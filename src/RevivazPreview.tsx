@@ -310,36 +310,55 @@ export default function RevivazPreview() {
 
   /* ──────────────────── RENDER ──────────────────── */
   return (
-    <div style={{ width: "100%", fontFamily: "'Nunito',system-ui,sans-serif", fontSize: F.sm, background: T.gray050, color: T.gray950, lineHeight: 1.5 }}>
+    <div id="top" style={{ width: "100%", fontFamily: "'Nunito',system-ui,sans-serif", fontSize: F.sm, background: T.gray050, color: T.gray950, lineHeight: 1.5 }}>
 
-      {/* ═══ BLOCO 2 — Header sticky (responsivo) ═══ */}
-      <header style={{ position: "sticky", top: 0, zIndex: 50, width: "100%", background: T.white, borderBottom: `1px solid ${T.gray200}` }}>
-        <div style={{ padding: bp === "mobile" ? `${Sp.m}px ${Sp.m}px` : `${Sp.l}px ${Sp.xl}px`, minHeight: bp === "mobile" ? 56 : 72, display: "flex", alignItems: "center", gap: bp === "mobile" ? Sp.s : S.xl, flexWrap: "wrap", ...container }}>
-          <span style={{ fontWeight: 900, fontSize: Fp.xl, color: T.teal700, fontFamily: "'Nunito',sans-serif", letterSpacing: "-0.02em", flexShrink: 0 }}>Revivaz</span>
-          <div style={{ flex: bp === "mobile" ? "1 1 100%" : 1, position: "relative", maxWidth: bp === "mobile" ? "100%" : 320, order: bp === "mobile" ? 3 : 0, minWidth: bp === "mobile" ? 0 : 120 }}>
-            <Search size={bp === "mobile" ? 16 : 18} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: T.gray600 }} />
-            <input placeholder="Buscar especialidade…" style={{ ...inputBase, padding: bp === "mobile" ? "10px 12px 10px 36px" : "14px 16px 14px 44px", fontSize: Fp.sm, borderRadius: 9999, minHeight: bp === "mobile" ? 44 : 48 }} />
+      {/* ═══ BLOCO 2 — Header (layout profissional: esquerda nav, direita ações) ═══ */}
+      <header style={{ position: "sticky", top: 0, zIndex: 50, width: "100%", background: T.white, borderBottom: `1px solid ${T.gray200}`, boxShadow: "0 1px 3px rgba(0,0,0,.04)" }}>
+        <div style={{ padding: bp === "mobile" ? `${Sp.m}px ${Sp.m}px` : `${Sp.m}px ${Sp.xl}px`, minHeight: bp === "mobile" ? 56 : 64, display: "flex", alignItems: "center", justifyContent: "space-between", gap: Sp.m, flexWrap: "wrap", ...container }}>
+          {/* Esquerda: logo + navegação */}
+          <div style={{ display: "flex", alignItems: "center", gap: bp === "mobile" ? Sp.s : Sp.xl, flex: bp === "mobile" ? "1 1 auto" : "0 0 auto", minWidth: 0 }}>
+            <a href="#top" style={{ fontWeight: 900, fontSize: Fp.xl, color: T.teal700, fontFamily: "'Nunito',sans-serif", letterSpacing: "-0.02em", textDecoration: "none", flexShrink: 0 }}>Revivaz</a>
+            {bp !== "mobile" && (
+              <nav style={{ display: "flex", alignItems: "center", gap: Sp.l }}>
+                {["Especialidades", "Para pacientes", "Para profissionais", "Sobre"].map(l => (
+                  <button key={l} style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.gray700, fontFamily: "inherit", padding: "6px 0", whiteSpace: "nowrap" }}>{l}</button>
+                ))}
+              </nav>
+            )}
           </div>
-          {bp !== "mobile" && (
-            <nav style={{ display: "flex", gap: S.l, flexWrap: "wrap" }}>
-              {["Especialidades", "Planos", "Contato"].map(l => (
-                <button key={l} style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.gray600, fontFamily: "inherit", padding: "8px 4px" }}>{l}</button>
-              ))}
-            </nav>
-          )}
-          {bp === "mobile" && (
-            <button onClick={() => setMenuOpen(o => !o)} style={{ background: "none", border: "none", cursor: "pointer", padding: 8 }} aria-label="Menu">
-              <Menu size={24} color={T.gray600} />
+          {/* Direita: busca + Entrar + Cadastre-se + CTA */}
+          <div style={{ display: "flex", alignItems: "center", gap: bp === "mobile" ? Sp.s : Sp.m, flexWrap: "wrap", flex: bp === "mobile" ? "0 0 auto" : "0 0 auto" }}>
+            {bp !== "mobile" && (
+              <>
+                <div style={{ position: "relative", width: 200 }}>
+                  <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: T.gray500 }} />
+                  <input placeholder="Buscar…" style={{ ...inputBase, padding: "8px 10px 8px 36px", fontSize: Fp.xs, borderRadius: 9999, minHeight: 40, background: T.gray050 }} />
+                </div>
+                <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.gray600, fontFamily: "inherit", padding: "8px 0", whiteSpace: "nowrap" }}>Entrar</button>
+                <button style={{ background: "none", border: `2px solid ${T.teal700}`, cursor: "pointer", fontSize: Fp.sm, fontWeight: 700, color: T.teal700, fontFamily: "inherit", padding: "8px 16px", borderRadius: 9999, whiteSpace: "nowrap" }}>Cadastre-se</button>
+              </>
+            )}
+            {bp === "mobile" && (
+              <button onClick={() => setMenuOpen(o => !o)} style={{ background: "none", border: "none", cursor: "pointer", padding: 8 }} aria-label="Menu">
+                <Menu size={24} color={T.gray600} />
+              </button>
+            )}
+            <button onClick={openAgendar} style={{ padding: bp === "mobile" ? "10px 14px" : "10px 20px", fontWeight: 700, fontSize: Fp.sm, color: T.white, background: T.teal700, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 10px rgba(0,77,92,.3)", minHeight: bp === "mobile" ? 40 : 44, flexShrink: 0, whiteSpace: "nowrap" }}>
+              Agendar consulta
             </button>
-          )}
-          <button onClick={openAgendar} style={{ padding: bp === "mobile" ? "12px 16px" : "14px 24px", fontWeight: 700, fontSize: Fp.sm, color: T.white, background: T.teal700, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 12px rgba(0,77,92,.25)", minHeight: bp === "mobile" ? 44 : 48, flexShrink: 0 }}>
-            {bp === "mobile" ? "Agendar" : "Agendar consulta"}
-          </button>
+          </div>
+          {/* Menu mobile expandido */}
           {bp === "mobile" && menuOpen && (
-            <nav style={{ width: "100%", display: "flex", flexDirection: "column", gap: Sp.s, paddingTop: Sp.s, borderTop: `1px solid ${T.gray200}` }}>
-              {["Especialidades", "Planos", "Contato"].map(l => (
-                <button key={l} onClick={() => setMenuOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.gray600, fontFamily: "inherit", padding: "10px 0", textAlign: "left" }}>{l}</button>
+            <nav style={{ width: "100%", display: "flex", flexDirection: "column", gap: 0, paddingTop: Sp.m, borderTop: `1px solid ${T.gray200}`, order: 99 }}>
+              <div style={{ position: "relative", marginBottom: Sp.s }}>
+                <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: T.gray500 }} />
+                <input placeholder="Buscar especialidade…" style={{ ...inputBase, padding: "10px 12px 10px 36px", fontSize: Fp.sm, borderRadius: 8, minHeight: 44, width: "100%" }} />
+              </div>
+              {["Especialidades", "Para pacientes", "Para profissionais", "Sobre", "Planos", "Contato"].map(l => (
+                <button key={l} onClick={() => setMenuOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.gray700, fontFamily: "inherit", padding: "12px 0", textAlign: "left", borderBottom: `1px solid ${T.gray100}` }}>{l}</button>
               ))}
+              <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.teal700, fontFamily: "inherit", padding: "12px 0", textAlign: "left", marginTop: Sp.s }}>Entrar</button>
+              <button style={{ background: T.teal050, border: `2px solid ${T.teal700}`, cursor: "pointer", fontSize: Fp.sm, fontWeight: 700, color: T.teal700, fontFamily: "inherit", padding: "12px", borderRadius: 8, marginTop: Sp.s, textAlign: "center" }}>Cadastre-se</button>
             </nav>
           )}
         </div>
