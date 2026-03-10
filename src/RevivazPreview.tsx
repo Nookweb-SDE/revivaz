@@ -42,8 +42,8 @@ const T = {
   teal300: "#00BFD8", teal100: "#D6F4F8", teal050: "#EDF9FB",
   green700: "#2E7D32", green500: "#4CAF50",
   navy: "#0B1D3A", navy800: "#112240",
-  gray950: "#0D1117", gray800: "#1F2937", gray600: "#4B5563",
-  gray200: "#E5E7EB", gray050: "#F9FAFB", white: "#FFFFFF",
+  gray950: "#0D1117", gray800: "#1F2937", gray700: "#374151", gray600: "#4B5563",
+  gray200: "#E5E7EB", gray100: "#F3F4F6", gray050: "#F9FAFB", gray500: "#6B7280", white: "#FFFFFF",
 };
 const S = { s: 8, m: 16, l: 24, xl: 32, xxl: 48 } as const;
 const F = { xs: 12, sm: 14, base: 16, lg: 18, xl: 20, "2xl": 24, "3xl": 28 } as const;
