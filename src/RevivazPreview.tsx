@@ -249,9 +249,9 @@ export default function RevivazPreview() {
   ];
 
   const FEATURES = [
-    { icon: Brain, title: "Psiquiatria", sub: "Acompanhamento especializado com profissionais voluntários qualificados.", img: "/revivaz/team.png", imgPos: "center 5%" },
+    { icon: Brain, title: "Psiquiatria", sub: "Acompanhamento especializado com profissionais voluntários qualificados.", img: "/revivaz/hero-alt.png", imgPos: "center" },
     { icon: Calendar, title: "Agendamento fácil", sub: "Presencial ou online, sem burocracia. Agende em poucos cliques.", img: "/revivaz/hero-alt.png", imgPos: "center" },
-    { icon: FileText, title: "Receita digital", sub: "Receba sua receita por SMS ou WhatsApp logo após a consulta.", img: "/revivaz/hero-alt.png", imgPos: "center center" },
+    { icon: FileText, title: "Receita digital", sub: "Receba sua receita por SMS ou WhatsApp logo após a consulta.", img: "/revivaz/hero.png", imgPos: "center" },
     { icon: Users, title: "Voluntários", sub: "Psicólogos e psiquiatras dedicados ao atendimento solidário.", img: "/revivaz/hero.png", imgPos: "center" },
   ];
 
@@ -404,30 +404,33 @@ export default function RevivazPreview() {
         </div>
       </section>
 
-      {/* ═══ BLOCO 9 — 4 feature cards com imagem ═══ */}
+      {/* ═══ BLOCO 9 — 4 feature cards com imagem (overlay padronizado em todos) ═══ */}
       <section style={{ padding: `${S.xxl}px ${S.m}px`, background: T.white }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: S.l, ...container }}>
-          {FEATURES.map(({ icon: Ic, title, sub, img, imgPos }) => (
-            <div key={title} style={{ borderRadius: 16, overflow: "hidden", position: "relative", boxShadow: "0 4px 20px rgba(0,0,0,.1)" }}>
-              <img src={img} alt={title} style={{ width: "100%", height: 160, objectFit: "cover", objectPosition: imgPos, display: "block" }} />
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(11,29,58,.85) 30%,transparent 65%)" }} />
-              <div style={{ position: "absolute", top: S.m, left: S.m, width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,.2)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Ic size={20} color={T.white} />
+          {FEATURES.map(({ icon: Ic, title, sub, img, imgPos }) => {
+            const cardOverlay = { position: "absolute" as const, inset: 0, background: "linear-gradient(to top,rgba(11,29,58,.85) 30%,transparent 65%)" };
+            return (
+              <div key={title} style={{ borderRadius: 16, overflow: "hidden", position: "relative", boxShadow: "0 4px 20px rgba(0,0,0,.1)" }}>
+                <img src={img} alt={title} style={{ width: "100%", height: 160, objectFit: "cover", objectPosition: imgPos, display: "block" }} />
+                <div style={cardOverlay} />
+                <div style={{ position: "absolute", top: S.m, left: S.m, width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,.2)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Ic size={20} color={T.white} />
+                </div>
+                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: `${S.l}px ${S.m}px` }}>
+                  <div style={{ fontSize: F.base, fontWeight: 700, color: T.white, marginBottom: 4 }}>{title}</div>
+                  <div style={{ fontSize: F.xs, color: "rgba(255,255,255,.9)", lineHeight: 1.4 }}>{sub}</div>
+                </div>
               </div>
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: `${S.l}px ${S.m}px` }}>
-                <div style={{ fontSize: F.base, fontWeight: 700, color: T.white, marginBottom: 4 }}>{title}</div>
-                <div style={{ fontSize: F.xs, color: "rgba(255,255,255,.9)", lineHeight: 1.4 }}>{sub}</div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
       {/* ═══ BLOCO 10 — "Nossas soluções" (navy bg + image + icon grid) ═══ */}
       <section style={{ padding: `${S.xxl}px ${S.m}px`, background: T.navy }}>
         <div style={{ display: "flex", gap: S.xl, alignItems: "center", ...container, flexWrap: "wrap" }}>
-          <div style={{ width: "40%", minWidth: 260, borderRadius: 16, overflow: "hidden", flexShrink: 0, boxShadow: "0 12px 32px rgba(0,0,0,.3)" }}>
-            <img src="/revivaz/team.png" alt="Equipe" style={{ width: "100%", height: 200, objectFit: "cover", objectPosition: "center 25%", display: "block" }} />
+          <div style={{ width: "40%", minWidth: 260, borderRadius: 16, overflow: "hidden", flexShrink: 0, boxShadow: "0 12px 32px rgba(0,0,0,.3)", marginTop: 48 }}>
+            <img src="/revivaz/solucoes.png" alt="Consulta online por vídeo" style={{ width: "100%", height: 200, objectFit: "cover", objectPosition: "center", display: "block" }} />
           </div>
           <div style={{ flex: "1 1 280px" }}>
             <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.xl, color: T.white, marginBottom: S.m }}>Nossas soluções</h2>
