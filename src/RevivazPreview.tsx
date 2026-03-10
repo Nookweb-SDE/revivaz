@@ -8,8 +8,33 @@ import {
   Star, Download, Search, Heart, ArrowRight, ChevronLeft, ChevronRight,
   Clock, MessageCircle, Smartphone, Video, Monitor, Sparkles, Brain,
   Stethoscope, FileText, Users, MapPin, Calendar, User, Phone, Mail,
-  Send, X, CheckCircle, Instagram, Linkedin, Newspaper,
+  Send, X, CheckCircle, Instagram, Linkedin, Newspaper, Menu,
 } from "lucide-react";
+
+/* ── breakpoints: mobile < 640, tablet 640–1023, desktop ≥ 1024 ── */
+function useBreakpoint() {
+  const [bp, setBp] = useState<"mobile" | "tablet" | "desktop">(() => {
+    if (typeof window === "undefined") return "desktop";
+    const w = window.innerWidth;
+    return w < 640 ? "mobile" : w < 1024 ? "tablet" : "desktop";
+  });
+  useEffect(() => {
+    const mq = (min: number) => window.matchMedia(`(min-width: ${min}px)`);
+    const update = () => {
+      if (mq(1024).matches) setBp("desktop");
+      else if (mq(640).matches) setBp("tablet");
+      else setBp("mobile");
+    };
+    update();
+    mq(1024).addEventListener("change", update);
+    mq(640).addEventListener("change", update);
+    return () => {
+      mq(1024).removeEventListener("change", update);
+      mq(640).removeEventListener("change", update);
+    };
+  }, []);
+  return bp;
+}
 
 /* ── design tokens (UX: 8px grid, type scale legível) ── */
 const T = {
@@ -22,6 +47,12 @@ const T = {
 };
 const S = { s: 8, m: 16, l: 24, xl: 32, xxl: 48 } as const;
 const F = { xs: 12, sm: 14, base: 16, lg: 18, xl: 20, "2xl": 24, "3xl": 28 } as const;
+
+/* ── tokens responsivos (mobile / tablet / desktop) ── */
+const S_r = (bp: "mobile" | "tablet" | "desktop") => bp === "mobile" ? { s: 6, m: 12, l: 18, xl: 24, xxl: 36 } : bp === "tablet" ? { s: 8, m: 14, l: 20, xl: 28, xxl: 40 } : S;
+const F_r = (bp: "mobile" | "tablet" | "desktop") => bp === "mobile" ? { xs: 11, sm: 13, base: 15, lg: 16, xl: 18, "2xl": 20, "3xl": 24 } : bp === "tablet" ? { xs: 12, sm: 13, base: 15, lg: 17, xl: 19, "2xl": 22, "3xl": 26 } : F;
+const containerMax = (bp: "mobile" | "tablet" | "desktop") => bp === "mobile" ? 9999 : bp === "tablet" ? 720 : 1120;
+const containerPad = (bp: "mobile" | "tablet" | "desktop") => bp === "mobile" ? 12 : bp === "tablet" ? 20 : 16;
 
 const pill = (active: boolean) => ({
   padding: "10px 20px", fontSize: F.xs, fontWeight: 700 as const,
@@ -37,9 +68,6 @@ const inputBase = {
   border: `1px solid ${T.gray200}`, borderRadius: 12,
   boxSizing: "border-box" as const, fontFamily: "inherit", outline: "none",
 };
-
-const sectionPad = { padding: `${S.xl}px ${S.m}px` };
-const container = { maxWidth: 1120, margin: "0 auto", paddingLeft: S.m, paddingRight: S.m } as const;
 
 /* ── Simplex 2D noise for displacement mesh ── */
 const _P = [151,160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,190,6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,88,237,149,56,87,174,20,125,136,171,168,68,175,74,165,71,134,139,48,27,166,77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,102,143,54,65,25,63,161,1,216,80,73,209,76,132,187,208,89,18,169,200,196,135,130,116,188,159,86,164,100,109,198,173,186,3,64,52,217,226,250,124,123,5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,223,183,170,213,119,248,152,2,44,154,163,70,221,153,101,155,167,43,172,9,129,22,39,253,19,98,108,110,79,113,224,232,178,185,112,104,218,246,97,228,251,34,242,193,238,210,144,12,191,179,162,241,81,51,145,235,249,14,239,107,49,192,214,31,181,199,106,157,184,84,204,176,115,121,50,45,127,4,150,254,138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180];
@@ -60,7 +88,7 @@ function simplex2(x: number, y: number) {
 }
 
 /* ── Hero displacement mesh (Aegis/Monosphera-style) ── */
-function HeroCanvas({ heroLines, heroIdx, openAgendar }: { heroLines: string[]; heroIdx: number; openAgendar: () => void }) {
+function HeroCanvas({ heroLines, heroIdx, openAgendar, bp = "desktop" }: { heroLines: string[]; heroIdx: number; openAgendar: () => void; bp?: "mobile" | "tablet" | "desktop" }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
 
@@ -192,11 +220,14 @@ function HeroCanvas({ heroLines, heroIdx, openAgendar }: { heroLines: string[]; 
     return () => cancelAnimationFrame(animRef.current);
   }, []);
 
+  const heroMinH = bp === "mobile" ? 240 : bp === "tablet" ? 280 : 320;
+  const heroPad = bp === "mobile" ? "32px 16px 40px" : bp === "tablet" ? "40px 20px 48px" : "48px 24px 56px";
+  const heroTitleSize = bp === "mobile" ? 22 : bp === "tablet" ? 26 : F["3xl"];
   return (
-    <section style={{ position: "relative", minHeight: 320, color: T.white, overflow: "hidden" }}>
+    <section style={{ position: "relative", minHeight: heroMinH, color: T.white, overflow: "hidden" }}>
       <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
-      <div style={{ position: "relative", zIndex: 1, padding: "48px 24px 56px", maxWidth: 560 }}>
-        <h1 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: F["3xl"], lineHeight: 1.1, margin: "0 0 8px", letterSpacing: "-0.02em", background: `linear-gradient(90deg, ${T.teal100} 0%, ${T.teal300} 50%, ${T.teal500} 100%)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" } as React.CSSProperties}>
+      <div style={{ position: "relative", zIndex: 1, padding: heroPad, maxWidth: 560 }}>
+        <h1 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: heroTitleSize, lineHeight: 1.1, margin: "0 0 8px", letterSpacing: "-0.02em", background: `linear-gradient(90deg, ${T.teal100} 0%, ${T.teal300} 50%, ${T.teal500} 100%)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" } as React.CSSProperties}>
           Saúde que conecta
         </h1>
         <div style={{ fontSize: F.sm, fontWeight: 700, marginBottom: S.m, minHeight: 22, color: T.teal300, letterSpacing: "0.12em", textTransform: "uppercase" }}>
@@ -219,6 +250,12 @@ function HeroCanvas({ heroLines, heroIdx, openAgendar }: { heroLines: string[]; 
 }
 
 export default function RevivazPreview() {
+  const bp = useBreakpoint();
+  const Sp = S_r(bp);
+  const Fp = F_r(bp);
+  const container = { maxWidth: containerMax(bp), margin: "0 auto" as const, paddingLeft: containerPad(bp), paddingRight: containerPad(bp) };
+  const sectionPad = { padding: `${Sp.xl}px ${Sp.m}px` };
+
   /* state */
   const [tab, setTab] = useState(0);
   const [heroIdx, setHeroIdx] = useState(0);
@@ -227,6 +264,7 @@ export default function RevivazPreview() {
   const [agendarOk, setAgendarOk] = useState(false);
   const [modalReceita, setModalReceita] = useState(false);
   const [receitaOk, setReceitaOk] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [form, setForm] = useState({
     tipo: "online" as "presencial" | "online",
     esp: "psicologia" as "psiquiatria" | "psicologia",
@@ -274,31 +312,45 @@ export default function RevivazPreview() {
   return (
     <div style={{ width: "100%", fontFamily: "'Nunito',system-ui,sans-serif", fontSize: F.sm, background: T.gray050, color: T.gray950, lineHeight: 1.5 }}>
 
-      {/* ═══ BLOCO 2 — Header sticky (fundo branco 100% largura) ═══ */}
+      {/* ═══ BLOCO 2 — Header sticky (responsivo) ═══ */}
       <header style={{ position: "sticky", top: 0, zIndex: 50, width: "100%", background: T.white, borderBottom: `1px solid ${T.gray200}` }}>
-        <div style={{ padding: `${S.l}px ${S.xl}px`, minHeight: 72, display: "flex", alignItems: "center", gap: S.xl, ...container }}>
-          <span style={{ fontWeight: 900, fontSize: F.xl, color: T.teal700, fontFamily: "'Nunito',sans-serif", letterSpacing: "-0.02em" }}>Revivaz</span>
-          <div style={{ flex: 1, position: "relative", maxWidth: 320 }}>
-            <Search size={18} style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: T.gray600 }} />
-            <input placeholder="Buscar especialidade…" style={{ ...inputBase, padding: "14px 16px 14px 44px", fontSize: F.sm, borderRadius: 9999, minHeight: 48 }} />
+        <div style={{ padding: bp === "mobile" ? `${Sp.m}px ${Sp.m}px` : `${Sp.l}px ${Sp.xl}px`, minHeight: bp === "mobile" ? 56 : 72, display: "flex", alignItems: "center", gap: bp === "mobile" ? Sp.s : S.xl, flexWrap: "wrap", ...container }}>
+          <span style={{ fontWeight: 900, fontSize: Fp.xl, color: T.teal700, fontFamily: "'Nunito',sans-serif", letterSpacing: "-0.02em", flexShrink: 0 }}>Revivaz</span>
+          <div style={{ flex: bp === "mobile" ? "1 1 100%" : 1, position: "relative", maxWidth: bp === "mobile" ? "100%" : 320, order: bp === "mobile" ? 3 : 0, minWidth: bp === "mobile" ? 0 : 120 }}>
+            <Search size={bp === "mobile" ? 16 : 18} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: T.gray600 }} />
+            <input placeholder="Buscar especialidade…" style={{ ...inputBase, padding: bp === "mobile" ? "10px 12px 10px 36px" : "14px 16px 14px 44px", fontSize: Fp.sm, borderRadius: 9999, minHeight: bp === "mobile" ? 44 : 48 }} />
           </div>
-          <nav style={{ display: "flex", gap: S.l }}>
-            {["Especialidades", "Planos", "Contato"].map(l => (
-              <button key={l} style={{ background: "none", border: "none", cursor: "pointer", fontSize: F.sm, fontWeight: 600, color: T.gray600, fontFamily: "inherit", padding: "8px 4px" }}>{l}</button>
-            ))}
-          </nav>
-          <button onClick={openAgendar} style={{ padding: "14px 24px", fontWeight: 700, fontSize: F.sm, color: T.white, background: T.teal700, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 12px rgba(0,77,92,.25)", minHeight: 48 }}>
-            Agendar consulta
+          {bp !== "mobile" && (
+            <nav style={{ display: "flex", gap: S.l, flexWrap: "wrap" }}>
+              {["Especialidades", "Planos", "Contato"].map(l => (
+                <button key={l} style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.gray600, fontFamily: "inherit", padding: "8px 4px" }}>{l}</button>
+              ))}
+            </nav>
+          )}
+          {bp === "mobile" && (
+            <button onClick={() => setMenuOpen(o => !o)} style={{ background: "none", border: "none", cursor: "pointer", padding: 8 }} aria-label="Menu">
+              <Menu size={24} color={T.gray600} />
+            </button>
+          )}
+          <button onClick={openAgendar} style={{ padding: bp === "mobile" ? "12px 16px" : "14px 24px", fontWeight: 700, fontSize: Fp.sm, color: T.white, background: T.teal700, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 12px rgba(0,77,92,.25)", minHeight: bp === "mobile" ? 44 : 48, flexShrink: 0 }}>
+            {bp === "mobile" ? "Agendar" : "Agendar consulta"}
           </button>
+          {bp === "mobile" && menuOpen && (
+            <nav style={{ width: "100%", display: "flex", flexDirection: "column", gap: Sp.s, paddingTop: Sp.s, borderTop: `1px solid ${T.gray200}` }}>
+              {["Especialidades", "Planos", "Contato"].map(l => (
+                <button key={l} onClick={() => setMenuOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.gray600, fontFamily: "inherit", padding: "10px 0", textAlign: "left" }}>{l}</button>
+              ))}
+            </nav>
+          )}
         </div>
       </header>
 
       {/* ═══ BLOCO 3 — Hero (Canvas WebGL-like particle mesh) ═══ */}
-      <HeroCanvas heroLines={heroLines} heroIdx={heroIdx} openAgendar={openAgendar} />
+      <HeroCanvas heroLines={heroLines} heroIdx={heroIdx} openAgendar={openAgendar} bp={bp} />
 
       {/* ═══ BLOCO 4 — Pill tabs ═══ */}
-      <section style={{ background: T.white, padding: `${S.m}px ${S.m}px`, borderBottom: `1px solid ${T.gray200}` }}>
-        <div style={{ display: "flex", gap: S.s, flexWrap: "wrap", ...container }}>
+      <section style={{ background: T.white, padding: `${Sp.m}px ${Sp.m}px`, borderBottom: `1px solid ${T.gray200}` }}>
+        <div style={{ display: "flex", gap: Sp.s, flexWrap: "wrap", ...container }}>
           {["Para pacientes", "Para profissionais", "Como ativar"].map((l, i) => (
             <button key={l} onClick={() => setTab(i)} style={pill(tab === i)}>{l}</button>
           ))}
@@ -306,9 +358,9 @@ export default function RevivazPreview() {
       </section>
 
       {/* ═══ BLOCO 5 — Tab content (split: text + image) ═══ */}
-      <section style={{ background: T.white, padding: `${S.xl}px ${S.m}px` }}>
-        <div style={{ display: "flex", gap: S.xl, alignItems: "center", ...container, flexWrap: "wrap" }}>
-          <div style={{ flex: "1 1 280px" }}>
+      <section style={{ background: T.white, padding: `${Sp.xl}px ${Sp.m}px` }}>
+        <div style={{ display: "flex", gap: Sp.xl, alignItems: "center", ...container, flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 280px", minWidth: 0 }}>
             {tab === 0 && <>
               <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.xl, color: T.gray950, marginBottom: S.m }}>O futuro do cuidado em saúde mental</h2>
               <p style={{ fontSize: F.sm, color: T.gray600, lineHeight: 1.65, marginBottom: S.l }}>Agende presencial ou online, receba receita por WhatsApp e faça parte de uma rede que reduz a fila de espera do SUS.</p>
@@ -334,8 +386,8 @@ export default function RevivazPreview() {
               </div>
             </>}
           </div>
-          <div style={{ width: "42%", minWidth: 240, borderRadius: 16, overflow: "hidden", position: "relative", flexShrink: 0, boxShadow: "0 8px 32px rgba(0,0,0,.12)" }}>
-            <img src="/revivaz/team.png" alt="Equipe" style={{ width: "100%", height: 180, objectFit: "cover", objectPosition: "center 25%", display: "block" }} />
+          <div style={{ width: bp === "mobile" ? "100%" : "42%", minWidth: bp === "mobile" ? 0 : 240, borderRadius: 16, overflow: "hidden", position: "relative", flexShrink: 0, boxShadow: "0 8px 32px rgba(0,0,0,.12)" }}>
+            <img src="/revivaz/team.png" alt="Equipe" style={{ width: "100%", height: bp === "mobile" ? 160 : 180, objectFit: "cover", objectPosition: "center 25%", display: "block" }} />
             <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 16px 12px", background: "linear-gradient(transparent,rgba(0,0,0,.6))" }}>
               <span style={{ fontSize: F.xs, color: T.white, fontWeight: 700 }}>+500 profissionais</span>
             </div>
@@ -346,11 +398,11 @@ export default function RevivazPreview() {
       {/* ═══ BLOCO 6 — "Saúde digital" + mockup ═══ */}
       <section style={{ ...sectionPad, background: T.gray050, textAlign: "center" }}>
         <div style={{ ...container }}>
-          <div style={{ fontSize: F.xs, color: T.teal700, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 700, marginBottom: S.s }}>Saúde digital</div>
-          <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F["2xl"], color: T.gray950, marginBottom: S.s }}>do jeito que você precisa</h2>
-          <p style={{ fontSize: F.sm, color: T.gray600, marginBottom: S.l, maxWidth: 420, margin: "0 auto" }}>Atendimentos por agendamento. Presencial ou online por vídeo.</p>
-          <div style={{ maxWidth: 360, margin: "0 auto", background: T.gray950, borderRadius: "12px 12px 0 0", padding: "10px 10px 0", position: "relative", boxShadow: "0 12px 40px rgba(0,0,0,.2)" }}>
-            <div style={{ background: T.teal900, borderRadius: 8, height: 160, display: "flex", alignItems: "center", justifyContent: "center", gap: S.m }}>
+          <div style={{ fontSize: Fp.xs, color: T.teal700, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 700, marginBottom: Sp.s }}>Saúde digital</div>
+          <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp["2xl"], color: T.gray950, marginBottom: Sp.s }}>do jeito que você precisa</h2>
+          <p style={{ fontSize: Fp.sm, color: T.gray600, marginBottom: Sp.l, maxWidth: 420, margin: "0 auto" }}>Atendimentos por agendamento. Presencial ou online por vídeo.</p>
+          <div style={{ maxWidth: bp === "mobile" ? 320 : 360, margin: "0 auto", background: T.gray950, borderRadius: "12px 12px 0 0", padding: "10px 10px 0", position: "relative", boxShadow: "0 12px 40px rgba(0,0,0,.2)" }}>
+            <div style={{ background: T.teal900, borderRadius: 8, height: bp === "mobile" ? 140 : 160, display: "flex", alignItems: "center", justifyContent: "center", gap: Sp.m }}>
               <div style={{ width: 56, height: 56, borderRadius: "50%", background: T.teal700, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <User size={26} color={T.white} />
               </div>
@@ -373,13 +425,13 @@ export default function RevivazPreview() {
       </section>
 
       {/* ═══ BLOCO 7 — 2 stat cards (NAVY escuro) ═══ */}
-      <section style={{ padding: `${S.xl}px ${S.m}px`, background: T.white }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: S.l, ...container }}>
+      <section style={{ padding: `${Sp.xl}px ${Sp.m}px`, background: T.white }}>
+        <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1fr 1fr", gap: Sp.l, ...container }}>
           {[
             { value: "Até 24h", label: "para agendar sua consulta", note: "*Conforme disponibilidade", Icon: Clock },
             { value: "Na hora", label: "receita por SMS ou WhatsApp", note: "*Enviada pelo profissional", Icon: MessageCircle },
           ].map(({ value, label, note, Icon }) => (
-            <div key={value} style={{ textAlign: "center", padding: S.xl, background: T.navy, borderRadius: 16, position: "relative", overflow: "hidden", boxShadow: "0 8px 24px rgba(11,29,58,.25)" }}>
+            <div key={value} style={{ textAlign: "center", padding: Sp.xl, background: T.navy, borderRadius: 16, position: "relative", overflow: "hidden", boxShadow: "0 8px 24px rgba(11,29,58,.25)" }}>
               <div style={{ position: "absolute", top: -16, right: -16, width: 64, height: 64, borderRadius: "50%", background: "rgba(0,168,191,.15)" }} />
               <Icon size={24} color={T.teal300} style={{ marginBottom: S.s }} />
               <div style={{ fontSize: F["2xl"], fontWeight: 800, color: T.white, marginBottom: S.s }}>{value}</div>
@@ -391,10 +443,10 @@ export default function RevivazPreview() {
       </section>
 
       {/* ═══ BLOCO 8 — "Muito além de consultas" ═══ */}
-      <section style={{ padding: `${S.xxl}px ${S.m}px`, background: `linear-gradient(135deg,${T.teal050} 0%,${T.white} 100%)` }}>
+      <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: `linear-gradient(135deg,${T.teal050} 0%,${T.white} 100%)` }}>
         <div style={{ ...container }}>
-          <Sparkles size={22} color={T.teal700} style={{ marginBottom: S.s }} />
-          <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.xl, color: T.gray950, marginBottom: S.s }}>Muito além de consultas</h2>
+          <Sparkles size={bp === "mobile" ? 20 : 22} color={T.teal700} style={{ marginBottom: Sp.s }} />
+          <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.xl, color: T.gray950, marginBottom: Sp.s }}>Muito além de consultas</h2>
           <p style={{ fontSize: F.sm, color: T.gray600, lineHeight: 1.65, marginBottom: S.l, maxWidth: 480 }}>
             Os melhores recursos para uma jornada integral de saúde mental. Cuidado contínuo que transforma vidas.
           </p>
@@ -405,13 +457,13 @@ export default function RevivazPreview() {
       </section>
 
       {/* ═══ BLOCO 9 — 4 feature cards com imagem (overlay padronizado em todos) ═══ */}
-      <section style={{ padding: `${S.xxl}px ${S.m}px`, background: T.white }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: S.l, ...container }}>
+      <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: T.white }}>
+        <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1fr 1fr", gap: Sp.l, ...container }}>
           {FEATURES.map(({ icon: Ic, title, sub, img, imgPos }) => {
             const cardOverlay = { position: "absolute" as const, inset: 0, background: "linear-gradient(to top,rgba(11,29,58,.85) 30%,transparent 65%)" };
             return (
               <div key={title} style={{ borderRadius: 16, overflow: "hidden", position: "relative", boxShadow: "0 4px 20px rgba(0,0,0,.1)" }}>
-                <img src={img} alt={title} style={{ width: "100%", height: 160, objectFit: "cover", objectPosition: imgPos, display: "block" }} />
+                <img src={img} alt={title} style={{ width: "100%", height: bp === "mobile" ? 140 : 160, objectFit: "cover", objectPosition: imgPos, display: "block" }} />
                 <div style={cardOverlay} />
                 <div style={{ position: "absolute", top: S.m, left: S.m, width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,.2)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Ic size={20} color={T.white} />
@@ -427,14 +479,14 @@ export default function RevivazPreview() {
       </section>
 
       {/* ═══ BLOCO 10 — "Nossas soluções" (navy bg + image + icon grid) ═══ */}
-      <section style={{ padding: `${S.xxl}px ${S.m}px`, background: T.navy }}>
-        <div style={{ display: "flex", gap: S.xl, alignItems: "center", ...container, flexWrap: "wrap" }}>
-          <div style={{ width: "40%", minWidth: 260, borderRadius: 16, overflow: "hidden", flexShrink: 0, boxShadow: "0 12px 32px rgba(0,0,0,.3)", marginTop: 48 }}>
-            <img src="/revivaz/solucoes.png" alt="Consulta online por vídeo" style={{ width: "100%", height: 200, objectFit: "cover", objectPosition: "center", display: "block" }} />
+      <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: T.navy }}>
+        <div style={{ display: "flex", gap: Sp.xl, alignItems: "center", ...container, flexWrap: "wrap" }}>
+          <div style={{ width: bp === "mobile" ? "100%" : "40%", minWidth: bp === "mobile" ? 0 : 260, borderRadius: 16, overflow: "hidden", flexShrink: 0, boxShadow: "0 12px 32px rgba(0,0,0,.3)", marginTop: bp === "mobile" ? 0 : 48 }}>
+            <img src="/revivaz/solucoes.png" alt="Consulta online por vídeo" style={{ width: "100%", height: bp === "mobile" ? 180 : 200, objectFit: "cover", objectPosition: "center", display: "block" }} />
           </div>
-          <div style={{ flex: "1 1 280px" }}>
-            <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.xl, color: T.white, marginBottom: S.m }}>Nossas soluções</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: S.m }}>
+          <div style={{ flex: "1 1 280px", minWidth: 0 }}>
+            <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.xl, color: T.white, marginBottom: Sp.m }}>Nossas soluções</h2>
+            <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1fr 1fr", gap: Sp.m }}>
               {SOLUCOES.map(({ icon: Ic, title, desc }) => (
                 <div key={title} style={{ padding: S.m, background: "rgba(255,255,255,.08)", borderRadius: 12, border: "1px solid rgba(255,255,255,.1)" }}>
                   <Ic size={18} color={T.teal300} style={{ marginBottom: S.s }} />
@@ -448,10 +500,10 @@ export default function RevivazPreview() {
       </section>
 
       {/* ═══ BLOCO 11 — "+500 profissionais" banner gradiente ═══ */}
-      <section style={{ padding: `${S.xxl}px ${S.m}px`, background: `linear-gradient(135deg,${T.teal900} 0%,${T.teal500} 100%)`, color: T.white, textAlign: "center" }}>
+      <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: `linear-gradient(135deg,${T.teal900} 0%,${T.teal500} 100%)`, color: T.white, textAlign: "center" }}>
         <div style={{ ...container }}>
-          <div style={{ fontSize: 40, fontWeight: 900, marginBottom: S.s, letterSpacing: "-0.02em" }}>+500</div>
-          <div style={{ fontSize: F.base, opacity: 0.95, marginBottom: S.l, maxWidth: 400, margin: "0 auto" }}>profissionais & voluntários oferecem Revivaz para quem precisa</div>
+          <div style={{ fontSize: bp === "mobile" ? 32 : 40, fontWeight: 900, marginBottom: Sp.s, letterSpacing: "-0.02em" }}>+500</div>
+          <div style={{ fontSize: Fp.base, opacity: 0.95, marginBottom: Sp.l, maxWidth: 400, margin: "0 auto" }}>profissionais & voluntários oferecem Revivaz para quem precisa</div>
           <button onClick={openAgendar} style={{ padding: "14px 28px", fontSize: F.sm, fontWeight: 700, color: T.teal700, background: T.white, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 20px rgba(0,0,0,.2)", display: "inline-flex", alignItems: "center", gap: 6, minHeight: 48 }}>
             Faça parte <ArrowRight size={18} />
           </button>
@@ -461,9 +513,9 @@ export default function RevivazPreview() {
       {/* ═══ BLOCO 12 — Depoimentos (carousel + NPS + setas) ═══ */}
       <section style={{ ...sectionPad, background: T.white }}>
         <div style={{ ...container }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: S.l, flexWrap: "wrap", gap: S.m }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: Sp.l, flexWrap: "wrap", gap: Sp.m }}>
             <div>
-              <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.xl, color: T.gray950, marginBottom: S.s }}>Nossa comunidade recomenda</h2>
+              <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.xl, color: T.gray950, marginBottom: Sp.s }}>Nossa comunidade recomenda</h2>
               <div style={{ display: "flex", alignItems: "center", gap: S.s }}>
                 <span style={{ fontSize: F["2xl"], fontWeight: 900, color: T.teal700 }}>NPS &gt; 90</span>
                 <span style={{ fontSize: F.xs, color: T.gray600 }}>Net Promoter Score</span>
@@ -504,11 +556,11 @@ export default function RevivazPreview() {
       </section>
 
       {/* ═══ BLOCO 13 — App (mockup celular + store buttons) ═══ */}
-      <section style={{ padding: `${S.xxl}px ${S.m}px`, background: T.gray050, display: "flex", gap: S.xl, alignItems: "center", flexWrap: "wrap" }}>
-        <div style={{ ...container, display: "flex", gap: S.xl, alignItems: "center", flexWrap: "wrap" }}>
-          <div style={{ width: 100, flexShrink: 0 }}>
-            <div style={{ width: 88, margin: "0 auto", background: T.gray950, borderRadius: 20, padding: 6, position: "relative", boxShadow: "0 12px 32px rgba(0,0,0,.2)" }}>
-              <div style={{ background: T.teal900, borderRadius: 14, height: 160, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: S.s }}>
+      <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: T.gray050, display: "flex", gap: Sp.xl, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ ...container, display: "flex", gap: Sp.xl, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ width: bp === "mobile" ? "100%" : 100, flexShrink: 0, display: "flex", justifyContent: "center" }}>
+            <div style={{ width: bp === "mobile" ? 72 : 88, margin: "0 auto", background: T.gray950, borderRadius: 20, padding: 6, position: "relative", boxShadow: "0 12px 32px rgba(0,0,0,.2)" }}>
+              <div style={{ background: T.teal900, borderRadius: 14, height: bp === "mobile" ? 130 : 160, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: Sp.s }}>
                 <Smartphone size={28} color={T.teal300} />
                 <span style={{ fontSize: F.sm, color: T.white, fontWeight: 700 }}>Revivaz</span>
                 <span style={{ fontSize: F.xs, color: "rgba(255,255,255,.6)" }}>Saúde mental</span>
@@ -516,8 +568,8 @@ export default function RevivazPreview() {
               <div style={{ position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)", width: 28, height: 6, background: T.gray950, borderRadius: 6 }} />
             </div>
           </div>
-          <div style={{ flex: "1 1 280px" }}>
-            <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.lg, color: T.gray950, marginBottom: S.s }}>Sua saúde ainda mais conectada</h2>
+          <div style={{ flex: "1 1 280px", minWidth: 0 }}>
+            <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.lg, color: T.gray950, marginBottom: Sp.s }}>Sua saúde ainda mais conectada</h2>
             <p style={{ fontSize: F.sm, color: T.gray600, lineHeight: 1.55, marginBottom: S.m }}>Baixe o app e tenha acesso ao agendamento, receitas e teleatendimento na palma da mão.</p>
             <div style={{ display: "flex", gap: S.m, flexWrap: "wrap", marginBottom: S.s }}>
               <button style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.gray950, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 44 }}>
@@ -537,18 +589,18 @@ export default function RevivazPreview() {
       {/* ═══ BLOCO 14 — News (3 cards com thumbnail) ═══ */}
       <section style={{ ...sectionPad, background: T.white }}>
         <div style={{ ...container }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: S.l, flexWrap: "wrap", gap: S.m }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: Sp.l, flexWrap: "wrap", gap: Sp.m }}>
             <div>
-              <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.xl, color: T.gray950, margin: 0 }}>Revivaz em foco</h2>
+              <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.xl, color: T.gray950, margin: 0 }}>Revivaz em foco</h2>
               <p style={{ fontSize: F.xs, color: T.gray600, margin: "4px 0 0" }}>Principais acontecimentos e conteúdos.</p>
             </div>
             <button style={{ padding: "10px 18px", fontSize: F.xs, fontWeight: 700, color: T.teal700, background: T.teal050, border: `2px solid ${T.teal100}`, borderRadius: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 44 }}>
               Veja tudo <ArrowRight size={14} />
             </button>
           </div>
-          <div style={{ display: "flex", gap: S.m, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: Sp.m, flexWrap: "wrap" }}>
             {NEWS.map(n => (
-              <div key={n.title} style={{ flex: "1 1 200px", minWidth: 180, borderRadius: 16, overflow: "hidden", border: `1px solid ${T.gray200}`, background: T.gray050, boxShadow: "0 2px 8px rgba(0,0,0,.04)" }}>
+              <div key={n.title} style={{ flex: bp === "mobile" ? "1 1 100%" : "1 1 200px", minWidth: bp === "mobile" ? 0 : 180, borderRadius: 16, overflow: "hidden", border: `1px solid ${T.gray200}`, background: T.gray050, boxShadow: "0 2px 8px rgba(0,0,0,.04)" }}>
                 <img src={n.img} alt={n.title} style={{ width: "100%", height: 120, objectFit: "cover", objectPosition: (n as { imgPos?: string }).imgPos || "top center", display: "block" }} />
                 <div style={{ padding: S.m }}>
                   <div style={{ fontSize: F.xs, color: T.teal700, fontWeight: 700, marginBottom: 4 }}>{n.cat}</div>
@@ -562,9 +614,9 @@ export default function RevivazPreview() {
       </section>
 
       {/* ═══ BLOCO 15 — Footer ═══ */}
-      <footer style={{ background: T.gray950, color: "rgba(255,255,255,.7)", padding: `${S.xxl}px ${S.m}px ${S.xl}px`, fontSize: F.xs }}>
+      <footer style={{ background: T.gray950, color: "rgba(255,255,255,.7)", padding: `${Sp.xxl}px ${Sp.m}px ${Sp.xl}px`, fontSize: Fp.xs }}>
         <div style={{ ...container }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gap: S.xxl, marginBottom: S.xl }}>
+          <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1.4fr 1fr 1fr", gap: Sp.xxl, marginBottom: Sp.xl }}>
             <div>
               <div style={{ fontWeight: 900, color: T.teal300, fontSize: F.lg, marginBottom: S.s, fontFamily: "'Nunito',sans-serif" }}>Revivaz</div>
               <p style={{ lineHeight: 1.6, marginBottom: S.m, maxWidth: 320 }}>Atendimento solidário em saúde mental. Psiquiatras e psicólogos conectados a quem mais precisa.</p>
@@ -597,7 +649,7 @@ export default function RevivazPreview() {
               </button>
             </div>
           </div>
-          <div style={{ borderTop: "1px solid rgba(255,255,255,.1)", paddingTop: S.m, fontSize: F.xs, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: S.m }}>
+          <div style={{ borderTop: "1px solid rgba(255,255,255,.1)", paddingTop: Sp.m, fontSize: Fp.xs, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: Sp.m }}>
             <span>© 2025 Revivaz. Atendimento solidário em saúde mental.</span>
             <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Heart size={14} fill={T.teal500} stroke={T.teal500} /> Feito com amor</span>
           </div>
@@ -638,7 +690,7 @@ export default function RevivazPreview() {
                   </select>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: S.m, marginBottom: S.m }}>
+                <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1fr 1fr", gap: S.m, marginBottom: S.m }}>
                   <div>
                     <label style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Data</label>
                     <div style={{ position: "relative" }}>
