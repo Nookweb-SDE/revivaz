@@ -15,11 +15,9 @@
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" />
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" /></noscript>
-  </head>
-  <body>
-    <div id="root">
-      <!-- critical inline skeleton shown before JS hydrates -->
-      <style>
+    <style>
+      /* critical skeleton — mobile only */
+      @media(max-width:639px){
         #cs{font-family:-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden}
         #cs-nav{background:#0B1D3A;padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
         #cs-nav .logo{color:#00BFD8;font-weight:900;font-size:18px}
@@ -40,8 +38,12 @@
         #cs-img{border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.12);position:relative;margin-top:8px}
         #cs-img img{width:100%;height:160px;object-fit:cover;object-position:center 25%;display:block}
         #cs-img .badge{position:absolute;bottom:0;left:0;right:0;padding:20px 16px 12px;background:linear-gradient(transparent,rgba(0,0,0,.6));color:#fff;font-size:12px;font-weight:700}
-        @media(min-width:640px){#cs{display:none}}
-      </style>
+      }
+      @media(min-width:640px){#cs{display:none}}
+    </style>
+  </head>
+  <body>
+    <div id="root">
       <div id="cs" aria-hidden="true">
         <div id="cs-nav">
           <span class="logo">Revivaz</span>
@@ -67,7 +69,7 @@
           <h2>O futuro do cuidado em saúde mental</h2>
           <p>Agende presencial ou online, receba receita por WhatsApp e faça parte de uma rede que reduz a fila de espera do SUS.</p>
           <div id="cs-img">
-            <img src="/revivaz/team.webp" alt="Equipe Revivaz" fetchpriority="high" decoding="sync" width="600" height="160" />
+            <img src="/revivaz/team.webp" alt="Equipe Revivaz" fetchpriority="high" decoding="async" width="600" height="160" />
             <div class="badge">+500 profissionais</div>
           </div>
         </div>
