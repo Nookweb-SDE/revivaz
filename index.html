@@ -17,7 +17,28 @@
     <noscript><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" /></noscript>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- critical inline hero: shown before JS loads, hidden after React hydrates -->
+      <style>
+        #crit-hero { background: linear-gradient(180deg,#0d2440 0%,#0B1D3A 50%,#060d18 100%); color: #fff; min-height: 300px; display: flex; align-items: center; padding: 40px 16px 48px; box-sizing: border-box; }
+        #crit-hero h1 { font-family: -apple-system,BlinkMacSystemFont,sans-serif; font-weight: 900; font-size: 26px; line-height: 1.1; margin: 0 0 8px; letter-spacing: -0.02em; background: linear-gradient(90deg,#D6F4F8 0%,#00BFD8 50%,#00A8BF 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        #crit-hero p { font-family: -apple-system,BlinkMacSystemFont,sans-serif; font-size: 14px; opacity: 0.92; line-height: 1.65; margin: 0 0 24px; max-width: 90%; color: rgba(214,244,248,0.9); }
+        #crit-hero .btn-primary { padding: 14px 24px; font-weight: 700; font-size: 14px; color: #001820; background: linear-gradient(90deg,#00BFD8,#00A8BF); border: none; border-radius: 12px; cursor: pointer; font-family: inherit; box-shadow: 0 4px 20px rgba(0,191,216,.35); min-height: 48px; display: inline-block; text-decoration: none; }
+        #crit-hero .btn-secondary { padding: 14px 24px; font-weight: 700; font-size: 14px; color: #00BFD8; background: transparent; border: 2px solid rgba(0,191,216,0.5); border-radius: 12px; cursor: pointer; font-family: inherit; min-height: 48px; display: inline-block; margin-left: 12px; }
+        #crit-hero .sub { font-size: 11px; font-weight: 700; margin-bottom: 16px; color: #00BFD8; letter-spacing: 0.12em; text-transform: uppercase; font-family: -apple-system,BlinkMacSystemFont,sans-serif; }
+      </style>
+      <div id="crit-hero" aria-hidden="true">
+        <div>
+          <div class="sub">Psiquiatria · Psicologia · Solidária</div>
+          <h1>Saúde que conecta</h1>
+          <p>Cuidado em saúde mental de qualidade, oferecido por psiquiatras e psicólogos em trabalho solidário. Sem filas, sem burocracia.</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+            <span class="btn-primary">Agendar consulta</span>
+            <span class="btn-secondary">Saiba como ativar</span>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
