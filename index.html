@@ -18,23 +18,57 @@
   </head>
   <body>
     <div id="root">
-      <!-- critical inline hero: shown before JS loads, hidden after React hydrates -->
+      <!-- critical inline skeleton shown before JS hydrates -->
       <style>
-        #crit-hero { background: linear-gradient(180deg,#0d2440 0%,#0B1D3A 50%,#060d18 100%); color: #fff; min-height: 300px; display: flex; align-items: center; padding: 40px 16px 48px; box-sizing: border-box; }
-        #crit-hero h1 { font-family: -apple-system,BlinkMacSystemFont,sans-serif; font-weight: 900; font-size: 26px; line-height: 1.1; margin: 0 0 8px; letter-spacing: -0.02em; background: linear-gradient(90deg,#D6F4F8 0%,#00BFD8 50%,#00A8BF 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        #crit-hero p { font-family: -apple-system,BlinkMacSystemFont,sans-serif; font-size: 14px; opacity: 0.92; line-height: 1.65; margin: 0 0 24px; max-width: 90%; color: rgba(214,244,248,0.9); }
-        #crit-hero .btn-primary { padding: 14px 24px; font-weight: 700; font-size: 14px; color: #001820; background: linear-gradient(90deg,#00BFD8,#00A8BF); border: none; border-radius: 12px; cursor: pointer; font-family: inherit; box-shadow: 0 4px 20px rgba(0,191,216,.35); min-height: 48px; display: inline-block; text-decoration: none; }
-        #crit-hero .btn-secondary { padding: 14px 24px; font-weight: 700; font-size: 14px; color: #00BFD8; background: transparent; border: 2px solid rgba(0,191,216,0.5); border-radius: 12px; cursor: pointer; font-family: inherit; min-height: 48px; display: inline-block; margin-left: 12px; }
-        #crit-hero .sub { font-size: 11px; font-weight: 700; margin-bottom: 16px; color: #00BFD8; letter-spacing: 0.12em; text-transform: uppercase; font-family: -apple-system,BlinkMacSystemFont,sans-serif; }
+        #cs{font-family:-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden}
+        #cs-nav{background:#0B1D3A;padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
+        #cs-nav .logo{color:#00BFD8;font-weight:900;font-size:18px}
+        #cs-nav .cta{background:linear-gradient(90deg,#00BFD8,#00A8BF);color:#001820;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;border:none}
+        #cs-hero{background:linear-gradient(180deg,#0d2440 0%,#0B1D3A 60%,#060d18 100%);color:#fff;min-height:300px;display:flex;align-items:center;padding:40px 16px 48px;box-sizing:border-box}
+        #cs-hero h1{font-weight:900;font-size:26px;line-height:1.1;margin:0 0 8px;letter-spacing:-.02em;background:linear-gradient(90deg,#D6F4F8 0%,#00BFD8 50%,#00A8BF 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        #cs-hero p{font-size:14px;opacity:.92;line-height:1.65;margin:0 0 24px;max-width:90%;color:rgba(214,244,248,.9)}
+        #cs-hero .sub{font-size:11px;font-weight:700;margin-bottom:16px;color:#00BFD8;letter-spacing:.12em;text-transform:uppercase}
+        #cs-hero .btns{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+        #cs-hero .bp{padding:14px 24px;font-weight:700;font-size:14px;color:#001820;background:linear-gradient(90deg,#00BFD8,#00A8BF);border:none;border-radius:12px;min-height:48px;display:inline-block}
+        #cs-hero .bs{padding:14px 24px;font-weight:700;font-size:14px;color:#00BFD8;background:transparent;border:2px solid rgba(0,191,216,.5);border-radius:12px;min-height:48px;display:inline-block}
+        #cs-tabs{background:#fff;padding:16px;border-bottom:1px solid #E5E7EB;display:flex;gap:8px}
+        #cs-tabs .ta{padding:10px 20px;font-size:12px;font-weight:700;border-radius:9999px;background:#007A8C;color:#fff;white-space:nowrap}
+        #cs-tabs .tb{padding:10px 20px;font-size:12px;font-weight:700;border-radius:9999px;background:#F9FAFB;color:#4B5563;white-space:nowrap}
+        #cs-tab{background:#fff;padding:24px 16px}
+        #cs-tab h2{font-weight:800;font-size:20px;color:#0D1117;margin:0 0 12px}
+        #cs-tab p{font-size:14px;color:#4B5563;line-height:1.65;margin:0 0 20px}
+        #cs-img{border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.12);position:relative;margin-top:8px}
+        #cs-img img{width:100%;height:160px;object-fit:cover;object-position:center 25%;display:block}
+        #cs-img .badge{position:absolute;bottom:0;left:0;right:0;padding:20px 16px 12px;background:linear-gradient(transparent,rgba(0,0,0,.6));color:#fff;font-size:12px;font-weight:700}
+        @media(min-width:640px){#cs{display:none}}
       </style>
-      <div id="crit-hero" aria-hidden="true">
-        <div>
-          <div class="sub">Psiquiatria · Psicologia · Solidária</div>
-          <h1>Saúde que conecta</h1>
-          <p>Cuidado em saúde mental de qualidade, oferecido por psiquiatras e psicólogos em trabalho solidário. Sem filas, sem burocracia.</p>
-          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-            <span class="btn-primary">Agendar consulta</span>
-            <span class="btn-secondary">Saiba como ativar</span>
+      <div id="cs" aria-hidden="true">
+        <div id="cs-nav">
+          <span class="logo">Revivaz</span>
+          <button class="cta">Agendar consulta</button>
+        </div>
+        <div id="cs-hero">
+          <div>
+            <div class="sub">Psiquiatria · Psicologia · Solidária</div>
+            <h1>Saúde que conecta</h1>
+            <p>Cuidado em saúde mental de qualidade, oferecido por psiquiatras e psicólogos em trabalho solidário. Sem filas, sem burocracia.</p>
+            <div class="btns">
+              <span class="bp">Agendar consulta</span>
+              <span class="bs">Saiba como ativar</span>
+            </div>
+          </div>
+        </div>
+        <div id="cs-tabs">
+          <span class="ta">Para pacientes</span>
+          <span class="tb">Para profissionais</span>
+          <span class="tb">Como ativar</span>
+        </div>
+        <div id="cs-tab">
+          <h2>O futuro do cuidado em saúde mental</h2>
+          <p>Agende presencial ou online, receba receita por WhatsApp e faça parte de uma rede que reduz a fila de espera do SUS.</p>
+          <div id="cs-img">
+            <img src="/revivaz/team.webp" alt="Equipe Revivaz" fetchpriority="high" decoding="sync" width="600" height="160" />
+            <div class="badge">+500 profissionais</div>
           </div>
         </div>
       </div>
