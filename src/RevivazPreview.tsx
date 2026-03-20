@@ -98,145 +98,72 @@ function HeroCanvas({ heroLines, heroIdx, openAgendar, bp = "desktop" }: { heroL
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    // Desliga efeito pesado do mesh para priorizar PageSpeed/UX.
-    const disableHeavyHeroFx = true;
 
     let w = 0, h = 0;
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const isMobile = bp === "mobile";
+
     const resize = () => {
       const rect = canvas.parentElement!.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.15 : 1.5);
+      const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 1.5);
       w = rect.width; h = rect.height;
       canvas.width = w * dpr; canvas.height = h * dpr;
       canvas.style.width = w + "px"; canvas.style.height = h + "px";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
-    if (disableHeavyHeroFx) {
+
+    // Gradiente estático para quem prefere menos movimento
+    const drawStatic = () => {
       const bg = ctx.createLinearGradient(0, 0, 0, h);
-      bg.addColorStop(0, "#0d2440");
-      bg.addColorStop(0.5, "#0B1D3A");
-      bg.addColorStop(1, "#060d18");
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, w, h);
-      const glow = ctx.createRadialGradient(w * 0.62, h * 0.45, 0, w * 0.62, h * 0.45, w * 0.55);
-      glow.addColorStop(0, "rgba(0,191,216,0.12)");
-      glow.addColorStop(1, "rgba(0,191,216,0)");
-      ctx.fillStyle = glow;
-      ctx.fillRect(0, 0, w, h);
-      return;
+      bg.addColorStop(0, "#0d2440"); bg.addColorStop(0.5, "#0B1D3A"); bg.addColorStop(1, "#060d18");
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+      const glow = ctx.createRadialGradient(w * 0.3, h * 0.5, 0, w * 0.3, h * 0.5, w * 0.5);
+      glow.addColorStop(0, "rgba(0,191,216,0.10)"); glow.addColorStop(1, "rgba(0,191,216,0)");
+      ctx.fillStyle = glow; ctx.fillRect(0, 0, w, h);
+    };
+
+    if (prefersReducedMotion) { drawStatic(); return; }
+
+    // Orbs flutuantes ultra-leves — 5 no mobile, 8 no desktop, a ~15fps
+    const orbCount = isMobile ? 5 : 8;
+    const orbs: { x: number; y: number; r: number; sp: number; a: number; o: number }[] = [];
+    for (let i = 0; i < orbCount; i++) {
+      orbs.push({
+        x: Math.random(),
+        y: Math.random(),
+        r: Math.random() * 70 + 35,
+        sp: Math.random() * 0.12 + 0.04,
+        a: Math.random() * Math.PI * 2,
+        o: Math.random() * 0.10 + 0.04,
+      });
     }
-
-    const cols = isMobile ? 28 : 40, rows = isMobile ? 16 : 24, perspective = 180, tiltX = -0.35;
-
-    // Floating sparks
-    const sparks: { x: number; y: number; s: number; sp: number; a: number }[] = [];
-    for (let i = 0; i < (isMobile ? 24 : 40); i++) sparks.push({ x: Math.random(), y: Math.random(), s: Math.random() * 1.2 + 0.4, sp: Math.random() * 0.3 + 0.1, a: Math.random() * Math.PI * 2 });
 
     let t = 0;
     const animate = (ts: number) => {
-      // Throttle para ~30fps e respeita reduced motion.
-      const minFrame = prefersReducedMotion ? 80 : 33;
-      if (ts - lastTsRef.current < minFrame) {
+      if (ts - lastTsRef.current < 66) { // ~15fps
         animRef.current = requestAnimationFrame(animate);
         return;
       }
       lastTsRef.current = ts;
-      const rect = canvas.parentElement!.getBoundingClientRect();
-      if (Math.abs(rect.width - w) > 2 || Math.abs(rect.height - h) > 2) resize();
-      ctx.clearRect(0, 0, w, h);
 
-      // BG gradient — navy (igual aos cards) para harmonizar; partículas continuam teal
+      // Fundo
       const bg = ctx.createLinearGradient(0, 0, 0, h);
       bg.addColorStop(0, "#0d2440"); bg.addColorStop(0.5, "#0B1D3A"); bg.addColorStop(1, "#060d18");
       ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
 
-      // Soft glow behind mesh
-      const glow = ctx.createRadialGradient(w * 0.5, h * 0.65, 0, w * 0.5, h * 0.65, w * 0.6);
-      glow.addColorStop(0, "rgba(0,168,191,0.08)"); glow.addColorStop(0.5, "rgba(0,77,92,0.04)"); glow.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = glow; ctx.fillRect(0, 0, w, h);
-
-      const time = t * 0.008;
-      const cx = w / 2, cy = h * 0.55;
-      const gridW = w * 1.6, gridH = h * 1.4;
-
-      // Compute 3D grid with noise displacement
-      const pts: { sx: number; sy: number; z: number }[][] = [];
-      for (let r = 0; r <= rows; r++) {
-        pts[r] = [];
-        for (let c = 0; c <= cols; c++) {
-          const u = (c / cols - 0.5) * gridW;
-          const v = (r / rows - 0.5) * gridH;
-          const n1 = simplex2(c * 0.12 + time * 1.2, r * 0.12 + time * 0.8);
-          const n2 = simplex2(c * 0.06 + 50 + time * 0.5, r * 0.06 + 50 + time * 0.4);
-          const disp = (n1 * 0.6 + n2 * 0.4) * 35;
-          const y3 = v * Math.cos(tiltX) - disp * Math.sin(tiltX);
-          const z3 = v * Math.sin(tiltX) + disp * Math.cos(tiltX);
-          const scale = perspective / (perspective + z3 + 120);
-          pts[r][c] = { sx: cx + u * scale, sy: cy + y3 * scale, z: disp };
-        }
+      // Orbs teal pulsantes
+      for (const o of orbs) {
+        o.a += o.sp * 0.012;
+        const px = o.x * w + Math.sin(o.a) * w * 0.07;
+        const py = o.y * h + Math.cos(o.a * 0.7) * h * 0.07;
+        const pulse = o.o + Math.sin(t * 0.05 + o.a) * 0.03;
+        const g = ctx.createRadialGradient(px, py, 0, px, py, o.r);
+        g.addColorStop(0, `rgba(0,191,216,${pulse.toFixed(3)})`);
+        g.addColorStop(1, "rgba(0,191,216,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(px, py, o.r, 0, Math.PI * 2); ctx.fill();
       }
-
-      // Draw horizontal grid lines
-      for (let r = 0; r <= rows; r++) {
-        ctx.beginPath();
-        for (let c = 0; c <= cols; c++) {
-          const p = pts[r][c];
-          if (c === 0) ctx.moveTo(p.sx, p.sy); else ctx.lineTo(p.sx, p.sy);
-        }
-        const edgeFade = 1 - Math.pow(Math.abs(r / rows - 0.5) * 2, 4);
-        const zAvg = (pts[r][0].z + pts[r][cols].z) / 2;
-        const zn = (zAvg + 35) / 70;
-        ctx.strokeStyle = `rgba(${Math.round(zn * 10)},${Math.round(77 + zn * 114)},${Math.round(92 + zn * 124)},${edgeFade * (0.1 + zn * 0.22)})`;
-        ctx.lineWidth = 0.6; ctx.stroke();
-      }
-
-      // Draw vertical grid lines
-      for (let c = 0; c <= cols; c++) {
-        ctx.beginPath();
-        const edgeFade = 1 - Math.pow(Math.abs(c / cols - 0.5) * 2, 3);
-        for (let r = 0; r <= rows; r++) {
-          const p = pts[r][c];
-          if (r === 0) ctx.moveTo(p.sx, p.sy); else ctx.lineTo(p.sx, p.sy);
-        }
-        ctx.strokeStyle = `rgba(0,168,191,${edgeFade * 0.12})`; ctx.lineWidth = 0.4; ctx.stroke();
-      }
-
-      // Bright dots at peaks
-      for (let r = 0; r <= rows; r += 2) {
-        for (let c = 0; c <= cols; c += 2) {
-          const p = pts[r][c];
-          const zn = (p.z + 35) / 70;
-          if (zn > 0.55) {
-            const ef = (1 - Math.pow(Math.abs(c / cols - 0.5) * 2, 3)) * (1 - Math.pow(Math.abs(r / rows - 0.5) * 2, 4));
-            const da = (zn - 0.55) * 2.2 * ef;
-            const rad = 0.8 + zn * 1.2;
-            const dg = ctx.createRadialGradient(p.sx, p.sy, 0, p.sx, p.sy, rad * 4);
-            dg.addColorStop(0, `rgba(0,191,216,${da * 0.4})`); dg.addColorStop(1, "rgba(0,191,216,0)");
-            ctx.fillStyle = dg; ctx.beginPath(); ctx.arc(p.sx, p.sy, rad * 4, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = `rgba(214,244,248,${da * 0.9})`; ctx.beginPath(); ctx.arc(p.sx, p.sy, rad, 0, Math.PI * 2); ctx.fill();
-          }
-        }
-      }
-
-      // Floating sparks
-      for (const s of sparks) {
-        s.a += s.sp * 0.02;
-        const px = s.x * w + Math.sin(s.a) * 8, py = s.y * h + Math.cos(s.a * 0.7) * 5;
-        const fl = 0.3 + Math.sin(t * 0.03 + s.a) * 0.2;
-        const sg = ctx.createRadialGradient(px, py, 0, px, py, s.s * 3);
-        sg.addColorStop(0, `rgba(0,191,216,${fl})`); sg.addColorStop(1, "rgba(0,191,216,0)");
-        ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(px, py, s.s * 3, 0, Math.PI * 2); ctx.fill();
-      }
-
-      // Edge fades — navy para combinar com o fundo
-      const fadeT = ctx.createLinearGradient(0, 0, 0, h * 0.18);
-      fadeT.addColorStop(0, "#0B1D3A"); fadeT.addColorStop(1, "rgba(11,29,58,0)");
-      ctx.fillStyle = fadeT; ctx.fillRect(0, 0, w, h * 0.18);
-      const fadeB = ctx.createLinearGradient(0, h * 0.88, 0, h);
-      fadeB.addColorStop(0, "rgba(6,13,24,0)"); fadeB.addColorStop(1, "#060d18");
-      ctx.fillStyle = fadeB; ctx.fillRect(0, h * 0.88, w, h * 0.12);
 
       t++;
       animRef.current = requestAnimationFrame(animate);
@@ -246,30 +173,78 @@ function HeroCanvas({ heroLines, heroIdx, openAgendar, bp = "desktop" }: { heroL
     return () => cancelAnimationFrame(animRef.current);
   }, [bp]);
 
-  const heroMinH = bp === "mobile" ? 240 : bp === "tablet" ? 280 : 320;
-  const heroPad = bp === "mobile" ? "32px 16px 40px" : bp === "tablet" ? "40px 20px 48px" : "48px 24px 56px";
-  const heroTitleSize = bp === "mobile" ? 22 : bp === "tablet" ? 26 : F["3xl"];
+  const heroMinH = bp === "mobile" ? 300 : bp === "tablet" ? 360 : 420;
+  const heroPad = bp === "mobile" ? "40px 16px 48px" : bp === "tablet" ? "48px 24px 56px" : "56px 40px 64px";
+  const heroTitleSize = bp === "mobile" ? 26 : bp === "tablet" ? 30 : F["3xl"];
+
   return (
-    <section style={{ position: "relative", minHeight: heroMinH, color: T.white, overflow: "hidden", background: "linear-gradient(180deg,#0d2440 0%,#0B1D3A 55%,#060d18 100%)" }}>
+    <section style={{ position: "relative", minHeight: heroMinH, color: T.white, overflow: "hidden", background: "#0B1D3A" }}>
       <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
-      <div style={{ position: "relative", zIndex: 1, padding: heroPad, maxWidth: 560 }}>
-        <h1 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: heroTitleSize, lineHeight: 1.1, margin: "0 0 8px", letterSpacing: "-0.02em", background: `linear-gradient(90deg, ${T.teal100} 0%, ${T.teal300} 50%, ${T.teal500} 100%)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" } as React.CSSProperties}>
-          Saúde que conecta
-        </h1>
-        <div style={{ fontSize: F.sm, fontWeight: 700, marginBottom: S.m, minHeight: 22, color: T.teal300, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-          {heroLines[heroIdx]}
+      <div style={{
+        position: "relative", zIndex: 1,
+        display: "flex", alignItems: "center",
+        padding: heroPad,
+        maxWidth: 1200, margin: "0 auto",
+        minHeight: heroMinH,
+        gap: bp === "mobile" ? 0 : 48,
+      }}>
+        {/* Esquerda: texto */}
+        <div style={{ flex: "1 1 0", minWidth: 0 }}>
+          <h1 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: heroTitleSize, lineHeight: 1.1, margin: "0 0 8px", letterSpacing: "-0.02em", background: `linear-gradient(90deg, ${T.teal100} 0%, ${T.teal300} 50%, ${T.teal500} 100%)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" } as React.CSSProperties}>
+            Saúde que conecta
+          </h1>
+          <div style={{ fontSize: F.sm, fontWeight: 700, marginBottom: S.m, minHeight: 22, color: T.teal300, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            {heroLines[heroIdx]}
+          </div>
+          <p style={{ fontSize: F.sm, opacity: 0.92, lineHeight: 1.65, marginBottom: S.l, maxWidth: "90%", color: "rgba(214,244,248,0.9)" }}>
+            Cuidado em saúde mental de qualidade, oferecido por psiquiatras e psicólogos em trabalho solidário. Sem filas, sem burocracia.
+          </p>
+          <div style={{ display: "flex", gap: S.m, flexWrap: "wrap", alignItems: "center" }}>
+            <button onClick={openAgendar} style={{ padding: "14px 24px", fontWeight: 700, fontSize: F.sm, color: "#001820", background: `linear-gradient(90deg, ${T.teal300}, ${T.teal500})`, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 20px rgba(0,191,216,.35)", minHeight: 48 }}>
+              Agendar consulta
+            </button>
+            <button style={{ padding: "14px 24px", fontWeight: 700, fontSize: F.sm, color: T.teal300, background: "transparent", border: "2px solid rgba(0,191,216,0.5)", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", minHeight: 48 }}>
+              Saiba como ativar
+            </button>
+          </div>
         </div>
-        <p style={{ fontSize: F.sm, opacity: 0.92, lineHeight: 1.65, marginBottom: S.l, maxWidth: "90%", color: "rgba(214,244,248,0.9)" }}>
-          Cuidado em saúde mental de qualidade, oferecido por psiquiatras e psicólogos em trabalho solidário. Sem filas, sem burocracia.
-        </p>
-        <div style={{ display: "flex", gap: S.m, flexWrap: "wrap", alignItems: "center" }}>
-          <button onClick={openAgendar} style={{ padding: "14px 24px", fontWeight: 700, fontSize: F.sm, color: "#001820", background: `linear-gradient(90deg, ${T.teal300}, ${T.teal500})`, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 20px rgba(0,191,216,.35)", minHeight: 48 }}>
-            Agendar consulta
-          </button>
-          <button style={{ padding: "14px 24px", fontWeight: 700, fontSize: F.sm, color: T.teal300, background: "transparent", border: "2px solid rgba(0,191,216,0.5)", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", minHeight: 48 }}>
-            Saiba como ativar
-          </button>
-        </div>
+
+        {/* Direita: imagem (tablet / desktop) */}
+        {bp !== "mobile" && (
+          <div style={{
+            flex: "0 0 400px",
+            borderRadius: 20,
+            overflow: "hidden",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,191,216,0.18)",
+            position: "relative",
+            flexShrink: 0,
+          }}>
+            <img
+              src="/revivaz/equipe.webp"
+              alt="Profissionais de saúde mental Revivaz"
+              fetchPriority="high"
+              decoding="async"
+              width="400"
+              height="280"
+              style={{ width: "100%", height: 280, objectFit: "cover", objectPosition: "center top", display: "block" }}
+            />
+            {/* overlay teal sutil */}
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(0,191,216,0.08) 0%,rgba(0,0,0,0.25) 100%)" }} />
+            {/* badge flutuante */}
+            <div style={{
+              position: "absolute", bottom: 14, left: 14, right: 14,
+              background: "rgba(6,13,24,0.85)", backdropFilter: "blur(10px)",
+              borderRadius: 12, padding: "10px 14px",
+              border: "1px solid rgba(0,191,216,0.28)",
+              display: "flex", alignItems: "center", gap: 10,
+            }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#25D366", flexShrink: 0, boxShadow: "0 0 6px #25D366" }} />
+              <span style={{ fontSize: 12, color: "rgba(214,244,248,0.95)", fontWeight: 600 }}>
+                +500 profissionais disponíveis agora
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
