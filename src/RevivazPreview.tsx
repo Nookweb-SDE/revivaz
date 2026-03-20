@@ -363,7 +363,7 @@ export default function RevivazPreview() {
             </>}
           </div>
           <div style={{ width: bp === "mobile" ? "100%" : "42%", minWidth: bp === "mobile" ? 0 : 240, borderRadius: 16, overflow: "hidden", position: "relative", flexShrink: 0, boxShadow: "0 8px 32px rgba(0,0,0,.12)" }}>
-            <img src="/revivaz/team.webp" alt="Equipe" loading="lazy" decoding="async" width="600" height="180" style={{ width: "100%", height: bp === "mobile" ? 160 : 180, objectFit: "cover", objectPosition: "center 25%", display: "block" }} />
+            <img src="/revivaz/team.webp" alt="Equipe" fetchPriority="high" decoding="async" width="600" height="180" style={{ width: "100%", height: bp === "mobile" ? 160 : 180, objectFit: "cover", objectPosition: "center 25%", display: "block" }} />
             <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 16px 12px", background: "linear-gradient(transparent,rgba(0,0,0,.6))" }}>
               <span style={{ fontSize: F.xs, color: T.white, fontWeight: 700 }}>+500 profissionais</span>
             </div>
@@ -622,9 +622,6 @@ export default function RevivazPreview() {
               <div style={{ display: "flex", alignItems: "center", gap: S.s, marginBottom: S.m }}>
                 <Phone size={14} color="rgba(255,255,255,.5)" /> (11) 4002-8922
               </div>
-              <button style={{ padding: "10px 16px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.green700, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44 }}>
-                <MessageCircle size={14} /> WhatsApp
-              </button>
             </div>
           </div>
           <div style={{ borderTop: "1px solid rgba(255,255,255,.1)", paddingTop: Sp.m, fontSize: Fp.xs, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: Sp.m }}>
