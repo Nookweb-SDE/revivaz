@@ -91,32 +91,58 @@ function simplex2(x: number, y: number) {
 function HeroCanvas({ heroLines, heroIdx, openAgendar, bp = "desktop" }: { heroLines: string[]; heroIdx: number; openAgendar: () => void; bp?: "mobile" | "tablet" | "desktop" }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
+  const lastTsRef = useRef<number>(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    // Desliga efeito pesado do mesh para priorizar PageSpeed/UX.
+    const disableHeavyHeroFx = true;
 
     let w = 0, h = 0;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isMobile = bp === "mobile";
     const resize = () => {
       const rect = canvas.parentElement!.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.15 : 1.5);
       w = rect.width; h = rect.height;
       canvas.width = w * dpr; canvas.height = h * dpr;
       canvas.style.width = w + "px"; canvas.style.height = h + "px";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
+    if (disableHeavyHeroFx) {
+      const bg = ctx.createLinearGradient(0, 0, 0, h);
+      bg.addColorStop(0, "#0d2440");
+      bg.addColorStop(0.5, "#0B1D3A");
+      bg.addColorStop(1, "#060d18");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+      const glow = ctx.createRadialGradient(w * 0.62, h * 0.45, 0, w * 0.62, h * 0.45, w * 0.55);
+      glow.addColorStop(0, "rgba(0,191,216,0.12)");
+      glow.addColorStop(1, "rgba(0,191,216,0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, w, h);
+      return;
+    }
 
-    const cols = 48, rows = 28, perspective = 180, tiltX = -0.35;
+    const cols = isMobile ? 28 : 40, rows = isMobile ? 16 : 24, perspective = 180, tiltX = -0.35;
 
     // Floating sparks
     const sparks: { x: number; y: number; s: number; sp: number; a: number }[] = [];
-    for (let i = 0; i < 60; i++) sparks.push({ x: Math.random(), y: Math.random(), s: Math.random() * 1.2 + 0.4, sp: Math.random() * 0.3 + 0.1, a: Math.random() * Math.PI * 2 });
+    for (let i = 0; i < (isMobile ? 24 : 40); i++) sparks.push({ x: Math.random(), y: Math.random(), s: Math.random() * 1.2 + 0.4, sp: Math.random() * 0.3 + 0.1, a: Math.random() * Math.PI * 2 });
 
     let t = 0;
-    const animate = () => {
+    const animate = (ts: number) => {
+      // Throttle para ~30fps e respeita reduced motion.
+      const minFrame = prefersReducedMotion ? 80 : 33;
+      if (ts - lastTsRef.current < minFrame) {
+        animRef.current = requestAnimationFrame(animate);
+        return;
+      }
+      lastTsRef.current = ts;
       const rect = canvas.parentElement!.getBoundingClientRect();
       if (Math.abs(rect.width - w) > 2 || Math.abs(rect.height - h) > 2) resize();
       ctx.clearRect(0, 0, w, h);
@@ -218,13 +244,13 @@ function HeroCanvas({ heroLines, heroIdx, openAgendar, bp = "desktop" }: { heroL
 
     animRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animRef.current);
-  }, []);
+  }, [bp]);
 
   const heroMinH = bp === "mobile" ? 240 : bp === "tablet" ? 280 : 320;
   const heroPad = bp === "mobile" ? "32px 16px 40px" : bp === "tablet" ? "40px 20px 48px" : "48px 24px 56px";
   const heroTitleSize = bp === "mobile" ? 22 : bp === "tablet" ? 26 : F["3xl"];
   return (
-    <section style={{ position: "relative", minHeight: heroMinH, color: T.white, overflow: "hidden" }}>
+    <section style={{ position: "relative", minHeight: heroMinH, color: T.white, overflow: "hidden", background: "linear-gradient(180deg,#0d2440 0%,#0B1D3A 55%,#060d18 100%)" }}>
       <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
       <div style={{ position: "relative", zIndex: 1, padding: heroPad, maxWidth: 560 }}>
         <h1 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: heroTitleSize, lineHeight: 1.1, margin: "0 0 8px", letterSpacing: "-0.02em", background: `linear-gradient(90deg, ${T.teal100} 0%, ${T.teal300} 50%, ${T.teal500} 100%)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" } as React.CSSProperties}>
@@ -287,10 +313,10 @@ export default function RevivazPreview() {
   ];
 
   const FEATURES = [
-    { icon: Brain, title: "Psiquiatria", sub: "Acompanhamento especializado com profissionais voluntários qualificados.", img: "/revivaz/hero-alt.png", imgPos: "center" },
-    { icon: Calendar, title: "Agendamento fácil", sub: "Presencial ou online, sem burocracia. Agende em poucos cliques.", img: "/revivaz/hero-alt.png", imgPos: "center" },
-    { icon: FileText, title: "Receita digital", sub: "Receba sua receita por SMS ou WhatsApp logo após a consulta.", img: "/revivaz/hero.png", imgPos: "center" },
-    { icon: Users, title: "Voluntários", sub: "Psicólogos e psiquiatras dedicados ao atendimento solidário.", img: "/revivaz/hero.png", imgPos: "center" },
+    { icon: Brain, title: "Psiquiatria", sub: "Acompanhamento especializado com profissionais voluntários qualificados.", img: "/revivaz/hero-alt.webp", imgPos: "center" },
+    { icon: Calendar, title: "Agendamento fácil", sub: "Presencial ou online, sem burocracia. Agende em poucos cliques.", img: "/revivaz/hero-alt.webp", imgPos: "center" },
+    { icon: FileText, title: "Receita digital", sub: "Receba sua receita por SMS ou WhatsApp logo após a consulta.", img: "/revivaz/hero.webp", imgPos: "center" },
+    { icon: Users, title: "Voluntários", sub: "Psicólogos e psiquiatras dedicados ao atendimento solidário.", img: "/revivaz/hero.webp", imgPos: "center" },
   ];
 
   const SOLUCOES = [
@@ -301,9 +327,9 @@ export default function RevivazPreview() {
   ];
 
   const NEWS = [
-    { title: "Revivaz e SUS: parceria para reduzir filas", cat: "Solidário", date: "1 out.", img: "/revivaz/partners.png", imgPos: "top center" },
-    { title: "Saúde mental nas periferias: entrevista", cat: "Imprensa", date: "25 set.", img: "/revivaz/hero-alt.png", imgPos: "top center" },
-    { title: "Novos profissionais voluntários em 2025", cat: "Imprensa", date: "23 set.", img: "/revivaz/team.png", imgPos: "center 25%" },
+    { title: "Revivaz e SUS: parceria para reduzir filas", cat: "Solidário", date: "1 out.", img: "/revivaz/partners.webp", imgPos: "top center" },
+    { title: "Saúde mental nas periferias: entrevista", cat: "Imprensa", date: "25 set.", img: "/revivaz/hero-alt.webp", imgPos: "top center" },
+    { title: "Novos profissionais voluntários em 2025", cat: "Imprensa", date: "23 set.", img: "/revivaz/team.webp", imgPos: "center 25%" },
   ];
 
   const openAgendar = () => { setModalAgendar(true); setAgendarOk(false); };
@@ -334,7 +360,7 @@ export default function RevivazPreview() {
                   <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: T.gray500 }} />
                   <input aria-label="Buscar no site" placeholder="Buscar…" style={{ ...inputBase, padding: "8px 10px 8px 36px", fontSize: Fp.xs, borderRadius: 9999, minHeight: 40, background: T.gray050 }} />
                 </div>
-                <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.gray600, fontFamily: "inherit", padding: "8px 0", whiteSpace: "nowrap" }}>Entrar</button>
+                <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.gray800, fontFamily: "inherit", padding: "8px 0", whiteSpace: "nowrap" }}>Entrar</button>
                 <button style={{ background: "none", border: `2px solid ${T.teal700}`, cursor: "pointer", fontSize: Fp.sm, fontWeight: 700, color: T.teal700, fontFamily: "inherit", padding: "8px 16px", borderRadius: 9999, whiteSpace: "nowrap" }}>Cadastre-se</button>
               </>
             )}
@@ -407,7 +433,7 @@ export default function RevivazPreview() {
             </>}
           </div>
           <div style={{ width: bp === "mobile" ? "100%" : "42%", minWidth: bp === "mobile" ? 0 : 240, borderRadius: 16, overflow: "hidden", position: "relative", flexShrink: 0, boxShadow: "0 8px 32px rgba(0,0,0,.12)" }}>
-            <img src="/revivaz/team.png" alt="Equipe" decoding="async" srcSet="/revivaz/team.png 1x" style={{ width: "100%", height: bp === "mobile" ? 160 : 180, objectFit: "cover", objectPosition: "center 25%", display: "block" }} />
+            <img src="/revivaz/team.webp" alt="Equipe" loading="lazy" decoding="async" width="600" height="180" style={{ width: "100%", height: bp === "mobile" ? 160 : 180, objectFit: "cover", objectPosition: "center 25%", display: "block" }} />
             <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 16px 12px", background: "linear-gradient(transparent,rgba(0,0,0,.6))" }}>
               <span style={{ fontSize: F.xs, color: T.white, fontWeight: 700 }}>+500 profissionais</span>
             </div>
@@ -502,16 +528,16 @@ export default function RevivazPreview() {
       <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: T.navy }}>
         <div style={{ display: "flex", gap: Sp.xl, alignItems: "center", ...container, flexWrap: "wrap" }}>
           <div style={{ width: bp === "mobile" ? "100%" : "40%", minWidth: bp === "mobile" ? 0 : 260, borderRadius: 16, overflow: "hidden", flexShrink: 0, boxShadow: "0 12px 32px rgba(0,0,0,.3)", marginTop: bp === "mobile" ? 0 : 48 }}>
-            <img loading="lazy" decoding="async" src="/revivaz/solucoes.png" alt="Consulta online por vídeo" style={{ width: "100%", height: bp === "mobile" ? 180 : 200, objectFit: "cover", objectPosition: "center", display: "block" }} />
+            <img loading="lazy" decoding="async" src="/revivaz/solucoes.webp" alt="Consulta online por vídeo" width="600" height="200" style={{ width: "100%", height: bp === "mobile" ? 180 : 200, objectFit: "cover", objectPosition: "center", display: "block" }} />
           </div>
           <div style={{ flex: "1 1 280px", minWidth: 0 }}>
             <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.xl, color: T.white, marginBottom: Sp.m }}>Nossas soluções</h2>
             <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1fr 1fr", gap: Sp.m }}>
               {SOLUCOES.map(({ icon: Ic, title, desc }) => (
-                <div key={title} style={{ padding: S.m, background: "rgba(255,255,255,.08)", borderRadius: 12, border: "1px solid rgba(255,255,255,.1)" }}>
+                <div key={title} style={{ padding: S.m, background: "rgba(255,255,255,.10)", borderRadius: 12, border: "1px solid rgba(255,255,255,.16)" }}>
                   <Ic size={18} color={T.teal300} style={{ marginBottom: S.s }} />
                   <div style={{ fontSize: F.sm, fontWeight: 700, color: T.white, marginBottom: 4 }}>{title}</div>
-                  <div style={{ fontSize: F.xs, color: "rgba(255,255,255,.7)", lineHeight: 1.4 }}>{desc}</div>
+                  <div style={{ fontSize: F.xs, color: "rgba(255,255,255,.92)", lineHeight: 1.4 }}>{desc}</div>
                 </div>
               ))}
             </div>
@@ -568,7 +594,9 @@ export default function RevivazPreview() {
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: S.m, justifyContent: "center" }}>
               {DEPOS.map((_, i) => (
-                <button aria-label={`Ir para depoimento ${i + 1}`} key={i} onClick={() => setDepoIdx(i)} style={{ width: 10, height: 10, borderRadius: "50%", border: "none", background: depoIdx === i ? T.teal700 : T.gray200, cursor: "pointer", transition: "all .2s" }} />
+                <button aria-label={`Ir para depoimento ${i + 1}`} key={i} onClick={() => setDepoIdx(i)} style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "transparent", cursor: "pointer", transition: "all .2s", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: depoIdx === i ? T.teal700 : T.gray200, display: "block" }} />
+                </button>
               ))}
             </div>
           </div>
@@ -583,7 +611,7 @@ export default function RevivazPreview() {
               <div style={{ background: T.teal900, borderRadius: 14, height: bp === "mobile" ? 130 : 160, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: Sp.s }}>
                 <Smartphone size={28} color={T.teal300} />
                 <span style={{ fontSize: F.sm, color: T.white, fontWeight: 700 }}>Revivaz</span>
-                <span style={{ fontSize: F.xs, color: "rgba(255,255,255,.6)" }}>Saúde mental</span>
+                <span style={{ fontSize: F.xs, color: "rgba(255,255,255,.9)" }}>Saúde mental</span>
               </div>
               <div style={{ position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)", width: 28, height: 6, background: T.gray950, borderRadius: 6 }} />
             </div>
@@ -634,7 +662,7 @@ export default function RevivazPreview() {
       </section>
 
       {/* ═══ BLOCO 15 — Footer ═══ */}
-      <footer style={{ background: T.gray950, color: "rgba(255,255,255,.7)", padding: `${Sp.xxl}px ${Sp.m}px ${Sp.xl}px`, fontSize: Fp.xs }}>
+      <footer style={{ background: T.gray950, color: "rgba(255,255,255,.85)", padding: `${Sp.xxl}px ${Sp.m}px ${Sp.xl}px`, fontSize: Fp.xs }}>
         <div style={{ ...container }}>
           <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1.4fr 1fr 1fr", gap: Sp.xxl, marginBottom: Sp.xl }}>
             <div>
@@ -642,8 +670,8 @@ export default function RevivazPreview() {
               <p style={{ lineHeight: 1.6, marginBottom: S.m, maxWidth: 320 }}>Atendimento solidário em saúde mental. Psiquiatras e psicólogos conectados a quem mais precisa.</p>
               <div style={{ display: "flex", gap: S.s }}>
                 {[Instagram, Linkedin, Newspaper].map((Ic, i) => (
-                  <button aria-label={["Instagram", "LinkedIn", "Notícias"][i]} key={i} style={{ width: 40, height: 40, borderRadius: "50%", border: "none", background: "rgba(255,255,255,.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                    <Ic size={18} color="rgba(255,255,255,.7)" />
+                  <button aria-label={["Instagram", "LinkedIn", "Notícias"][i]} key={i} style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: "rgba(255,255,255,.14)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                    <Ic size={18} color="rgba(255,255,255,.92)" />
                   </button>
                 ))}
               </div>
@@ -652,7 +680,7 @@ export default function RevivazPreview() {
               <div style={{ fontWeight: 700, color: T.white, marginBottom: S.m, fontSize: F.sm }}>Institucional</div>
               {["Sobre", "Especialidades", "Para profissionais", "Privacidade"].map(l => (
                 <div key={l} style={{ marginBottom: 6 }}>
-                  <button style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: 0, fontFamily: "inherit", fontSize: F.xs }}>{l}</button>
+                  <button style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "8px 0", fontFamily: "inherit", fontSize: F.xs, minHeight: 32, textAlign: "left" }}>{l}</button>
                 </div>
               ))}
             </div>
@@ -664,7 +692,7 @@ export default function RevivazPreview() {
               <div style={{ display: "flex", alignItems: "center", gap: S.s, marginBottom: S.m }}>
                 <Phone size={14} color="rgba(255,255,255,.5)" /> (11) 4002-8922
               </div>
-              <button style={{ padding: "10px 16px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.green500, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44 }}>
+              <button style={{ padding: "10px 16px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.green700, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44 }}>
                 <MessageCircle size={14} /> WhatsApp
               </button>
             </div>
@@ -676,6 +704,35 @@ export default function RevivazPreview() {
         </div>
       </footer>
       </main>
+
+      {/* CTA flutuante WhatsApp */}
+      {!modalAgendar && !modalReceita && (
+        <a
+          href="https://wa.me/551140028922?text=Ol%C3%A1!%20Quero%20agendar%20uma%20consulta%20na%20Revivaz."
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Falar no WhatsApp"
+          style={{
+            position: "fixed",
+            right: bp === "mobile" ? 16 : 24,
+            bottom: bp === "mobile" ? 16 : 24,
+            zIndex: 90,
+            background: "#25D366",
+            borderRadius: "50%",
+            width: 56,
+            height: 56,
+            textDecoration: "none",
+            boxShadow: "0 4px 16px rgba(0,0,0,.30)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <svg viewBox="0 0 24 24" width={30} height={30} fill="#ffffff" aria-hidden="true">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+          </svg>
+        </a>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════
           MODAL — Agendamento (sem login)
@@ -702,10 +759,10 @@ export default function RevivazPreview() {
                   ))}
                 </div>
 
-                <label style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Especialidade</label>
+                <label htmlFor="form-esp" style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Especialidade</label>
                 <div style={{ position: "relative", marginBottom: S.m }}>
                   <Brain size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: T.gray600 }} />
-                  <select value={form.esp} onChange={e => setForm({ ...form, esp: e.target.value as any })} style={{ ...inputBase, appearance: "none" }}>
+                  <select id="form-esp" value={form.esp} onChange={e => setForm({ ...form, esp: e.target.value as any })} style={{ ...inputBase, appearance: "none" }}>
                     <option value="psiquiatria">Psiquiatria</option>
                     <option value="psicologia">Psicologia</option>
                   </select>
@@ -713,37 +770,37 @@ export default function RevivazPreview() {
 
                 <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1fr 1fr", gap: S.m, marginBottom: S.m }}>
                   <div>
-                    <label style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Data</label>
+                    <label htmlFor="form-data" style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Data</label>
                     <div style={{ position: "relative" }}>
                       <Calendar size={14} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: T.gray600 }} />
-                      <input type="date" value={form.data} onChange={e => setForm({ ...form, data: e.target.value })} style={inputBase} />
+                      <input id="form-data" type="date" value={form.data} onChange={e => setForm({ ...form, data: e.target.value })} style={inputBase} />
                     </div>
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Horário</label>
+                    <label htmlFor="form-hora" style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Horário</label>
                     <div style={{ position: "relative" }}>
                       <Clock size={14} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: T.gray600 }} />
-                      <input type="time" value={form.hora} onChange={e => setForm({ ...form, hora: e.target.value })} style={inputBase} />
+                      <input id="form-hora" type="time" value={form.hora} onChange={e => setForm({ ...form, hora: e.target.value })} style={inputBase} />
                     </div>
                   </div>
                 </div>
 
-                <label style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Nome completo</label>
+                <label htmlFor="form-nome" style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Nome completo</label>
                 <div style={{ position: "relative", marginBottom: S.m }}>
                   <User size={14} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: T.gray600 }} />
-                  <input placeholder="Seu nome" value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })} style={inputBase} />
+                  <input id="form-nome" placeholder="Seu nome" value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })} style={inputBase} />
                 </div>
 
-                <label style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Telefone (WhatsApp)</label>
+                <label htmlFor="form-tel" style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Telefone (WhatsApp)</label>
                 <div style={{ position: "relative", marginBottom: S.m }}>
                   <Phone size={14} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: T.gray600 }} />
-                  <input type="tel" placeholder="(11) 99999-9999" value={form.tel} onChange={e => setForm({ ...form, tel: e.target.value })} style={inputBase} />
+                  <input id="form-tel" type="tel" placeholder="(11) 99999-9999" value={form.tel} onChange={e => setForm({ ...form, tel: e.target.value })} style={inputBase} />
                 </div>
 
-                <label style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>E-mail</label>
+                <label htmlFor="form-email" style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>E-mail</label>
                 <div style={{ position: "relative", marginBottom: S.l }}>
                   <Mail size={14} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: T.gray600 }} />
-                  <input type="email" placeholder="seu@email.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} style={inputBase} />
+                  <input id="form-email" type="email" placeholder="seu@email.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} style={inputBase} />
                 </div>
 
                 <button onClick={() => setAgendarOk(true)} style={{ width: "100%", padding: "14px", fontSize: F.sm, fontWeight: 700, color: T.white, background: `linear-gradient(135deg,${T.teal700},${T.teal500})`, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 14px rgba(0,77,92,.3)", minHeight: 48 }}>
