@@ -332,7 +332,7 @@ export default function RevivazPreview() {
               <>
                 <div style={{ position: "relative", width: 200 }}>
                   <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: T.gray500 }} />
-                  <input placeholder="Buscar…" style={{ ...inputBase, padding: "8px 10px 8px 36px", fontSize: Fp.xs, borderRadius: 9999, minHeight: 40, background: T.gray050 }} />
+                  <input aria-label="Buscar no site" placeholder="Buscar…" style={{ ...inputBase, padding: "8px 10px 8px 36px", fontSize: Fp.xs, borderRadius: 9999, minHeight: 40, background: T.gray050 }} />
                 </div>
                 <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.gray600, fontFamily: "inherit", padding: "8px 0", whiteSpace: "nowrap" }}>Entrar</button>
                 <button style={{ background: "none", border: `2px solid ${T.teal700}`, cursor: "pointer", fontSize: Fp.sm, fontWeight: 700, color: T.teal700, fontFamily: "inherit", padding: "8px 16px", borderRadius: 9999, whiteSpace: "nowrap" }}>Cadastre-se</button>
@@ -352,7 +352,7 @@ export default function RevivazPreview() {
             <nav style={{ width: "100%", display: "flex", flexDirection: "column", gap: 0, paddingTop: Sp.m, borderTop: `1px solid ${T.gray200}`, order: 99 }}>
               <div style={{ position: "relative", marginBottom: Sp.s }}>
                 <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: T.gray500 }} />
-                <input placeholder="Buscar especialidade…" style={{ ...inputBase, padding: "10px 12px 10px 36px", fontSize: Fp.sm, borderRadius: 8, minHeight: 44, width: "100%" }} />
+                <input aria-label="Buscar especialidade" placeholder="Buscar especialidade…" style={{ ...inputBase, padding: "10px 12px 10px 36px", fontSize: Fp.sm, borderRadius: 8, minHeight: 44, width: "100%" }} />
               </div>
               {["Especialidades", "Para pacientes", "Para profissionais", "Sobre", "Planos", "Contato"].map(l => (
                 <button key={l} onClick={() => setMenuOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.gray700, fontFamily: "inherit", padding: "12px 0", textAlign: "left", borderBottom: `1px solid ${T.gray100}` }}>{l}</button>
@@ -364,6 +364,7 @@ export default function RevivazPreview() {
         </div>
       </header>
 
+      <main>
       {/* ═══ BLOCO 3 — Hero (Canvas WebGL-like particle mesh) ═══ */}
       <HeroCanvas heroLines={heroLines} heroIdx={heroIdx} openAgendar={openAgendar} bp={bp} />
 
@@ -406,7 +407,7 @@ export default function RevivazPreview() {
             </>}
           </div>
           <div style={{ width: bp === "mobile" ? "100%" : "42%", minWidth: bp === "mobile" ? 0 : 240, borderRadius: 16, overflow: "hidden", position: "relative", flexShrink: 0, boxShadow: "0 8px 32px rgba(0,0,0,.12)" }}>
-            <img src="/revivaz/team.png" alt="Equipe" style={{ width: "100%", height: bp === "mobile" ? 160 : 180, objectFit: "cover", objectPosition: "center 25%", display: "block" }} />
+            <img src="/revivaz/team.png" alt="Equipe" decoding="async" srcSet="/revivaz/team.png 1x" style={{ width: "100%", height: bp === "mobile" ? 160 : 180, objectFit: "cover", objectPosition: "center 25%", display: "block" }} />
             <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 16px 12px", background: "linear-gradient(transparent,rgba(0,0,0,.6))" }}>
               <span style={{ fontSize: F.xs, color: T.white, fontWeight: 700 }}>+500 profissionais</span>
             </div>
@@ -482,7 +483,7 @@ export default function RevivazPreview() {
             const cardOverlay = { position: "absolute" as const, inset: 0, background: "linear-gradient(to top,rgba(11,29,58,.85) 30%,transparent 65%)" };
             return (
               <div key={title} style={{ borderRadius: 16, overflow: "hidden", position: "relative", boxShadow: "0 4px 20px rgba(0,0,0,.1)" }}>
-                <img src={img} alt={title} style={{ width: "100%", height: bp === "mobile" ? 140 : 160, objectFit: "cover", objectPosition: imgPos, display: "block" }} />
+                <img loading="lazy" decoding="async" src={img} alt={title} style={{ width: "100%", height: bp === "mobile" ? 140 : 160, objectFit: "cover", objectPosition: imgPos, display: "block" }} />
                 <div style={cardOverlay} />
                 <div style={{ position: "absolute", top: S.m, left: S.m, width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,.2)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Ic size={20} color={T.white} />
@@ -501,7 +502,7 @@ export default function RevivazPreview() {
       <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: T.navy }}>
         <div style={{ display: "flex", gap: Sp.xl, alignItems: "center", ...container, flexWrap: "wrap" }}>
           <div style={{ width: bp === "mobile" ? "100%" : "40%", minWidth: bp === "mobile" ? 0 : 260, borderRadius: 16, overflow: "hidden", flexShrink: 0, boxShadow: "0 12px 32px rgba(0,0,0,.3)", marginTop: bp === "mobile" ? 0 : 48 }}>
-            <img src="/revivaz/solucoes.png" alt="Consulta online por vídeo" style={{ width: "100%", height: bp === "mobile" ? 180 : 200, objectFit: "cover", objectPosition: "center", display: "block" }} />
+            <img loading="lazy" decoding="async" src="/revivaz/solucoes.png" alt="Consulta online por vídeo" style={{ width: "100%", height: bp === "mobile" ? 180 : 200, objectFit: "cover", objectPosition: "center", display: "block" }} />
           </div>
           <div style={{ flex: "1 1 280px", minWidth: 0 }}>
             <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.xl, color: T.white, marginBottom: Sp.m }}>Nossas soluções</h2>
@@ -541,10 +542,10 @@ export default function RevivazPreview() {
               </div>
             </div>
             <div style={{ display: "flex", gap: S.s }}>
-              <button onClick={() => setDepoIdx(p => (p - 1 + DEPOS.length) % DEPOS.length)} style={{ width: 44, height: 44, borderRadius: "50%", border: `2px solid ${T.gray200}`, background: T.white, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button aria-label="Depoimento anterior" onClick={() => setDepoIdx(p => (p - 1 + DEPOS.length) % DEPOS.length)} style={{ width: 44, height: 44, borderRadius: "50%", border: `2px solid ${T.gray200}`, background: T.white, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <ChevronLeft size={18} color={T.gray600} />
               </button>
-              <button onClick={() => setDepoIdx(p => (p + 1) % DEPOS.length)} style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: T.teal700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button aria-label="Próximo depoimento" onClick={() => setDepoIdx(p => (p + 1) % DEPOS.length)} style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: T.teal700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <ChevronRight size={18} color={T.white} />
               </button>
             </div>
@@ -567,7 +568,7 @@ export default function RevivazPreview() {
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: S.m, justifyContent: "center" }}>
               {DEPOS.map((_, i) => (
-                <button key={i} onClick={() => setDepoIdx(i)} style={{ width: 10, height: 10, borderRadius: "50%", border: "none", background: depoIdx === i ? T.teal700 : T.gray200, cursor: "pointer", transition: "all .2s" }} />
+                <button aria-label={`Ir para depoimento ${i + 1}`} key={i} onClick={() => setDepoIdx(i)} style={{ width: 10, height: 10, borderRadius: "50%", border: "none", background: depoIdx === i ? T.teal700 : T.gray200, cursor: "pointer", transition: "all .2s" }} />
               ))}
             </div>
           </div>
@@ -620,7 +621,7 @@ export default function RevivazPreview() {
           <div style={{ display: "flex", gap: Sp.m, flexWrap: "wrap" }}>
             {NEWS.map(n => (
               <div key={n.title} style={{ flex: bp === "mobile" ? "1 1 100%" : "1 1 200px", minWidth: bp === "mobile" ? 0 : 180, borderRadius: 16, overflow: "hidden", border: `1px solid ${T.gray200}`, background: T.gray050, boxShadow: "0 2px 8px rgba(0,0,0,.04)" }}>
-                <img src={n.img} alt={n.title} style={{ width: "100%", height: 120, objectFit: "cover", objectPosition: (n as { imgPos?: string }).imgPos || "top center", display: "block" }} />
+                <img loading="lazy" decoding="async" src={n.img} alt={n.title} style={{ width: "100%", height: 120, objectFit: "cover", objectPosition: (n as { imgPos?: string }).imgPos || "top center", display: "block" }} />
                 <div style={{ padding: S.m }}>
                   <div style={{ fontSize: F.xs, color: T.teal700, fontWeight: 700, marginBottom: 4 }}>{n.cat}</div>
                   <div style={{ fontSize: F.sm, fontWeight: 600, color: T.gray950, lineHeight: 1.4, marginBottom: 4 }}>{n.title}</div>
@@ -641,9 +642,9 @@ export default function RevivazPreview() {
               <p style={{ lineHeight: 1.6, marginBottom: S.m, maxWidth: 320 }}>Atendimento solidário em saúde mental. Psiquiatras e psicólogos conectados a quem mais precisa.</p>
               <div style={{ display: "flex", gap: S.s }}>
                 {[Instagram, Linkedin, Newspaper].map((Ic, i) => (
-                  <div key={i} style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <button aria-label={["Instagram", "LinkedIn", "Notícias"][i]} key={i} style={{ width: 40, height: 40, borderRadius: "50%", border: "none", background: "rgba(255,255,255,.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                     <Ic size={18} color="rgba(255,255,255,.7)" />
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -674,6 +675,7 @@ export default function RevivazPreview() {
           </div>
         </div>
       </footer>
+      </main>
 
       {/* ═══════════════════════════════════════════════════════════
           MODAL — Agendamento (sem login)
@@ -684,7 +686,7 @@ export default function RevivazPreview() {
             {/* header */}
             <div style={{ padding: `${S.m}px ${S.l}px`, borderBottom: `1px solid ${T.gray200}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h3 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.lg, color: T.gray950, margin: 0 }}>Agendar consulta</h3>
-              <button onClick={() => setModalAgendar(false)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}>
+              <button aria-label="Fechar modal de agendamento" onClick={() => setModalAgendar(false)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}>
                 <X size={16} color={T.gray600} />
               </button>
             </div>
