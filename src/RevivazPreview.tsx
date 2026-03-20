@@ -90,8 +90,6 @@ function simplex2(x: number, y: number) {
 /* ── Hero displacement mesh (Aegis/Monosphera-style) ── */
 function HeroCanvas({ heroLines, heroIdx, openAgendar, bp = "desktop" }: { heroLines: string[]; heroIdx: number; openAgendar: () => void; bp?: "mobile" | "tablet" | "desktop" }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animRef = useRef<number>(0);
-  const lastTsRef = useRef<number>(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -99,78 +97,35 @@ function HeroCanvas({ heroLines, heroIdx, openAgendar, bp = "desktop" }: { heroL
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let w = 0, h = 0;
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const isMobile = bp === "mobile";
+    const rect = canvas.parentElement!.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 1.5);
+    const w = rect.width, h = rect.height;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    canvas.style.width = w + "px"; canvas.style.height = h + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const resize = () => {
-      const rect = canvas.parentElement!.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 1.5);
-      w = rect.width; h = rect.height;
-      canvas.width = w * dpr; canvas.height = h * dpr;
-      canvas.style.width = w + "px"; canvas.style.height = h + "px";
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-    resize();
+    // Fundo — gradiente navy
+    const bg = ctx.createLinearGradient(0, 0, 0, h);
+    bg.addColorStop(0, "#0d2440"); bg.addColorStop(0.5, "#0B1D3A"); bg.addColorStop(1, "#060d18");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
 
-    // Gradiente estático para quem prefere menos movimento
-    const drawStatic = () => {
-      const bg = ctx.createLinearGradient(0, 0, 0, h);
-      bg.addColorStop(0, "#0d2440"); bg.addColorStop(0.5, "#0B1D3A"); bg.addColorStop(1, "#060d18");
-      ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
-      const glow = ctx.createRadialGradient(w * 0.3, h * 0.5, 0, w * 0.3, h * 0.5, w * 0.5);
-      glow.addColorStop(0, "rgba(0,191,216,0.10)"); glow.addColorStop(1, "rgba(0,191,216,0)");
-      ctx.fillStyle = glow; ctx.fillRect(0, 0, w, h);
-    };
-
-    if (prefersReducedMotion) { drawStatic(); return; }
-
-    // Orbs flutuantes ultra-leves — 5 no mobile, 8 no desktop, a ~15fps
-    const orbCount = isMobile ? 5 : 8;
-    const orbs: { x: number; y: number; r: number; sp: number; a: number; o: number }[] = [];
-    for (let i = 0; i < orbCount; i++) {
-      orbs.push({
-        x: Math.random(),
-        y: Math.random(),
-        r: Math.random() * 70 + 35,
-        sp: Math.random() * 0.12 + 0.04,
-        a: Math.random() * Math.PI * 2,
-        o: Math.random() * 0.10 + 0.04,
-      });
+    // Orbs teal estáticas decorativas (sem loop, zero TBT)
+    const orbs = [
+      { x: 0.10, y: 0.25, r: 130, o: 0.09 },
+      { x: 0.05, y: 0.75, r: 100, o: 0.07 },
+      { x: 0.30, y: 0.10, r:  70, o: 0.06 },
+      { x: 0.22, y: 0.88, r:  90, o: 0.07 },
+      { x: 0.42, y: 0.55, r:  60, o: 0.05 },
+    ];
+    for (const o of orbs) {
+      const g = ctx.createRadialGradient(o.x * w, o.y * h, 0, o.x * w, o.y * h, o.r);
+      g.addColorStop(0, `rgba(0,191,216,${o.o})`);
+      g.addColorStop(1, "rgba(0,191,216,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(o.x * w, o.y * h, o.r, 0, Math.PI * 2); ctx.fill();
     }
-
-    let t = 0;
-    const animate = (ts: number) => {
-      if (ts - lastTsRef.current < 66) { // ~15fps
-        animRef.current = requestAnimationFrame(animate);
-        return;
-      }
-      lastTsRef.current = ts;
-
-      // Fundo
-      const bg = ctx.createLinearGradient(0, 0, 0, h);
-      bg.addColorStop(0, "#0d2440"); bg.addColorStop(0.5, "#0B1D3A"); bg.addColorStop(1, "#060d18");
-      ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
-
-      // Orbs teal pulsantes
-      for (const o of orbs) {
-        o.a += o.sp * 0.012;
-        const px = o.x * w + Math.sin(o.a) * w * 0.07;
-        const py = o.y * h + Math.cos(o.a * 0.7) * h * 0.07;
-        const pulse = o.o + Math.sin(t * 0.05 + o.a) * 0.03;
-        const g = ctx.createRadialGradient(px, py, 0, px, py, o.r);
-        g.addColorStop(0, `rgba(0,191,216,${pulse.toFixed(3)})`);
-        g.addColorStop(1, "rgba(0,191,216,0)");
-        ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(px, py, o.r, 0, Math.PI * 2); ctx.fill();
-      }
-
-      t++;
-      animRef.current = requestAnimationFrame(animate);
-    };
-
-    animRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animRef.current);
+    // Sem requestAnimationFrame — desenha uma vez e para.
   }, [bp]);
 
   const heroMinH = bp === "mobile" ? 300 : bp === "tablet" ? 360 : 420;
