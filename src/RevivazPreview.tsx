@@ -96,36 +96,37 @@ function HeroCanvas({ heroLines, heroIdx, openAgendar, bp = "desktop" }: { heroL
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
     const isMobile = bp === "mobile";
-    const rect = canvas.parentElement!.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 1.5);
-    const w = rect.width, h = rect.height;
-    canvas.width = w * dpr; canvas.height = h * dpr;
-    canvas.style.width = w + "px"; canvas.style.height = h + "px";
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    // Fundo — gradiente navy
-    const bg = ctx.createLinearGradient(0, 0, 0, h);
-    bg.addColorStop(0, "#0d2440"); bg.addColorStop(0.5, "#0B1D3A"); bg.addColorStop(1, "#060d18");
-    ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
-
-    // Orbs teal estáticas decorativas (sem loop, zero TBT)
-    const orbs = [
-      { x: 0.10, y: 0.25, r: 130, o: 0.09 },
-      { x: 0.05, y: 0.75, r: 100, o: 0.07 },
-      { x: 0.30, y: 0.10, r:  70, o: 0.06 },
-      { x: 0.22, y: 0.88, r:  90, o: 0.07 },
-      { x: 0.42, y: 0.55, r:  60, o: 0.05 },
-    ];
-    for (const o of orbs) {
-      const g = ctx.createRadialGradient(o.x * w, o.y * h, 0, o.x * w, o.y * h, o.r);
-      g.addColorStop(0, `rgba(0,191,216,${o.o})`);
-      g.addColorStop(1, "rgba(0,191,216,0)");
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(o.x * w, o.y * h, o.r, 0, Math.PI * 2); ctx.fill();
-    }
-    // Sem requestAnimationFrame — desenha uma vez e para.
+    // rAF garante que lemos layout num frame limpo (evita forced reflow)
+    const rafId = requestAnimationFrame(() => {
+      if (!canvas.parentElement) return;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 1.5);
+      const w = rect.width, h = rect.height;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      canvas.style.width = w + "px"; canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // Fundo — gradiente navy
+      const bg = ctx.createLinearGradient(0, 0, 0, h);
+      bg.addColorStop(0, "#0d2440"); bg.addColorStop(0.5, "#0B1D3A"); bg.addColorStop(1, "#060d18");
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+      // Orbs teal estáticas decorativas (sem loop, zero TBT)
+      const orbs = [
+        { x: 0.10, y: 0.25, r: 130, o: 0.09 },
+        { x: 0.05, y: 0.75, r: 100, o: 0.07 },
+        { x: 0.30, y: 0.10, r:  70, o: 0.06 },
+        { x: 0.22, y: 0.88, r:  90, o: 0.07 },
+        { x: 0.42, y: 0.55, r:  60, o: 0.05 },
+      ];
+      for (const o of orbs) {
+        const g = ctx.createRadialGradient(o.x * w, o.y * h, 0, o.x * w, o.y * h, o.r);
+        g.addColorStop(0, `rgba(0,191,216,${o.o})`);
+        g.addColorStop(1, "rgba(0,191,216,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(o.x * w, o.y * h, o.r, 0, Math.PI * 2); ctx.fill();
+      }
+    });
+    return () => cancelAnimationFrame(rafId);
   }, [bp]);
 
   const heroMinH = bp === "mobile" ? 300 : bp === "tablet" ? 360 : 420;
@@ -616,11 +617,8 @@ export default function RevivazPreview() {
             </div>
             <div>
               <div style={{ fontWeight: 700, color: T.white, marginBottom: S.m, fontSize: F.sm }}>Contato</div>
-              <div style={{ display: "flex", alignItems: "center", gap: S.s, marginBottom: 6 }}>
-                <Mail size={14} color="rgba(255,255,255,.5)" /> contato@revivaz.com.br
-              </div>
               <div style={{ display: "flex", alignItems: "center", gap: S.s, marginBottom: S.m }}>
-                <Phone size={14} color="rgba(255,255,255,.5)" /> (11) 4002-8922
+                <Mail size={14} color="rgba(255,255,255,.5)" /> contato@revivaz.com.br
               </div>
             </div>
           </div>

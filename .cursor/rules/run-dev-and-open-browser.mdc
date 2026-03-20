@@ -1,0 +1,14 @@
+---
+description: Ao abrir projeto — rodar servidor e abrir no browser (Cursor, Edge ou Chrome)
+alwaysApply: true
+---
+
+# Rodar servidor e abrir no browser
+
+Ao abrir este workspace ou quando o usuário pedir "roda o projeto" / "abre no browser":
+1. Rodar `npm run dev` na raiz.
+2. Aguardar 5–8 s.
+3. Abrir no browser: MCP `browser_navigate` para http://localhost:5173 (take_screenshot_afterwards, position side) ou informar que pode abrir no Edge/Chrome em http://localhost:5173.
+4. Tasks disponíveis: **Dev Server (Revivaz)** (runOn: folderOpen), **Abrir no Browser (Edge/Chrome)**.
+
+Revivaz: React 18 + Vite + Lucide. Componente principal: src/RevivazPreview.tsx. Porta: 5173.

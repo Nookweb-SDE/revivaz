@@ -1,0 +1,23 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Dev Server (Revivaz)",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": { "cwd": "${workspaceFolder}", "env": {} },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "silent", "panel": "dedicated" },
+      "runOptions": { "runOn": "folderOpen" }
+    },
+    {
+      "label": "Abrir no Browser (Edge/Chrome)",
+      "type": "shell",
+      "command": "start http://localhost:5173",
+      "windows": { "command": "start http://localhost:5173" },
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    }
+  ]
+}
