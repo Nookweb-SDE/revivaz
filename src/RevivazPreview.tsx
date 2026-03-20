@@ -181,7 +181,7 @@ function HeroCanvas({ heroLines, heroIdx, openAgendar, bp = "desktop" }: { heroL
               fetchPriority="high"
               decoding="async"
               width="400"
-              height="280"
+              height="276"
               style={{ width: "100%", height: 280, objectFit: "cover", objectPosition: "center top", display: "block" }}
             />
             {/* overlay teal sutil */}
