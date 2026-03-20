@@ -220,7 +220,7 @@ function HeroCanvas({ heroLines, heroIdx, openAgendar, bp = "desktop" }: { heroL
             flexShrink: 0,
           }}>
             <img
-              src="/revivaz/equipe.webp"
+              src="/revivaz/hero-doctors.webp"
               alt="Profissionais de saúde mental Revivaz"
               fetchPriority="high"
               decoding="async"
