@@ -180,18 +180,17 @@ function HeroCanvas({ heroLines, heroIdx, openAgendar, bp = "desktop" }: { heroL
               alt="Profissionais de saúde mental Revivaz"
               fetchPriority="high"
               decoding="async"
-              width="400"
-              height="280"
+              width="800"
+              height="597"
               style={{ width: "100%", height: 280, objectFit: "cover", objectPosition: "center top", display: "block" }}
             />
-            {/* overlay teal sutil */}
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(0,191,216,0.08) 0%,rgba(0,0,0,0.25) 100%)" }} />
-            {/* badge flutuante */}
+            {/* overlay: cobre completamente o bottom (onde fica marca Gemini) */}
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,191,216,0.06) 0%, transparent 40%, rgba(6,13,24,0.95) 100%)" }} />
+            {/* badge flutuante — cobre o bottom da imagem */}
             <div style={{
-              position: "absolute", bottom: 14, left: 14, right: 14,
-              background: "rgba(6,13,24,0.85)", backdropFilter: "blur(10px)",
-              borderRadius: 12, padding: "10px 14px",
-              border: "1px solid rgba(0,191,216,0.28)",
+              position: "absolute", bottom: 0, left: 0, right: 0,
+              background: "rgba(6,13,24,0.92)", backdropFilter: "blur(10px)",
+              borderRadius: "0 0 20px 20px", padding: "10px 14px",
               display: "flex", alignItems: "center", gap: 10,
             }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#25D366", flexShrink: 0, boxShadow: "0 0 6px #25D366" }} />
