@@ -11,7 +11,9 @@
     <link rel="preload" as="image" href="/revivaz/hero-doctors.webp" type="image/webp" fetchpriority="high" media="(min-width: 640px)" />
     <link rel="preload" as="image" href="/revivaz/team.webp" type="image/webp" fetchpriority="high" media="(max-width: 639px)" />
     <link rel="preload" as="font" href="/fonts/nunito-latin.woff2" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="/fonts/nunito.css" />
+    <link rel="preload" as="style" href="/fonts/nunito.css" />
+    <link rel="stylesheet" href="/fonts/nunito.css" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="/fonts/nunito.css" /></noscript>
     <style>
       /* critical skeleton — mobile only */
       @media(max-width:639px){
