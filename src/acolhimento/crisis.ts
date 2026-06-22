@@ -12,7 +12,7 @@ export const CRISIS_RESOURCES: CrisisResource[] = [
 
 // Normaliza: minúsculas + remove acentos, para casar "não" e "nao".
 function normalize(text: string): string {
-  return text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
 // Padrões de crise/risco em PT-BR. Conservador: melhor disparar a mais.
