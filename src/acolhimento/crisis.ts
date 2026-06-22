@@ -19,7 +19,7 @@ function normalize(text: string): string {
 const CRISIS_PATTERNS: RegExp[] = [
   /\bme\s+matar\b/,
   /\bme\s+suicidar\b/,
-  /\bsuic[ií]d/,
+  /\bsuicid/,
   /\btirar\s+(a\s+)?minha\s+vida\b/,
   /\bdar\s+fim\s+(a\s+)?(minha\s+)?vida\b/,
   /\bnao\s+quero\s+mais\s+viver\b/,
