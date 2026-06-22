@@ -24,16 +24,24 @@ export const config = { runtime: "nodejs" };
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") { res.status(405).end("Method Not Allowed"); return; }
-  const ip = (req.headers["x-forwarded-for"] || "unknown").toString().split(",")[0].trim();
-  if (rateLimited(ip, Date.now())) { res.status(429).json({ error: "Muitas mensagens. Tente em instantes." }); return; }
 
+  // 1. Parse messages + size guard — run BEFORE rate-limit so crisis check is never blocked
   const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
   if (messages.length > 40) { res.status(413).json({ error: "Conversa muito longa." }); return; }
+
+  // 2. Crisis check — deterministic, free, must ALWAYS run (no AI call, no rate-limit gate)
   const lastUser = [...messages].reverse().find((m: any) => m.role === "user");
   if (lastUser && detectCrisis(String(lastUser.content))) {
     res.status(200).json({ crisis: true, resources: CRISIS_RESOURCES });
     return;
   }
+
+  // 3. Rate-limit — gates only the AI path, never the crisis path
+  const ip = (req.headers["x-forwarded-for"] || "unknown").toString().split(",")[0].trim();
+  if (rateLimited(ip, Date.now())) { res.status(429).json({ error: "Muitas mensagens. Tente em instantes." }); return; }
+
+  // 4. Empty-history guard — prevents empty prompt being sent to Claude
+  if (!lastUser || messages.length === 0) { res.status(400).json({ error: "Mensagem vazia." }); return; }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) { res.status(500).json({ error: "Serviço indisponível." }); return; }

@@ -60,6 +60,9 @@ export default function AcolhimentoChat() {
 
   return (
     <div style={{ maxWidth: 560, margin: "24px auto", padding: 16, fontFamily: "system-ui" }}>
+      <div role="complementary" aria-label="Números de emergência" style={{ borderTop: `2px solid ${teal}`, paddingTop: 8, marginBottom: 12, fontSize: 12, color: "#007A8C" }}>
+        Em emergência ligue <b>188</b> (CVV, 24h) ou <b>192</b> (SAMU).
+      </div>
       {crisis && (
         <div role="alert" style={{ background: "#FDECEC", border: "1px solid #E57373", borderRadius: 12, padding: 16, marginBottom: 16 }}>
           <b>Sua vida importa. Procure ajuda agora:</b>
