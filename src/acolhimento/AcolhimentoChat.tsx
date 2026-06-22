@@ -13,29 +13,37 @@ export default function AcolhimentoChat() {
   async function send() {
     const text = input.trim();
     if (!text || busy) return;
+    setCrisis(null);
     const next: Msg[] = [...messages, { role: "user", content: text }];
     setMessages(next); setInput(""); setBusy(true);
-    const resp = await fetch("/api/acolhimento", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: next }),
-    });
-    const ct = resp.headers.get("Content-Type") || "";
-    if (ct.includes("application/json")) {
-      const data = await resp.json();
-      if (data.crisis) { setCrisis(data.resources); setBusy(false); return; }
-      setBusy(false); return;
-    }
-    const reader = resp.body!.getReader();
-    const dec = new TextDecoder();
-    let acc = "";
-    setMessages([...next, { role: "assistant", content: "" }]);
-    for (;;) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      acc += dec.decode(value, { stream: true });
+    try {
+      const resp = await fetch("/api/acolhimento", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: next }),
+      });
+      const ct = resp.headers.get("Content-Type") || "";
+      if (ct.includes("application/json")) {
+        const data = await resp.json();
+        if (data.crisis) { setCrisis(data.resources); return; }
+        setMessages([...next, { role: "assistant", content: "Algo deu errado, tente de novo em instantes." }]);
+        return;
+      }
+      if (!resp.body) return;
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let acc = "";
+      setMessages([...next, { role: "assistant", content: "" }]);
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        acc += dec.decode(value, { stream: true });
+        setMessages([...next, { role: "assistant", content: acc }]);
+      }
+      acc += dec.decode();
       setMessages([...next, { role: "assistant", content: acc }]);
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   const teal = "#007A8C";
@@ -45,7 +53,7 @@ export default function AcolhimentoChat() {
         <h1 style={{ color: teal }}>Você não está sozinho</h1>
         <p>Este é um espaço de <b>acolhimento</b>. Converso com você, ajudo a se acalmar e te indico um caminho. <b>Não sou médico, não dou diagnóstico nem receita.</b> Em emergência, ligue <b>188 (CVV)</b> ou <b>192 (SAMU)</b>.</p>
         <p style={{ fontSize: 13, color: "#555" }}>Não guardamos sua conversa. Ao continuar, você concorda em conversar com um assistente de IA de apoio.</p>
-        <button onClick={() => setConsent(true)} style={{ background: teal, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", cursor: "pointer" }}>Começar a conversar</button>
+        <button type="button" onClick={() => setConsent(true)} style={{ background: teal, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", cursor: "pointer" }}>Começar a conversar</button>
       </div>
     );
   }
@@ -67,7 +75,7 @@ export default function AcolhimentoChat() {
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
         <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="Escreva o que está sentindo…" style={{ flex: 1, padding: 12, borderRadius: 10, border: "1px solid #ccc" }} />
-        <button onClick={send} disabled={busy} style={{ background: teal, color: "#fff", border: "none", borderRadius: 10, padding: "0 18px", cursor: "pointer" }}>Enviar</button>
+        <button type="button" onClick={send} disabled={busy} style={{ background: teal, color: "#fff", border: "none", borderRadius: 10, padding: "0 18px", cursor: "pointer" }}>Enviar</button>
       </div>
     </div>
   );
