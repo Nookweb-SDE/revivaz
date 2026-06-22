@@ -28,6 +28,7 @@ export default async function handler(req: any, res: any) {
   if (rateLimited(ip, Date.now())) { res.status(429).json({ error: "Muitas mensagens. Tente em instantes." }); return; }
 
   const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
+  if (messages.length > 40) { res.status(413).json({ error: "Conversa muito longa." }); return; }
   const lastUser = [...messages].reverse().find((m: any) => m.role === "user");
   if (lastUser && detectCrisis(String(lastUser.content))) {
     res.status(200).json({ crisis: true, resources: CRISIS_RESOURCES });
@@ -49,7 +50,8 @@ export default async function handler(req: any, res: any) {
     stream.on("text", (delta) => res.write(delta));
     await stream.finalMessage();
     res.end();
-  } catch {
+  } catch (e) {
+    console.error("acolhimento error:", e);
     res.end("Desculpe, tive um problema agora. Se for urgente, ligue 188 (CVV).");
   }
 }
