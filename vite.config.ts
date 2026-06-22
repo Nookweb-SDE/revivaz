@@ -28,4 +28,12 @@ function inlineCssPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [react(), inlineCssPlugin()],
+  build: {
+    rollupOptions: {
+      input: {
+        main: "index.html",
+        acolhimento: "acolhimento.html",
+      },
+    },
+  },
 });
