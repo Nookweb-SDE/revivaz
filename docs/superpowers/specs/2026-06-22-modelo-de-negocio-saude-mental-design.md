@@ -10,7 +10,7 @@
 
 ## 1. Visão / Missão
 
-Projeto de propósito ("que Deus colocou no coração") para **ajudar pessoas com sofrimento psíquico**, unindo **acolhimento humano + IA de apoio**. Foco especial em **neurodivergência** (autismo, TDAH, altas habilidades/superdotação), **depressão**, ansiedade e crises de pânico — e em **populações que não conseguem pagar** atendimento de saúde mental.
+Projeto de propósito ("que Deus colocou no coração") para **ajudar pessoas com sofrimento psíquico**, unindo **acolhimento humano + IA de apoio**. Atua em **saúde mental no geral** — ansiedade, depressão, estresse/burnout, crises de pânico e demais quadros — **e também em neurodivergência** (autismo, TDAH, altas habilidades/superdotação) como **especialidade forte**, não como limite. A cobertura ampla é necessária porque para atender **empresas (B2B)** é preciso dar conta de quadros diversos entre os colaboradores. Atenção especial a **populações que não conseguem pagar** atendimento de saúde mental.
 
 A IA é o "primeiro abraço" disponível 24/7; o profissional humano é o cuidado de verdade. Ninguém fica sozinho na crise.
 
@@ -26,7 +26,7 @@ A IA é o "primeiro abraço" disponível 24/7; o profissional humano é o cuidad
 
 | Público | Valor entregue |
 |---------|----------------|
-| **Quem sofre (beneficiário)** | Acolhimento imediato 24/7 pela IA + caminho para consulta humana acessível/gratuita, especializada em neurodivergência. |
+| **Quem sofre (beneficiário)** | Acolhimento imediato 24/7 pela IA + caminho para consulta humana acessível/gratuita, cobrindo **diversos quadros de saúde mental** (com neurodivergência como uma das especialidades). |
 | **Profissional embaixador** | Propósito + audiência/marca + renda flexível **sem custo de captação de paciente** + pertencer a algo que cresce. |
 | **Empresa / patrocinador** | Impacto social mensurável (ESG) + saúde mental dos colaboradores. |
 
