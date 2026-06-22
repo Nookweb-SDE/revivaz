@@ -1,0 +1,33 @@
+version: "3.8"
+
+# revivaz — VPS Contabo izai · Swarm + Traefik. Migrado do Vercel.
+# Node (tsx) serve o build estático (landing + /acolhimento) + a API /api/acolhimento.
+# Cutover de DNS feito 22/jun: revivaz.com.br + www apontam pro Contabo (saiu do Vercel).
+# (Host de staging revivaz-contabo NÃO usado: NXDOMAIN negativo-cacheado 24h pelo meu 1º registro errado.)
+# ANTHROPIC_API_KEY: adicionar depois via `docker service update --env-add` ou Docker secret
+# (sem a chave, o chat degrada gracioso: 500 + rodapé 188/192 sempre visível).
+
+services:
+  web:
+    image: revivaz:latest
+    environment:
+      - PORT=8080
+    networks: [traefik-public]
+    deploy:
+      replicas: 1
+      placement: { constraints: [node.role == manager] }
+      resources:
+        limits:       { cpus: "0.30", memory: 256M }
+        reservations: { memory: 48M }
+      restart_policy: { condition: on-failure, delay: 10s, max_attempts: 5 }
+      update_config: { parallelism: 1, delay: 12s, order: start-first }
+      labels:
+        - traefik.enable=true
+        - "traefik.http.routers.revivaz.rule=Host(`revivaz.com.br`) || Host(`www.revivaz.com.br`)"
+        - traefik.http.routers.revivaz.entrypoints=websecure
+        - traefik.http.routers.revivaz.tls.certresolver=le
+        - traefik.http.routers.revivaz.priority=410
+        - traefik.http.services.revivaz.loadbalancer.server.port=8080
+
+networks:
+  traefik-public: { external: true }
