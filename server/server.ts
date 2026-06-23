@@ -5,22 +5,23 @@ import express from "express";
 import { fileURLToPath } from "url";
 import path from "path";
 import { readFileSync, existsSync } from "fs";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { detectCrisis, CRISIS_RESOURCES } from "../src/acolhimento/crisis";
 import { ACOLHIMENTO_SYSTEM_PROMPT } from "../src/acolhimento/systemPrompt";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "..", "dist");
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
-// Chave Anthropic: env direta OU arquivo de Docker secret (ANTHROPIC_API_KEY_FILE).
+// Chave Gemini: env direta OU arquivo de Docker secret (GEMINI_API_KEY_FILE).
 // Política VPS: segredo via Docker secret (external), lido por *_FILE — nunca texto puro.
-function resolveAnthropicKey(): string {
-  if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY.trim();
-  const f = process.env.ANTHROPIC_API_KEY_FILE;
+function resolveGeminiKey(): string {
+  if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY.trim();
+  const f = process.env.GEMINI_API_KEY_FILE;
   if (f && existsSync(f)) return readFileSync(f, "utf8").trim();
   return "";
 }
-const ANTHROPIC_KEY = resolveAnthropicKey();
+const GEMINI_KEY = resolveGeminiKey();
 
 const app = express();
 app.use(express.json({ limit: "256kb" }));
@@ -59,19 +60,29 @@ app.post("/api/acolhimento", async (req, res) => {
   if (rateLimited(ip, Date.now())) { res.status(429).json({ error: "Muitas mensagens. Tente em instantes." }); return; }
   if (!lastUser || messages.length === 0) { res.status(400).json({ error: "Mensagem vazia." }); return; }
 
-  if (!ANTHROPIC_KEY) { res.status(500).json({ error: "Serviço indisponível." }); return; }
-  const client = new Anthropic({ apiKey: ANTHROPIC_KEY });
+  if (!GEMINI_KEY) { res.status(500).json({ error: "Serviço indisponível." }); return; }
+
+  // Gemini: roles user/model (assistant -> model); systemInstruction = prompt de acolhimento.
+  const contents = messages.slice(-12).map((m: any) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: String(m.content) }],
+  }));
+  // Gemini exige que o histórico comece com 'user'.
+  while (contents.length && contents[0].role === "model") contents.shift();
 
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
   try {
-    const stream = client.messages.stream({
-      model: "claude-haiku-4-5",
-      max_tokens: 600,
-      system: ACOLHIMENTO_SYSTEM_PROMPT,
-      messages: messages.slice(-12).map((m: any) => ({ role: m.role, content: String(m.content) })),
+    const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+    const model = genAI.getGenerativeModel({
+      model: GEMINI_MODEL,
+      systemInstruction: ACOLHIMENTO_SYSTEM_PROMPT,
+      generationConfig: { maxOutputTokens: 600 },
     });
-    stream.on("text", (delta) => res.write(delta));
-    await stream.finalMessage();
+    const result = await model.generateContentStream({ contents });
+    for await (const chunk of result.stream) {
+      const t = chunk.text();
+      if (t) res.write(t);
+    }
     res.end();
   } catch (e) {
     console.error("acolhimento error:", e);
