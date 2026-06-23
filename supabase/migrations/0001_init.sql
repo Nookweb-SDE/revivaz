@@ -79,7 +79,13 @@ alter table public.humor_registros enable row level security;
 
 -- profiles: dono lê/edita o próprio; admin tudo
 create policy profiles_self_select on public.profiles for select using (id = auth.uid() or public.is_admin());
-create policy profiles_self_update on public.profiles for update using (id = auth.uid() or public.is_admin());
+create policy profiles_self_update on public.profiles for update
+  using (id = auth.uid() or public.is_admin())
+  with check (
+    public.is_admin()
+    or (id = auth.uid() and role = (select role from public.profiles where id = auth.uid()))
+  );
+create policy profiles_self_insert on public.profiles for insert with check (id = auth.uid());
 create policy profiles_admin_all on public.profiles for all using (public.is_admin()) with check (public.is_admin());
 
 -- profissionais: SELECT público (autenticado); escrita só admin
