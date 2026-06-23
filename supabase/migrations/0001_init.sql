@@ -32,6 +32,7 @@ create table public.consultas (
   tipo text not null default 'online' check (tipo in ('online','presencial')),
   status text not null default 'solicitada' check (status in ('solicitada','agendada','realizada','cancelada')),
   link_ou_local text,
+  obs text,
   created_at timestamptz not null default now()
 );
 
