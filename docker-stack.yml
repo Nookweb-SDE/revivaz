@@ -4,14 +4,20 @@ version: "3.8"
 # Node (tsx) serve o build estático (landing + /acolhimento) + a API /api/acolhimento.
 # Cutover de DNS feito 22/jun: revivaz.com.br + www apontam pro Contabo (saiu do Vercel).
 # (Host de staging revivaz-contabo NÃO usado: NXDOMAIN negativo-cacheado 24h pelo meu 1º registro errado.)
-# ANTHROPIC_API_KEY: adicionar depois via `docker service update --env-add` ou Docker secret
-# (sem a chave, o chat degrada gracioso: 500 + rodapé 188/192 sempre visível).
+# ANTHROPIC_API_KEY via Docker secret `revivaz_anthropic_key` (external, lido por *_FILE).
+# Criar o secret no Contabo: `printf '%s' "<chave>" | docker secret create revivaz_anthropic_key -`
+# (sem o secret, o chat degrada gracioso: 500 + rodapé 188/192 sempre visível).
+
+secrets:
+  revivaz_anthropic_key: { external: true }
 
 services:
   web:
     image: revivaz:latest
     environment:
       - PORT=8080
+      - ANTHROPIC_API_KEY_FILE=/run/secrets/revivaz_anthropic_key
+    secrets: [revivaz_anthropic_key]
     networks: [traefik-public]
     deploy:
       replicas: 1
