@@ -8,8 +8,12 @@ version: "3.8"
 # Criar o secret no Contabo: `printf '%s' "<chave>" | docker secret create revivaz_gemini_key -`
 # (sem o secret, o chat degrada gracioso: 500 + rodapé 188/192 sempre visível).
 
+# Login WhatsApp (Fase 2): OTP self-contained no server → sessão via service_role.
+# Secrets: printf '%s' "<v>" | docker secret create revivaz_{gemini_key,service_role,evolution_key} -
 secrets:
   revivaz_gemini_key: { external: true }
+  revivaz_service_role: { external: true }
+  revivaz_evolution_key: { external: true }
 
 services:
   web:
@@ -17,7 +21,15 @@ services:
     environment:
       - PORT=8080
       - GEMINI_API_KEY_FILE=/run/secrets/revivaz_gemini_key
-    secrets: [revivaz_gemini_key]
+      # Supabase (públicas) + service_role via secret (server-side OTP→sessão)
+      - SUPABASE_URL=https://akobilxqkwkcfyqdlzzf.supabase.co
+      - SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrb2JpbHhxa3drY2Z5cWRsenpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNDIwNDcsImV4cCI6MjA5NzgxODA0N30.tdEEaZj1BPYTKjgLUrAv-_SOfZWyGzg7jPdbN77nAPs
+      - SUPABASE_SERVICE_ROLE_KEY_FILE=/run/secrets/revivaz_service_role
+      # WhatsApp (Evolution) — instância revivaz
+      - EVOLUTION_URL=https://evolution.izai.dev
+      - EVOLUTION_INSTANCE=revivaz
+      - EVOLUTION_API_KEY_FILE=/run/secrets/revivaz_evolution_key
+    secrets: [revivaz_gemini_key, revivaz_service_role, revivaz_evolution_key]
     networks: [traefik-public]
     deploy:
       replicas: 1
