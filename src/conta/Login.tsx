@@ -274,11 +274,6 @@ function WhatsAppLogin() {
     return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
   }
 
-  function phoneToE164(raw: string) {
-    const digits = raw.replace(/\D/g, "");
-    return `+55${digits}`;
-  }
-
   async function handleSendCode(e: React.FormEvent) {
     e.preventDefault();
     const digits = phone.replace(/\D/g, "");
@@ -286,14 +281,23 @@ function WhatsAppLogin() {
     setPhase("loading-send");
     setErro(null);
 
-    const e164 = phoneToE164(digits);
-    const { error } = await supabase.auth.signInWithOtp({ phone: e164 });
-    if (error) {
-      setErro(error.message ?? "Erro ao enviar código. Tente novamente.");
+    try {
+      const res = await fetch("/api/wa/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: digits }),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string };
+      if (!res.ok || !data.ok) {
+        setErro(data.error ?? "Erro ao enviar código. Tente novamente.");
+        setPhase("error");
+      } else {
+        setPhase("code");
+        setStep("code");
+      }
+    } catch {
+      setErro("Erro de conexão. Tente novamente.");
       setPhase("error");
-    } else {
-      setPhase("code");
-      setStep("code");
     }
   }
 
@@ -304,14 +308,32 @@ function WhatsAppLogin() {
     setPhase("loading-verify");
     setErro(null);
 
-    const e164 = phoneToE164(phone.replace(/\D/g, ""));
-    const { error } = await supabase.auth.verifyOtp({ phone: e164, token, type: "sms" });
-    if (error) {
-      setErro(error.message ?? "Código inválido. Tente novamente.");
+    try {
+      const res = await fetch("/api/wa/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phone.replace(/\D/g, ""), code: token }),
+      });
+      const data = await res.json() as { access_token?: string; refresh_token?: string; error?: string };
+      if (!res.ok || !data.access_token || !data.refresh_token) {
+        setErro(data.error ?? "Código inválido. Tente novamente.");
+        setPhase("error");
+        return;
+      }
+      // Inject the session obtained from the server into the Supabase client
+      const { error: sessionErr } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+      if (sessionErr) {
+        setErro("Erro ao iniciar sessão. Tente novamente.");
+        setPhase("error");
+      }
+      // On success the session is set; useSession picks it up automatically.
+    } catch {
+      setErro("Erro de conexão. Tente novamente.");
       setPhase("error");
     }
-    // On success the session is created; useSession picks it up automatically.
-    // No explicit navigation needed here.
   }
 
   const isLoading = phase === "loading-send" || phase === "loading-verify";
