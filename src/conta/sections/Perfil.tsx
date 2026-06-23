@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { User, Phone, Bell, LogOut } from "lucide-react";
 import { T, card, sectionTitle, btnPrimary, btnGhost } from "../ui";
-import type { Usuario } from "../sampleData";
+import type { UsuarioUI as Usuario } from "../types";
 
 /* ─── row helper ─── */
 function InfoRow({
@@ -122,7 +122,13 @@ function Toggle({
 }
 
 /* ─── main ─── */
-export default function Perfil({ usuario }: { usuario: Usuario }): JSX.Element {
+export default function Perfil({
+  usuario,
+  onSair,
+}: {
+  usuario: Usuario;
+  onSair?: () => void;
+}): JSX.Element {
   const [lembretes, setLembretes] = useState(usuario.preferencias.lembretes);
   const [modalidade, setModalidade] = useState<"online" | "presencial">(
     usuario.preferencias.modalidade
@@ -337,7 +343,7 @@ export default function Perfil({ usuario }: { usuario: Usuario }): JSX.Element {
             padding: "6px 0",
             minHeight: 44,
           }}
-          onClick={() => alert("Saindo da conta…")}
+          onClick={() => onSair ? onSair() : alert("Saindo da conta…")}
           aria-label="Sair da conta"
         >
           <LogOut size={18} strokeWidth={2.2} aria-hidden="true" />

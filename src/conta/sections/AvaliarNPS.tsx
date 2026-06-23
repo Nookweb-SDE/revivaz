@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { T, card, sectionTitle, btnPrimary } from "../ui";
-import type { Consulta } from "../sampleData";
+import type { ConsultaUI as Consulta } from "../types";
 
 /* ─── score color helper ─── */
 function scoreColor(score: number | null, selected: number): string {

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Video, MapPin, LogIn, Calendar, FileText, RefreshCw } from "lucide-react";
 import { T, card, sectionTitle, btnGhost } from "../ui";
-import type { Consulta } from "../sampleData";
+import type { ConsultaUI as Consulta } from "../types";
 
 type Aba = "proximas" | "passadas";
 
@@ -25,6 +25,7 @@ const badgeStyle = (status: Consulta["status"]): React.CSSProperties => {
 };
 
 const LABEL: Record<Consulta["status"], string> = {
+  solicitada: "Solicitada",
   agendada: "Agendada",
   realizada: "Realizada",
   cancelada: "Cancelada",
@@ -254,7 +255,9 @@ export default function ListaConsultas({
 }): JSX.Element {
   const [aba, setAba] = useState<Aba>("proximas");
 
-  const proximas = consultas.filter((c) => c.status === "agendada");
+  const proximas = consultas.filter(
+    (c) => c.status === "agendada" || c.status === "solicitada"
+  );
   const passadas = consultas.filter(
     (c) => c.status === "realizada" || c.status === "cancelada"
   );

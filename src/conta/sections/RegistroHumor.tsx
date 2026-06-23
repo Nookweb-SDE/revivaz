@@ -23,7 +23,13 @@ function barColor(value: number): string {
   return shades[value] ?? T.teal500;
 }
 
-export default function RegistroHumor({ semana }: { semana: number[] }): JSX.Element {
+export default function RegistroHumor({
+  semana,
+  onRegistrar,
+}: {
+  semana: number[];
+  onRegistrar?: (valor: number) => void;
+}): JSX.Element {
   const [selecionado, setSelecionado] = useState<number | null>(null);
 
   const maxVal = 4;
@@ -63,7 +69,10 @@ export default function RegistroHumor({ semana }: { semana: number[] }): JSX.Ele
                 key={idx}
                 aria-label={label}
                 aria-pressed={isSelected}
-                onClick={() => setSelecionado(idx)}
+                onClick={() => {
+                  setSelecionado(idx);
+                  if (onRegistrar) onRegistrar(idx + 1); // valor 1-5 (idx 0-4)
+                }}
                 style={{
                   flex: 1,
                   display: "flex",

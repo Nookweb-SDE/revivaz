@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { FileText, Download, Send, Pill } from "lucide-react";
 import { T, card, sectionTitle, btnGhost } from "../ui";
-import type { Receita } from "../sampleData";
+import type { ReceitaUI as Receita } from "../types";
 
 /* ── helpers ──────────────────────────────────────────────── */
 
