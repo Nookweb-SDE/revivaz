@@ -243,7 +243,7 @@ app.post("/api/wa/verify", async (req: Request, res: Response): Promise<void> =>
   const tempPassword = randomBytes(32).toString("hex");
   try {
     const patchRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
-      method: "PATCH",
+      method: "PUT",
       headers: adminHeaders,
       body: JSON.stringify({ password: tempPassword }),
     });
