@@ -21,7 +21,7 @@ export default function Header({ nome }: { nome: string }): JSX.Element {
       <span
         style={{
           fontFamily: "'Nunito', sans-serif",
-          fontWeight: 900,
+          fontWeight: 800,
           fontSize: 22,
           color: T.teal700,
           letterSpacing: "-0.5px",

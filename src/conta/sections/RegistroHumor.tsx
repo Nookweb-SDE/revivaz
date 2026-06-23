@@ -156,7 +156,7 @@ export default function RegistroHumor({ semana }: { semana: number[] }): JSX.Ele
         >
           {semana.slice(0, 7).map((val, idx) => {
             const height = val === 0 ? 4 : Math.round((val / maxVal) * barMaxHeight);
-            const isToday = idx === new Date().getDay() - 1 || (idx === 6 && new Date().getDay() === 0);
+            const isToday = idx === 6;
             return (
               <div
                 key={idx}

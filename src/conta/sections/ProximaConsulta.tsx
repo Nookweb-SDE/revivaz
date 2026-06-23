@@ -47,14 +47,14 @@ const daysBadge: React.CSSProperties = {
 const tipoBadgeOnline: React.CSSProperties = {
   ...badgeBase,
   background: "rgba(0,191,216,0.28)",
-  color: "#7EE8F8",
+  color: "#CFF7FF",
   border: "1px solid rgba(0,191,216,0.4)",
 };
 
 const tipoBadgePresencial: React.CSSProperties = {
   ...badgeBase,
   background: "rgba(255,255,255,0.15)",
-  color: "#C5EFF5",
+  color: "#E8F9FC",
   border: "1px solid rgba(255,255,255,0.25)",
 };
 
@@ -91,7 +91,7 @@ const btnEnter: React.CSSProperties = {
 const ghostActionStyle: React.CSSProperties = {
   background: "transparent",
   border: "none",
-  color: "rgba(255,255,255,0.65)",
+  color: "rgba(255,255,255,0.85)",
   fontFamily: "'Nunito',sans-serif",
   fontWeight: 600,
   fontSize: 13,
