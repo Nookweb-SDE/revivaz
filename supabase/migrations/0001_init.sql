@@ -104,3 +104,7 @@ create policy receitas_admin_write on public.receitas for all using (public.is_a
 
 -- humor: paciente só os dele
 create policy humor_own_all on public.humor_registros for all using (paciente_id = auth.uid()) with check (paciente_id = auth.uid());
+
+-- Hardening: funções SECURITY DEFINER não devem ser chamáveis direto pela Data API.
+revoke execute on function public.is_admin() from anon, authenticated;
+revoke execute on function public.handle_new_user() from anon, authenticated;

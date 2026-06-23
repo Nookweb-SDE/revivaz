@@ -32,6 +32,7 @@ export type Consulta = {
   tipo: "online" | "presencial";
   status: StatusConsulta;
   link_ou_local: string | null;
+  obs: string | null;
   created_at: string;
 };
 
