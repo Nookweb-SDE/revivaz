@@ -7,3 +7,5 @@ dist
 lh-*.json
 lighthouse-*.json
 docs
+.env
+.env.local
