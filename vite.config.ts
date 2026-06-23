@@ -34,6 +34,7 @@ export default defineConfig({
         main: "index.html",
         acolhimento: "acolhimento.html",
         conta: "conta.html",
+        admin: "admin.html",
       },
     },
   },

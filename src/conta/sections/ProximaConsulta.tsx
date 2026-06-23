@@ -1,7 +1,7 @@
 import React from "react";
 import { Calendar, Clock, Video, MapPin, CalendarPlus, MessageCircleHeart, RefreshCw, X } from "lucide-react";
 import { T, btnPrimary } from "../ui";
-import type { Consulta } from "../sampleData";
+import type { ConsultaUI as Consulta } from "../types";
 
 /* ─── palette ─── */
 const heroGrad = `linear-gradient(135deg, ${T.navy} 0%, ${T.teal900} 60%, ${T.teal700} 100%)`;
@@ -266,7 +266,7 @@ function FilledCard({ consulta }: { consulta: Consulta }) {
 }
 
 /* ─── Empty state ─── */
-function EmptyCard() {
+function EmptyCard({ onAgendar }: { onAgendar?: () => void }) {
   return (
     <div
       style={{
@@ -342,7 +342,7 @@ function EmptyCard() {
             background: `linear-gradient(90deg, ${T.teal900} 0%, ${T.teal700} 100%)`,
             boxShadow: `0 4px 14px rgba(0,122,140,0.28)`,
           }}
-          onClick={() => alert("Abrindo agendamento…")}
+          onClick={() => onAgendar ? onAgendar() : alert("Abrindo agendamento…")}
           aria-label="Agendar uma nova consulta"
         >
           <CalendarPlus size={18} strokeWidth={2.5} aria-hidden="true" />
@@ -379,6 +379,12 @@ function EmptyCard() {
 }
 
 /* ─── Main export ─── */
-export default function ProximaConsulta({ consulta }: { consulta?: Consulta }): JSX.Element {
-  return consulta ? <FilledCard consulta={consulta} /> : <EmptyCard />;
+export default function ProximaConsulta({
+  consulta,
+  onAgendar,
+}: {
+  consulta?: Consulta;
+  onAgendar?: () => void;
+}): JSX.Element {
+  return consulta ? <FilledCard consulta={consulta} /> : <EmptyCard onAgendar={onAgendar} />;
 }
