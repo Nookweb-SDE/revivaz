@@ -105,6 +105,8 @@ create policy receitas_admin_write on public.receitas for all using (public.is_a
 -- humor: paciente só os dele
 create policy humor_own_all on public.humor_registros for all using (paciente_id = auth.uid()) with check (paciente_id = auth.uid());
 
--- Hardening: funções SECURITY DEFINER não devem ser chamáveis direto pela Data API.
-revoke execute on function public.is_admin() from anon, authenticated;
+-- Hardening: handle_new_user é trigger (não precisa ser chamável por cliente) → revoga.
+-- is_admin() FICA executável por authenticated DE PROPÓSITO: é chamada dentro das
+-- políticas RLS; revogar quebraria a avaliação ("permission denied for function").
+-- Ela só revela se o PRÓPRIO chamador é admin (sem vazar dado) — exposição aceitável.
 revoke execute on function public.handle_new_user() from anon, authenticated;
