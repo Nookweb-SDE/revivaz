@@ -9,6 +9,7 @@ import type {
   Mensagem,
   Avaliacao,
   MetricsOverview,
+  StatusConsulta,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -103,6 +104,46 @@ export async function registrarHumor(valor: number): Promise<void> {
     valor,
     dia,
   });
+
+  if (error) throw error;
+}
+
+export async function getHumoresUltima7Dias(): Promise<number[]> {
+  // 7 posições: índice 0 = 6 dias atrás … índice 6 = hoje. 0 quando sem registro.
+  const userId = await getSessionUserId();
+  const out = [0, 0, 0, 0, 0, 0, 0];
+  if (!userId) return out;
+
+  const desde = new Date();
+  desde.setDate(desde.getDate() - 6);
+  const desdeStr = desde.toISOString().slice(0, 10); // YYYY-MM-DD
+  const hojeStr = new Date().toISOString().slice(0, 10);
+
+  // RLS já restringe ao próprio paciente; filtro por dia p/ a janela.
+  const { data, error } = await supabase
+    .from("humor_registros")
+    .select("valor,dia,created_at")
+    .gte("dia", desdeStr)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+
+  // base de comparação de datas em UTC (mesma base do dia gravado)
+  const baseHoje = Date.parse(hojeStr + "T00:00:00Z");
+  for (const r of (data ?? []) as { valor: number; dia: string }[]) {
+    const diaMs = Date.parse(r.dia + "T00:00:00Z");
+    const idx = 6 - Math.round((baseHoje - diaMs) / 86400000);
+    if (idx >= 0 && idx <= 6) out[idx] = r.valor; // último registro do dia prevalece
+  }
+  return out;
+}
+
+export async function cancelarConsulta(consultaId: string): Promise<void> {
+  // própria consulta — RLS consultas_own_update garante a posse.
+  const { error } = await supabase
+    .from("consultas")
+    .update({ status: "cancelada" })
+    .eq("id", consultaId);
 
   if (error) throw error;
 }
@@ -229,10 +270,17 @@ export async function profDefinirAgenda(
   consultaId: string,
   dados: { data: string; hora: string; link_ou_local?: string }
 ): Promise<void> {
+  // Ao agendar, o profissional ASSUME o atendimento: precisa setar
+  // profissional_id com a própria ficha. Sem isso, pedidos pendentes nascem
+  // com profissional_id=NULL e o WITH CHECK da RLS bloqueia o UPDATE.
+  const ficha = await profMinhaFicha();
+  if (!ficha) throw new Error("Profissional não encontrado");
+
   const { error } = await supabase
     .from("consultas")
     .update({
       status: "agendada",
+      profissional_id: ficha.id,
       data: dados.data,
       hora: dados.hora,
       link_ou_local: dados.link_ou_local ?? null,
@@ -273,6 +321,103 @@ export async function profAtualizarBio(bio: string): Promise<void> {
     .eq("profile_id", userId);
 
   if (error) throw error;
+}
+
+export async function profAtualizarFicha(dados: {
+  bio?: string;
+  especialidade?: string;
+  registro?: string;
+}): Promise<void> {
+  const userId = await getSessionUserId();
+  if (!userId) throw new Error("Usuário não autenticado");
+
+  const patch: Record<string, string> = {};
+  if (dados.bio !== undefined) patch.bio = dados.bio;
+  if (dados.especialidade !== undefined) patch.especialidade = dados.especialidade;
+  if (dados.registro !== undefined) patch.registro = dados.registro;
+
+  // RLS prof_self_update restringe à própria linha.
+  const { error } = await supabase
+    .from("profissionais")
+    .update(patch)
+    .eq("profile_id", userId);
+
+  if (error) throw error;
+}
+
+export async function profCancelarConsulta(consultaId: string): Promise<void> {
+  // consulta do profissional — RLS consultas_prof_update garante a posse.
+  const { error } = await supabase
+    .from("consultas")
+    .update({ status: "cancelada" })
+    .eq("id", consultaId);
+
+  if (error) throw error;
+}
+
+export async function profSalvarObsClinica(
+  consultaId: string,
+  obs_profissional: string
+): Promise<void> {
+  // anotação clínica na consulta dele — RLS consultas_prof_update permite.
+  const { error } = await supabase
+    .from("consultas")
+    .update({ obs_profissional })
+    .eq("id", consultaId);
+
+  if (error) throw error;
+}
+
+export async function profHistoricoPaciente(
+  pacienteId: string
+): Promise<{ consultas: Consulta[]; receitas: Receita[] }> {
+  // RLS (consultas_prof_select / receitas_prof_select) já restringe ao que é do
+  // profissional; o filtro por paciente_id apenas recorta o paciente desejado.
+  const [cRes, rRes] = await Promise.all([
+    supabase
+      .from("consultas")
+      .select("*")
+      .eq("paciente_id", pacienteId)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("receitas")
+      .select("*")
+      .eq("paciente_id", pacienteId)
+      .order("created_at", { ascending: false }),
+  ]);
+
+  if (cRes.error) throw cRes.error;
+  if (rRes.error) throw rRes.error;
+
+  return {
+    consultas: (cRes.data ?? []) as Consulta[],
+    receitas: (rRes.data ?? []) as Receita[],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Common (professional/admin) — patient names
+// ---------------------------------------------------------------------------
+
+export async function getNomesPacientes(
+  ids: string[]
+): Promise<Record<string, string>> {
+  if (!ids.length) return {};
+
+  // RLS (profiles_prof_patient_read p/ prof; profiles_admin_all p/ admin)
+  // decide o que volta; ids ausentes simplesmente não aparecem no mapa.
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id,nome")
+    .in("id", ids);
+
+  if (error) throw error;
+
+  const map: Record<string, string> = {};
+  for (const p of (data ?? []) as { id: string; nome: string | null }[]) {
+    map[p.id] = p.nome ?? "";
+  }
+  return map;
 }
 
 // ---------------------------------------------------------------------------
@@ -376,4 +521,119 @@ export async function getMetricsOverview(): Promise<MetricsOverview> {
 
   if (error) throw error;
   return data as MetricsOverview;
+}
+
+// ---------------------------------------------------------------------------
+// Admin — gestão geral (RLS admin libera tudo)
+// ---------------------------------------------------------------------------
+
+export async function adminListTodasConsultas(filtros?: {
+  status?: StatusConsulta;
+}): Promise<Consulta[]> {
+  let q = supabase
+    .from("consultas")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (filtros?.status) q = q.eq("status", filtros.status);
+
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as Consulta[];
+}
+
+export async function adminCancelarConsulta(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("consultas")
+    .update({ status: "cancelada" })
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function adminEditarProfissional(
+  id: string,
+  dados: Partial<{
+    nome: string;
+    especialidade: string | null;
+    registro: string | null;
+    bio: string | null;
+    ativo: boolean;
+  }>
+): Promise<void> {
+  const { error } = await supabase
+    .from("profissionais")
+    .update(dados)
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function adminListProfissionais(
+  incluirInativos = false
+): Promise<Profissional[]> {
+  let q = supabase.from("profissionais").select("*").order("nome", {
+    ascending: true,
+  });
+
+  if (!incluirInativos) q = q.eq("ativo", true);
+
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as Profissional[];
+}
+
+export async function adminListPacientes(): Promise<Profile[]> {
+  // RLS admin libera todos os profiles; filtra os pacientes.
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("role", "paciente")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as Profile[];
+}
+
+export async function adminListAvaliacoes(): Promise<Avaliacao[]> {
+  // RLS admin (avaliacoes_admin_select) libera todas.
+  const { data, error } = await supabase
+    .from("avaliacoes")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as Avaliacao[];
+}
+
+export async function adminVincularProfissional(
+  profissionalId: string,
+  email: string
+): Promise<void> {
+  // O vínculo exige privilégio de admin no servidor (cria/acha o auth user e
+  // promove o profile). Manda o access_token do usuário logado p/ o server
+  // validar que é admin antes de usar service_role.
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) throw new Error("Usuário não autenticado");
+
+  const res = await fetch("/api/admin/profissional-link", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ profissional_id: profissionalId, email }),
+  });
+
+  if (!res.ok) {
+    let msg = `Falha ao vincular profissional (${res.status})`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body?.error) msg = body.error;
+    } catch {
+      // resposta sem JSON — mantém msg padrão
+    }
+    throw new Error(msg);
+  }
 }

@@ -29,6 +29,18 @@ button {
 input, select {
   font-size: inherit;
 }
+/* Indicador de foco por teclado (WCAG 2.4.7). Vários campos usam
+   outline:"none" inline; esta regra garante realce visível ao navegar por Tab
+   sem precisar de handler onFocus/onBlur em cada campo. */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #007A8C; /* teal700 */
+  outline-offset: 1px;
+}
 /* Áreas seguras para notch/home indicator em dispositivos móveis */
 @supports (padding: max(0px)) {
   body {

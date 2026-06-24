@@ -7,12 +7,13 @@ import { T, btnPrimary, btnGhost } from "../conta/ui";
 import Agenda from "./sections/Agenda";
 import Atendimento from "./sections/Atendimento";
 import MinhasReceitas from "./sections/MinhasReceitas";
+import MeuPerfil from "./sections/MeuPerfil";
 
 // ---------------------------------------------------------------------------
 // Layout constants
 // ---------------------------------------------------------------------------
 
-const TABS = ["Agenda", "Atendimento", "Receitas"] as const;
+const TABS = ["Agenda", "Atendimento", "Receitas", "Meu Perfil"] as const;
 type Tab = (typeof TABS)[number];
 
 const baseStyle: React.CSSProperties = {
@@ -278,6 +279,7 @@ export function ProfissionalApp() {
         {activeTab === "Agenda" && <Agenda />}
         {activeTab === "Atendimento" && <Atendimento />}
         {activeTab === "Receitas" && <MinhasReceitas />}
+        {activeTab === "Meu Perfil" && <MeuPerfil />}
       </main>
     </div>
   );

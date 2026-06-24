@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { getMetricsOverview } from "../../lib/data";
-import type { MetricsOverview } from "../../lib/types";
+import { getMetricsOverview, adminListAvaliacoes } from "../../lib/data";
+import type { MetricsOverview, Avaliacao } from "../../lib/types";
 import { T, card, sectionTitle } from "../../conta/ui";
 import { fmtPct, fmtMetric } from "../../lib/metrics";
 
@@ -127,6 +127,163 @@ function StatusBar({
 }
 
 // ---------------------------------------------------------------------------
+// Últimas avaliações (NPS)
+// ---------------------------------------------------------------------------
+
+// Cor por faixa NPS: detrator (<=6) vermelho, neutro (7-8) âmbar, promotor (>=9) teal.
+const AMBAR = "#D97706";
+function corNota(nota: number): string {
+  if (nota <= 6) return T.red;
+  if (nota <= 8) return AMBAR;
+  return T.teal700;
+}
+
+function fmtData(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+const notaBadgeStyle = (nota: number): React.CSSProperties => ({
+  fontFamily: "'Nunito',sans-serif",
+  fontWeight: 900,
+  fontSize: 16,
+  color: T.white,
+  background: corNota(nota),
+  borderRadius: 10,
+  minWidth: 38,
+  height: 38,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+});
+
+function UltimasAvaliacoes() {
+  const [avaliacoes, setAvaliacoes] = useState<Avaliacao[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    setErro(null);
+    adminListAvaliacoes()
+      .then((rows) => {
+        if (alive) setAvaliacoes(rows.slice(0, 15));
+      })
+      .catch((err) => {
+        if (alive)
+          setErro(
+            err instanceof Error
+              ? err.message
+              : "Erro ao carregar avaliações."
+          );
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  return (
+    <>
+      <h2 style={sectionTitle}>Últimas avaliações (NPS)</h2>
+      <div style={card}>
+        {loading && (
+          <p
+            style={{
+              fontFamily: "'Nunito',sans-serif",
+              color: T.teal700,
+              fontSize: 14,
+              margin: 0,
+            }}
+          >
+            Carregando avaliações…
+          </p>
+        )}
+
+        {!loading && erro && (
+          <p
+            style={{
+              fontFamily: "'Nunito',sans-serif",
+              color: T.red,
+              fontSize: 14,
+              margin: 0,
+            }}
+          >
+            {erro}
+          </p>
+        )}
+
+        {!loading && !erro && avaliacoes && avaliacoes.length === 0 && (
+          <p
+            style={{
+              fontFamily: "'Nunito',sans-serif",
+              color: T.gray600,
+              fontSize: 14,
+              margin: 0,
+            }}
+          >
+            Nenhuma avaliação ainda.
+          </p>
+        )}
+
+        {!loading && !erro && avaliacoes && avaliacoes.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {avaliacoes.map((a, i) => (
+              <div
+                key={a.id}
+                style={{
+                  display: "flex",
+                  gap: 12,
+                  alignItems: "flex-start",
+                  paddingTop: i === 0 ? 0 : 10,
+                  borderTop: i === 0 ? "none" : `1px solid ${T.gray100}`,
+                }}
+              >
+                <div style={notaBadgeStyle(a.nota)}>{a.nota}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p
+                    style={{
+                      fontFamily: "'Nunito',sans-serif",
+                      fontWeight: 600,
+                      fontSize: 14,
+                      color: a.comentario ? T.gray700 : T.gray600,
+                      fontStyle: a.comentario ? "normal" : "italic",
+                      margin: "0 0 4px",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {a.comentario || "Sem comentário"}
+                  </p>
+                  <span
+                    style={{
+                      fontFamily: "'Nunito',sans-serif",
+                      fontWeight: 600,
+                      fontSize: 12,
+                      color: T.gray600,
+                    }}
+                  >
+                    {fmtData(a.created_at)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Metricas
 // ---------------------------------------------------------------------------
 
@@ -244,6 +401,11 @@ export function Metricas() {
           total={totalConsultas}
           color={T.green500}
         />
+      </div>
+
+      {/* Últimas avaliações (NPS) */}
+      <div style={{ marginTop: 20 }}>
+        <UltimasAvaliacoes />
       </div>
     </div>
   );

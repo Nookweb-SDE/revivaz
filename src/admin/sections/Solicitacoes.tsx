@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import {
-  adminListSolicitacoes,
+  adminListTodasConsultas,
   adminConfirmarConsulta,
   adminMarcarRealizada,
+  adminCancelarConsulta,
   adminLancarReceita,
   listProfissionais,
+  getNomesPacientes,
 } from "../../lib/data";
-import type { Consulta, Profissional } from "../../lib/types";
+import type { Consulta, Profissional, StatusConsulta } from "../../lib/types";
 import { T, card, sectionTitle, btnPrimary, btnGhost } from "../../conta/ui";
 
 // ---------------------------------------------------------------------------
@@ -31,7 +33,7 @@ const inputStyle: React.CSSProperties = {
   fontFamily: "'Nunito',sans-serif",
   color: T.gray950,
   boxSizing: "border-box",
-  outline: "none",
+  outline: "2px solid transparent", // foco visível vem da regra :focus-visible global
 };
 
 const badgeStyle = (status: string): React.CSSProperties => {
@@ -56,6 +58,32 @@ const badgeStyle = (status: string): React.CSSProperties => {
   };
 };
 
+// Filtro de status — null = todas
+type FiltroStatus = StatusConsulta | null;
+
+const FILTROS: { key: FiltroStatus; label: string }[] = [
+  { key: null, label: "Todas" },
+  { key: "solicitada", label: "Solicitadas" },
+  { key: "agendada", label: "Agendadas" },
+  { key: "realizada", label: "Realizadas" },
+  { key: "cancelada", label: "Canceladas" },
+];
+
+function chipStyle(ativo: boolean): React.CSSProperties {
+  return {
+    padding: "7px 14px",
+    borderRadius: 20,
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: "pointer",
+    fontFamily: "'Nunito',sans-serif",
+    border: `1.5px solid ${ativo ? T.teal700 : T.gray200}`,
+    background: ativo ? T.teal700 : T.white,
+    color: ativo ? T.white : T.gray700,
+    minHeight: 36,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Confirmar Form
 // ---------------------------------------------------------------------------
@@ -69,8 +97,9 @@ function ConfirmarForm({
   profissionais: Profissional[];
   onDone: () => void;
 }) {
+  const uid = React.useId();
   const [profissionalId, setProfissionalId] = useState(
-    profissionais[0]?.id ?? ""
+    consulta.profissional_id ?? profissionais[0]?.id ?? ""
   );
   const [data, setData] = useState("");
   const [hora, setHora] = useState("");
@@ -115,8 +144,9 @@ function ConfirmarForm({
       }}
     >
       <div>
-        <label style={label}>Profissional</label>
+        <label style={label} htmlFor={`${uid}-prof`}>Profissional</label>
         <select
+          id={`${uid}-prof`}
           value={profissionalId}
           onChange={(e) => setProfissionalId(e.target.value)}
           style={inputStyle}
@@ -133,8 +163,9 @@ function ConfirmarForm({
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <div>
-          <label style={label}>Data</label>
+          <label style={label} htmlFor={`${uid}-data`}>Data</label>
           <input
+            id={`${uid}-data`}
             type="date"
             value={data}
             onChange={(e) => setData(e.target.value)}
@@ -143,8 +174,9 @@ function ConfirmarForm({
           />
         </div>
         <div>
-          <label style={label}>Hora</label>
+          <label style={label} htmlFor={`${uid}-hora`}>Hora</label>
           <input
+            id={`${uid}-hora`}
             type="time"
             value={hora}
             onChange={(e) => setHora(e.target.value)}
@@ -154,8 +186,9 @@ function ConfirmarForm({
         </div>
       </div>
       <div>
-        <label style={label}>Link / Local (opcional)</label>
+        <label style={label} htmlFor={`${uid}-link`}>Link / Local (opcional)</label>
         <input
+          id={`${uid}-link`}
           type="text"
           value={link}
           onChange={(e) => setLink(e.target.value)}
@@ -193,6 +226,7 @@ function ReceitaForm({
   consulta: Consulta;
   onDone: () => void;
 }) {
+  const uid = React.useId();
   const [resumo, setResumo] = useState("");
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -238,8 +272,9 @@ function ReceitaForm({
       }}
     >
       <div>
-        <label style={label}>Resumo da receita / orientações</label>
+        <label style={label} htmlFor={`${uid}-resumo`}>Resumo da receita / orientações</label>
         <textarea
+          id={`${uid}-resumo`}
           value={resumo}
           onChange={(e) => setResumo(e.target.value)}
           rows={4}
@@ -270,14 +305,18 @@ function ReceitaForm({
 function ConsultaCard({
   consulta,
   profissionais,
+  nomePaciente,
   onRefresh,
 }: {
   consulta: Consulta;
   profissionais: Profissional[];
+  nomePaciente?: string;
   onRefresh: () => void;
 }) {
   const [openForm, setOpenForm] = useState<"confirmar" | "receita" | null>(null);
-  const [realizandoLoading, setRealizandoLoading] = useState(false);
+  const [acaoLoading, setAcaoLoading] = useState<"realizar" | "cancelar" | null>(
+    null
+  );
   const [erro, setErro] = useState<string | null>(null);
 
   const profissional = profissionais.find(
@@ -285,7 +324,7 @@ function ConsultaCard({
   );
 
   async function marcarRealizada() {
-    setRealizandoLoading(true);
+    setAcaoLoading("realizar");
     setErro(null);
     try {
       await adminMarcarRealizada(consulta.id);
@@ -293,9 +332,31 @@ function ConsultaCard({
     } catch (err) {
       setErro(err instanceof Error ? err.message : "Erro.");
     } finally {
-      setRealizandoLoading(false);
+      setAcaoLoading(null);
     }
   }
+
+  async function cancelar() {
+    if (
+      !window.confirm(
+        "Cancelar esta consulta? O paciente perderá o agendamento."
+      )
+    )
+      return;
+    setAcaoLoading("cancelar");
+    setErro(null);
+    try {
+      await adminCancelarConsulta(consulta.id);
+      onRefresh();
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Erro ao cancelar.");
+    } finally {
+      setAcaoLoading(null);
+    }
+  }
+
+  const cancelavel =
+    consulta.status === "solicitada" || consulta.status === "agendada";
 
   return (
     <div style={{ ...card, marginBottom: 14 }}>
@@ -323,13 +384,18 @@ function ConsultaCard({
       <div style={{ marginTop: 10, fontSize: 13, color: T.gray700, fontFamily: "'Nunito',sans-serif", lineHeight: 1.6 }}>
         <div>
           <strong>Paciente:</strong>{" "}
-          <code style={{ background: T.gray100, padding: "1px 6px", borderRadius: 4, fontSize: 11 }}>
-            {consulta.paciente_id.slice(0, 8)}…
-          </code>
+          {nomePaciente && nomePaciente.trim() ? (
+            nomePaciente
+          ) : (
+            <code style={{ background: T.gray100, padding: "1px 6px", borderRadius: 4, fontSize: 11 }}>
+              {consulta.paciente_id.slice(0, 8)}…
+            </code>
+          )}
         </div>
         {profissional && (
           <div>
             <strong>Profissional:</strong> {profissional.nome}
+            {profissional.especialidade ? ` — ${profissional.especialidade}` : ""}
           </div>
         )}
         {consulta.data && (
@@ -346,6 +412,11 @@ function ConsultaCard({
             <strong>Link/Local:</strong> {consulta.link_ou_local}
           </div>
         )}
+        {consulta.obs && (
+          <div>
+            <strong>Observação do paciente:</strong> {consulta.obs}
+          </div>
+        )}
       </div>
 
       {/* Actions */}
@@ -358,14 +429,14 @@ function ConsultaCard({
             Confirmar
           </button>
         )}
-        {(consulta.status === "agendada") && openForm !== "receita" && (
+        {consulta.status === "agendada" && openForm !== "receita" && (
           <>
             <button
               style={{ ...btnPrimary, padding: "8px 16px", fontSize: 13, background: T.teal500 }}
               onClick={marcarRealizada}
-              disabled={realizandoLoading}
+              disabled={acaoLoading === "realizar"}
             >
-              {realizandoLoading ? "Salvando…" : "Marcar realizada"}
+              {acaoLoading === "realizar" ? "Salvando…" : "Marcar realizada"}
             </button>
             <button
               style={{ ...btnPrimary, padding: "8px 16px", fontSize: 13, background: T.green500 }}
@@ -381,6 +452,26 @@ function ConsultaCard({
             onClick={() => setOpenForm("receita")}
           >
             Lançar receita
+          </button>
+        )}
+        {cancelavel && (
+          <button
+            style={{
+              padding: "8px 16px",
+              fontSize: 13,
+              fontWeight: 700,
+              borderRadius: 12,
+              border: `1.5px solid ${T.red}`,
+              background: T.white,
+              color: T.red,
+              cursor: "pointer",
+              fontFamily: "'Nunito',sans-serif",
+              minHeight: 36,
+            }}
+            onClick={cancelar}
+            disabled={acaoLoading === "cancelar"}
+          >
+            {acaoLoading === "cancelar" ? "Cancelando…" : "Cancelar"}
           </button>
         )}
       </div>
@@ -419,19 +510,29 @@ function ConsultaCard({
 export function Solicitacoes() {
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
+  const [nomesPacientes, setNomesPacientes] = useState<Record<string, string>>(
+    {}
+  );
+  const [filtro, setFiltro] = useState<FiltroStatus>(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  async function load() {
+  async function load(statusFiltro: FiltroStatus) {
     setLoading(true);
     setErro(null);
     try {
       const [c, p] = await Promise.all([
-        adminListSolicitacoes(),
+        adminListTodasConsultas(statusFiltro ? { status: statusFiltro } : undefined),
+        // inclui inativos p/ resolver o nome de profissionais desativados
         listProfissionais(),
       ]);
       setConsultas(c);
       setProfissionais(p);
+
+      // nomes dos pacientes envolvidos (RLS admin libera)
+      const ids = Array.from(new Set(c.map((x) => x.paciente_id)));
+      const nomes = await getNomesPacientes(ids);
+      setNomesPacientes(nomes);
     } catch (err) {
       setErro(err instanceof Error ? err.message : "Erro ao carregar.");
     } finally {
@@ -440,40 +541,46 @@ export function Solicitacoes() {
   }
 
   useEffect(() => {
-    load();
-  }, []);
-
-  if (loading) {
-    return (
-      <div style={{ textAlign: "center", padding: 40, color: T.gray600, fontFamily: "'Nunito',sans-serif" }}>
-        Carregando solicitações…
-      </div>
-    );
-  }
-
-  if (erro) {
-    return (
-      <div style={{ color: T.red, padding: 20, fontFamily: "'Nunito',sans-serif" }}>
-        {erro}{" "}
-        <button style={btnGhost} onClick={load}>
-          Tentar novamente
-        </button>
-      </div>
-    );
-  }
+    load(filtro);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtro]);
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <h2 style={{ ...sectionTitle, margin: 0, fontSize: 18 }}>
-          Solicitações ({consultas.length})
+          Consultas{!loading ? ` (${consultas.length})` : ""}
         </h2>
-        <button style={{ ...btnGhost, fontSize: 13 }} onClick={load}>
+        <button style={{ ...btnGhost, fontSize: 13 }} onClick={() => load(filtro)}>
           Atualizar
         </button>
       </div>
 
-      {consultas.length === 0 ? (
+      {/* Chips de filtro por status */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+        {FILTROS.map((f) => (
+          <button
+            key={f.label}
+            style={chipStyle(filtro === f.key)}
+            onClick={() => setFiltro(f.key)}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 40, color: T.gray600, fontFamily: "'Nunito',sans-serif" }}>
+          Carregando consultas…
+        </div>
+      ) : erro ? (
+        <div style={{ color: T.red, padding: 20, fontFamily: "'Nunito',sans-serif" }}>
+          {erro}{" "}
+          <button style={btnGhost} onClick={() => load(filtro)}>
+            Tentar novamente
+          </button>
+        </div>
+      ) : consultas.length === 0 ? (
         <div
           style={{
             ...card,
@@ -483,7 +590,9 @@ export function Solicitacoes() {
             fontFamily: "'Nunito',sans-serif",
           }}
         >
-          Nenhuma solicitação pendente.
+          {filtro
+            ? `Nenhuma consulta com status "${filtro}".`
+            : "Nenhuma consulta registrada."}
         </div>
       ) : (
         consultas.map((c) => (
@@ -491,7 +600,8 @@ export function Solicitacoes() {
             key={c.id}
             consulta={c}
             profissionais={profissionais}
-            onRefresh={load}
+            nomePaciente={nomesPacientes[c.paciente_id]}
+            onRefresh={() => load(filtro)}
           />
         ))
       )}

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Video, MapPin, LogIn, Calendar, FileText, RefreshCw } from "lucide-react";
+import { Video, MapPin, LogIn, FileText, Eye, X } from "lucide-react";
 import { T, card, sectionTitle, btnGhost } from "../ui";
 import type { ConsultaUI as Consulta } from "../types";
 
@@ -36,6 +36,13 @@ function formatDate(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+/* link lives on the data row (consulta.link_ou_local); B-pac-app maps it into
+   ConsultaUI as an optional `link`. Read it defensively to stay type-safe. */
+function getLink(c: Consulta): string | undefined {
+  const v = (c as Consulta & { link?: string }).link;
+  return v && v.trim() ? v : undefined;
+}
+
 function Initials({ initials }: { initials: string }) {
   return (
     <div
@@ -61,99 +68,82 @@ function Initials({ initials }: { initials: string }) {
   );
 }
 
-function ConsultaRow({ c, isProxima }: { c: Consulta; isProxima: boolean }) {
+const actionBtnBase: React.CSSProperties = {
+  ...btnGhost,
+  borderRadius: 10,
+  padding: "7px 14px",
+  fontSize: 12,
+  minHeight: 34,
+  display: "flex",
+  alignItems: "center",
+  gap: 5,
+};
+
+function ConsultaRow({
+  c,
+  isProxima,
+  onEntrar,
+  onCancelar,
+  onVerDetalhe,
+}: {
+  c: Consulta;
+  isProxima: boolean;
+  onEntrar: (c: Consulta) => void;
+  onCancelar: (c: Consulta) => void;
+  onVerDetalhe: (c: Consulta) => void;
+}) {
   const tipoIcon = c.tipo === "online"
     ? <Video size={13} color={T.teal500} aria-label="Online" />
     : <MapPin size={13} color={T.teal500} aria-label="Presencial" />;
+
+  const link = getLink(c);
+  const canEntrar = c.status === "agendada" && c.tipo === "online" && !!link;
+  const canCancelar = c.status === "solicitada" || c.status === "agendada";
 
   const renderAction = () => {
     if (isProxima) {
       return (
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          {canEntrar && (
+            <button
+              style={{ ...actionBtnBase, background: T.teal700, color: T.white }}
+              onClick={() => onEntrar(c)}
+              aria-label={`Entrar na consulta com ${c.profissional}`}
+            >
+              <LogIn size={13} aria-hidden="true" />
+              Entrar
+            </button>
+          )}
           <button
-            style={{
-              ...btnGhost,
-              background: T.teal700,
-              color: T.white,
-              borderRadius: 10,
-              padding: "7px 14px",
-              fontSize: 12,
-              minHeight: 34,
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-            }}
-            onClick={() => alert(`Entrando na consulta com ${c.profissional}`)}
-            aria-label={`Entrar na consulta com ${c.profissional}`}
+            style={{ ...actionBtnBase, border: `1px solid ${T.gray200}`, color: T.teal700 }}
+            onClick={() => onVerDetalhe(c)}
+            aria-label={`Ver detalhe da consulta com ${c.profissional}`}
           >
-            <LogIn size={13} aria-hidden="true" />
-            Entrar
+            <Eye size={13} aria-hidden="true" />
+            Ver detalhe
           </button>
-          <button
-            style={{
-              ...btnGhost,
-              border: `1px solid ${T.gray200}`,
-              borderRadius: 10,
-              padding: "7px 14px",
-              fontSize: 12,
-              minHeight: 34,
-              color: T.gray700,
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-            }}
-            onClick={() => alert(`Remarcando consulta com ${c.profissional}`)}
-            aria-label={`Remarcar consulta com ${c.profissional}`}
-          >
-            <Calendar size={13} aria-hidden="true" />
-            Remarcar
-          </button>
+          {canCancelar && (
+            <button
+              style={{ ...actionBtnBase, border: `1px solid ${T.gray200}`, color: T.gray700 }}
+              onClick={() => onCancelar(c)}
+              aria-label={`Cancelar consulta com ${c.profissional}`}
+            >
+              <X size={13} aria-hidden="true" />
+              Cancelar
+            </button>
+          )}
         </div>
       );
     }
-    if (c.status === "realizada") {
-      return (
-        <button
-          style={{
-            ...btnGhost,
-            border: `1px solid ${T.gray200}`,
-            borderRadius: 10,
-            padding: "7px 14px",
-            fontSize: 12,
-            minHeight: 34,
-            color: T.teal700,
-            display: "flex",
-            alignItems: "center",
-            gap: 5,
-          }}
-          onClick={() => alert(`Ver resumo da consulta com ${c.profissional}`)}
-          aria-label={`Ver resumo da consulta com ${c.profissional}`}
-        >
-          <FileText size={13} aria-hidden="true" />
-          Ver resumo
-        </button>
-      );
-    }
-    // cancelada
+    // passadas (realizada / cancelada) — só leitura
     return (
       <button
-        style={{
-          ...btnGhost,
-          border: `1px solid ${T.gray200}`,
-          borderRadius: 10,
-          padding: "7px 14px",
-          fontSize: 12,
-          minHeight: 34,
-          color: T.gray700,
-          display: "flex",
-          alignItems: "center",
-          gap: 5,
-        }}
-        onClick={() => alert(`Reagendando consulta com ${c.profissional}`)}
-        aria-label={`Reagendar consulta com ${c.profissional}`}
+        style={{ ...actionBtnBase, border: `1px solid ${T.gray200}`, color: T.teal700 }}
+        onClick={() => onVerDetalhe(c)}
+        aria-label={`Ver resumo da consulta com ${c.profissional}`}
       >
-        <RefreshCw size={13} aria-hidden="true" />
-        Reagendar
+        <FileText size={13} aria-hidden="true" />
+        Ver resumo
       </button>
     );
   };
@@ -250,8 +240,14 @@ function EmptyState({ aba }: { aba: Aba }) {
 
 export default function ListaConsultas({
   consultas,
+  onEntrar,
+  onCancelar,
+  onVerDetalhe,
 }: {
   consultas: Consulta[];
+  onEntrar: (c: Consulta) => void;
+  onCancelar: (c: Consulta) => void;
+  onVerDetalhe: (c: Consulta) => void;
 }): JSX.Element {
   const [aba, setAba] = useState<Aba>("proximas");
 
@@ -364,7 +360,14 @@ export default function ListaConsultas({
               <EmptyState aba="proximas" />
             ) : (
               lista.map((c) => (
-                <ConsultaRow key={c.id} c={c} isProxima={true} />
+                <ConsultaRow
+                  key={c.id}
+                  c={c}
+                  isProxima={true}
+                  onEntrar={onEntrar}
+                  onCancelar={onCancelar}
+                  onVerDetalhe={onVerDetalhe}
+                />
               ))
             )}
           </div>
@@ -382,7 +385,14 @@ export default function ListaConsultas({
               <EmptyState aba="passadas" />
             ) : (
               lista.map((c) => (
-                <ConsultaRow key={c.id} c={c} isProxima={false} />
+                <ConsultaRow
+                  key={c.id}
+                  c={c}
+                  isProxima={false}
+                  onEntrar={onEntrar}
+                  onCancelar={onCancelar}
+                  onVerDetalhe={onVerDetalhe}
+                />
               ))
             )}
           </div>

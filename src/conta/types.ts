@@ -16,6 +16,8 @@ export type ConsultaUI = {
   status: "solicitada" | "agendada" | "realizada" | "cancelada";
   emDias?: number;            // days until appointment (computed by ContaApp)
   avaliada?: boolean;
+  link?: string | null;       // link_ou_local — used by "Entrar na consulta" (window.open)
+  obs?: string | null;        // observação que o paciente escreveu ao solicitar
 };
 
 export type ReceitaUI = {

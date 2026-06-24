@@ -1,10 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { FileText, Pill, Send, CheckCircle2 } from "lucide-react";
 import { T, card, sectionTitle, btnPrimary } from "../../conta/ui";
-import { profMinhaAgenda, profLancarReceita, getReceitas } from "../../lib/data";
+import { profMinhaAgenda, profLancarReceita, getReceitas, getNomesPacientes } from "../../lib/data";
 import type { Consulta } from "../../lib/types";
 
 /* ── helpers ──────────────────────────────────────────────── */
+
+function shortId(id: string): string {
+  return id.slice(0, 8);
+}
+
+function nomeDoPaciente(c: Consulta, nomes: Record<string, string>): string {
+  const n = nomes[c.paciente_id];
+  if (n && n.trim() !== "") return n;
+  return `Paciente #${shortId(c.paciente_id)}`;
+}
 
 function formatDate(iso: string | null): string {
   if (!iso) return "Sem data";
@@ -43,10 +53,12 @@ function ConsultaIcon() {
 
 function ConsultaReceitaCard({
   consulta,
+  nome,
   jaLancada,
   onLancada,
 }: {
   consulta: Consulta;
+  nome: string;
   jaLancada: boolean;
   onLancada: () => void;
 }) {
@@ -124,7 +136,7 @@ function ConsultaReceitaCard({
                 lineHeight: 1.3,
               }}
             >
-              Consulta realizada
+              Paciente: {nome}
             </div>
             <div
               style={{
@@ -359,6 +371,7 @@ function SkeletonCard() {
 
 export default function MinhasReceitas(): JSX.Element {
   const [consultas, setConsultas] = useState<Consulta[]>([]);
+  const [nomes, setNomes] = useState<Record<string, string>>({});
   // consulta_ids that already have a receita lançada (RLS: professional's own)
   const [comReceita, setComReceita] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -372,7 +385,8 @@ export default function MinhasReceitas(): JSX.Element {
         profMinhaAgenda(),
         getReceitas(),
       ]);
-      setConsultas(agenda.filter((c) => c.status === "realizada"));
+      const realizadas = agenda.filter((c) => c.status === "realizada");
+      setConsultas(realizadas);
       setComReceita(
         new Set(
           receitas
@@ -380,6 +394,17 @@ export default function MinhasReceitas(): JSX.Element {
             .filter((id): id is string => !!id),
         ),
       );
+      // nomes dos pacientes num único request (RLS 0003 liberou a leitura)
+      const ids = Array.from(new Set(realizadas.map((c) => c.paciente_id)));
+      if (ids.length > 0) {
+        try {
+          setNomes(await getNomesPacientes(ids));
+        } catch {
+          // fallback "Paciente #id"
+        }
+      } else {
+        setNomes({});
+      }
     } catch (e) {
       setErro(
         e instanceof Error
@@ -451,6 +476,7 @@ export default function MinhasReceitas(): JSX.Element {
             <ConsultaReceitaCard
               key={c.id}
               consulta={c}
+              nome={nomeDoPaciente(c, nomes)}
               jaLancada={comReceita.has(c.id)}
               onLancada={() => {
                 // Recarrega para refletir a receita recém-lançada (e impedir

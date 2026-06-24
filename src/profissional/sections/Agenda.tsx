@@ -8,14 +8,31 @@ import {
   Check,
   Link2,
   AlertCircle,
+  XCircle,
+  History,
+  X,
+  FileText,
 } from "lucide-react";
 import { T, card, sectionTitle, btnPrimary, btnGhost } from "../../conta/ui";
-import { profMinhaAgenda, profDefinirAgenda, profMarcarRealizada } from "../../lib/data";
-import type { Consulta } from "../../lib/types";
+import {
+  profMinhaAgenda,
+  profDefinirAgenda,
+  profMarcarRealizada,
+  profCancelarConsulta,
+  profHistoricoPaciente,
+  getNomesPacientes,
+} from "../../lib/data";
+import type { Consulta, Receita } from "../../lib/types";
 
 /* ─── helpers ─── */
 function shortId(id: string): string {
   return id.slice(0, 8);
+}
+
+function nomeDoPaciente(c: Consulta, nomes: Record<string, string>): string {
+  const n = nomes[c.paciente_id];
+  if (n && n.trim() !== "") return n;
+  return `Paciente #${shortId(c.paciente_id)}`;
 }
 
 function formatData(iso: string | null): string {
@@ -25,6 +42,11 @@ function formatData(iso: string | null): string {
   const [y, m, d] = parts;
   const dt = new Date(y, m - 1, d);
   return dt.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
+}
+
+function inicial(nome: string): string {
+  const t = nome.trim();
+  return t ? t[0].toUpperCase() : "P";
 }
 
 /* ─── spinner (padrão das áreas protegidas) ─── */
@@ -95,8 +117,19 @@ function tipoBadge(tipo: Consulta["tipo"]): JSX.Element {
   );
 }
 
-/* ─── avatar (id curto, paciente anônimo via RLS) ─── */
-function PacienteAvatar(): JSX.Element {
+function statusBadge(status: Consulta["status"]): JSX.Element {
+  const map: Record<string, { bg: string; color: string; label: string }> = {
+    solicitada: { bg: "#FEF3C7", color: "#92400E", label: "Solicitada" },
+    agendada: { bg: T.teal100, color: T.teal900, label: "Agendada" },
+    realizada: { bg: "#D1FAE5", color: "#065F46", label: "Realizada" },
+    cancelada: { bg: "#FEE2E2", color: "#991B1B", label: "Cancelada" },
+  };
+  const s = map[status] ?? { bg: T.gray100, color: T.gray700, label: status };
+  return <span style={{ ...badgeBase, background: s.bg, color: s.color }}>{s.label}</span>;
+}
+
+/* ─── avatar (inicial do nome do paciente) ─── */
+function PacienteAvatar({ nome }: { nome: string }): JSX.Element {
   return (
     <div
       aria-hidden="true"
@@ -116,7 +149,262 @@ function PacienteAvatar(): JSX.Element {
         userSelect: "none",
       }}
     >
-      P
+      {inicial(nome)}
+    </div>
+  );
+}
+
+/* ─── modal histórico do paciente ─── */
+function HistoricoModal({
+  pacienteId,
+  pacienteNome,
+  onFechar,
+}: {
+  pacienteId: string;
+  pacienteNome: string;
+  onFechar: () => void;
+}): JSX.Element {
+  const [dados, setDados] = useState<{ consultas: Consulta[]; receitas: Receita[] } | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const carregar = useCallback(async () => {
+    setErro(null);
+    try {
+      const d = await profHistoricoPaciente(pacienteId);
+      setDados(d);
+    } catch (e) {
+      setDados({ consultas: [], receitas: [] });
+      setErro(e instanceof Error ? e.message : "Não foi possível carregar o histórico.");
+    }
+  }, [pacienteId]);
+
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onFechar();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onFechar]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Histórico de ${pacienteNome}`}
+      onClick={onFechar}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(15,23,42,0.45)",
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        zIndex: 1000,
+        padding: 0,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: T.white,
+          width: "100%",
+          maxWidth: 520,
+          maxHeight: "85vh",
+          borderRadius: "18px 18px 0 0",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          boxShadow: "0 -8px 32px rgba(15,23,42,0.18)",
+        }}
+      >
+        {/* header */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "16px 18px",
+            borderBottom: `1px solid ${T.gray100}`,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <History size={18} color={T.teal700} strokeWidth={2.5} aria-hidden="true" />
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontFamily: "'Nunito',sans-serif",
+                  fontWeight: 800,
+                  fontSize: 15,
+                  color: T.gray950,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {pacienteNome}
+              </div>
+              <div style={{ fontFamily: "'Nunito',sans-serif", fontSize: 11, color: T.gray600 }}>
+                Histórico clínico
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onFechar}
+            aria-label="Fechar histórico"
+            style={{
+              ...btnGhost,
+              padding: 8,
+              minHeight: 40,
+              minWidth: 40,
+              borderRadius: 10,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: T.gray600,
+            }}
+          >
+            <X size={18} strokeWidth={2.5} aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* corpo */}
+        <div style={{ overflowY: "auto", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 18 }}>
+          {dados === null ? (
+            <Spinner />
+          ) : erro ? (
+            <div
+              role="alert"
+              style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start" }}
+            >
+              <p style={{ margin: 0, fontFamily: "'Nunito',sans-serif", fontSize: 13, color: T.red }}>
+                {erro}
+              </p>
+              <button
+                onClick={() => void carregar()}
+                style={{ ...btnPrimary, padding: "8px 16px", fontSize: 13, minHeight: 38 }}
+              >
+                Tentar de novo
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* consultas */}
+              <section aria-label="Consultas anteriores">
+                <h4
+                  style={{
+                    margin: "0 0 8px",
+                    fontFamily: "'Nunito',sans-serif",
+                    fontWeight: 800,
+                    fontSize: 13,
+                    color: T.gray700,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <Calendar size={14} color={T.teal500} strokeWidth={2.5} aria-hidden="true" />
+                  Consultas ({dados.consultas.length})
+                </h4>
+                {dados.consultas.length === 0 ? (
+                  <p style={{ margin: 0, fontFamily: "'Nunito',sans-serif", fontSize: 13, color: T.gray600 }}>
+                    Nenhuma consulta registrada.
+                  </p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {dados.consultas.map((c) => (
+                      <div
+                        key={c.id}
+                        style={{
+                          background: T.gray050,
+                          borderRadius: 10,
+                          padding: "10px 12px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 6,
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          {statusBadge(c.status)}
+                          {tipoBadge(c.tipo)}
+                          <span
+                            style={{
+                              fontFamily: "'Nunito',sans-serif",
+                              fontSize: 12,
+                              color: T.gray600,
+                            }}
+                          >
+                            {formatData(c.data)}
+                            {c.hora ? ` · ${c.hora.slice(0, 5)}` : ""}
+                          </span>
+                        </div>
+                        {c.obs && (
+                          <p style={{ margin: 0, fontFamily: "'Nunito',sans-serif", fontSize: 12, color: T.gray700, lineHeight: 1.5 }}>
+                            <strong>Paciente:</strong> {c.obs}
+                          </p>
+                        )}
+                        {c.obs_profissional && (
+                          <p style={{ margin: 0, fontFamily: "'Nunito',sans-serif", fontSize: 12, color: T.gray700, lineHeight: 1.5 }}>
+                            <strong>Anotação:</strong> {c.obs_profissional}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              {/* receitas */}
+              <section aria-label="Receitas anteriores">
+                <h4
+                  style={{
+                    margin: "0 0 8px",
+                    fontFamily: "'Nunito',sans-serif",
+                    fontWeight: 800,
+                    fontSize: 13,
+                    color: T.gray700,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <FileText size={14} color={T.teal500} strokeWidth={2.5} aria-hidden="true" />
+                  Receitas ({dados.receitas.length})
+                </h4>
+                {dados.receitas.length === 0 ? (
+                  <p style={{ margin: 0, fontFamily: "'Nunito',sans-serif", fontSize: 13, color: T.gray600 }}>
+                    Nenhuma receita registrada.
+                  </p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {dados.receitas.map((r) => (
+                      <div
+                        key={r.id}
+                        style={{
+                          background: T.teal050,
+                          borderRadius: 10,
+                          padding: "10px 12px",
+                          borderLeft: `3px solid ${T.teal500}`,
+                        }}
+                      >
+                        <div style={{ fontFamily: "'Nunito',sans-serif", fontSize: 11, color: T.gray600, marginBottom: 4 }}>
+                          {new Date(r.created_at).toLocaleDateString("pt-BR")}
+                        </div>
+                        <p style={{ margin: 0, fontFamily: "'Nunito',sans-serif", fontSize: 13, color: T.gray950, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+                          {r.resumo}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -261,13 +549,19 @@ function AgendarForm({
 /* ─── linha de consulta ─── */
 function ConsultaRow({
   c,
+  nome,
   onDefinir,
   onRealizada,
+  onCancelar,
+  onHistorico,
   busyId,
 }: {
   c: Consulta;
+  nome: string;
   onDefinir: (id: string, dados: { data: string; hora: string; link_ou_local?: string }) => void;
   onRealizada: (id: string) => void;
+  onCancelar: (id: string, nome: string) => void;
+  onHistorico: (pacienteId: string, nome: string) => void;
   busyId: string | null;
 }): JSX.Element {
   const [aberto, setAberto] = useState(false);
@@ -278,7 +572,7 @@ function ConsultaRow({
     <div style={{ ...card, display: "flex", flexDirection: "column", gap: 12, padding: "14px 16px" }}>
       {/* topo: avatar + info + tipo */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-        <PacienteAvatar />
+        <PacienteAvatar nome={nome} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
@@ -289,19 +583,7 @@ function ConsultaRow({
               lineHeight: 1.3,
             }}
           >
-            Paciente
-          </div>
-          <div
-            style={{
-              fontFamily: "'Nunito',sans-serif",
-              fontSize: 11,
-              color: T.gray600,
-              marginTop: 2,
-              fontVariantNumeric: "tabular-nums",
-            }}
-            title={c.paciente_id}
-          >
-            #{shortId(c.paciente_id)}
+            Paciente: {nome}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
             <span
@@ -374,16 +656,36 @@ function ConsultaRow({
       )}
 
       {/* ações */}
-      {pendente ? (
-        aberto ? (
-          <AgendarForm
-            consulta={c}
-            busy={busy}
-            onCancelar={() => setAberto(false)}
-            onConfirmar={(dados) => onDefinir(c.id, dados)}
-          />
-        ) : (
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      {pendente && aberto ? (
+        <AgendarForm
+          consulta={c}
+          busy={busy}
+          onCancelar={() => setAberto(false)}
+          onConfirmar={(dados) => onDefinir(c.id, dados)}
+        />
+      ) : (
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+          <button
+            onClick={() => onHistorico(c.paciente_id, nome)}
+            style={{
+              ...btnGhost,
+              border: `1px solid ${T.gray200}`,
+              borderRadius: 10,
+              padding: "8px 14px",
+              fontSize: 13,
+              minHeight: 38,
+              color: T.gray700,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+            aria-label={`Ver histórico de ${nome}`}
+          >
+            <History size={15} strokeWidth={2.5} aria-hidden="true" />
+            Histórico
+          </button>
+
+          {pendente ? (
             <button
               onClick={() => setAberto(true)}
               style={{
@@ -395,37 +697,59 @@ function ConsultaRow({
                 alignItems: "center",
                 gap: 6,
               }}
-              aria-label={`Agendar consulta do paciente ${shortId(c.paciente_id)}`}
+              aria-label={`Agendar consulta de ${nome}`}
             >
               <CalendarPlus size={15} strokeWidth={2.5} aria-hidden="true" />
               Agendar
             </button>
-          </div>
-        )
-      ) : (
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <button
-            onClick={() => onRealizada(c.id)}
-            disabled={busy}
-            style={{
-              ...btnGhost,
-              border: `1px solid ${T.teal700}`,
-              borderRadius: 10,
-              padding: "8px 16px",
-              fontSize: 13,
-              minHeight: 38,
-              color: T.teal700,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              opacity: busy ? 0.6 : 1,
-              cursor: busy ? "default" : "pointer",
-            }}
-            aria-label={`Marcar consulta do paciente ${shortId(c.paciente_id)} como realizada`}
-          >
-            <Check size={15} strokeWidth={2.5} aria-hidden="true" />
-            {busy ? "Salvando…" : "Marcar realizada"}
-          </button>
+          ) : (
+            <>
+              <button
+                onClick={() => onCancelar(c.id, nome)}
+                disabled={busy}
+                style={{
+                  ...btnGhost,
+                  border: `1px solid ${T.red}`,
+                  borderRadius: 10,
+                  padding: "8px 14px",
+                  fontSize: 13,
+                  minHeight: 38,
+                  color: T.red,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  opacity: busy ? 0.6 : 1,
+                  cursor: busy ? "default" : "pointer",
+                }}
+                aria-label={`Cancelar consulta de ${nome}`}
+              >
+                <XCircle size={15} strokeWidth={2.5} aria-hidden="true" />
+                Cancelar
+              </button>
+              <button
+                onClick={() => onRealizada(c.id)}
+                disabled={busy}
+                style={{
+                  ...btnGhost,
+                  border: `1px solid ${T.teal700}`,
+                  borderRadius: 10,
+                  padding: "8px 16px",
+                  fontSize: 13,
+                  minHeight: 38,
+                  color: T.teal700,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  opacity: busy ? 0.6 : 1,
+                  cursor: busy ? "default" : "pointer",
+                }}
+                aria-label={`Marcar consulta de ${nome} como realizada`}
+              >
+                <Check size={15} strokeWidth={2.5} aria-hidden="true" />
+                {busy ? "Salvando…" : "Marcar realizada"}
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -436,15 +760,21 @@ function ConsultaRow({
 function Grupo({
   titulo,
   itens,
+  nomes,
   onDefinir,
   onRealizada,
+  onCancelar,
+  onHistorico,
   busyId,
   vazio,
 }: {
   titulo: string;
   itens: Consulta[];
+  nomes: Record<string, string>;
   onDefinir: (id: string, dados: { data: string; hora: string; link_ou_local?: string }) => void;
   onRealizada: (id: string) => void;
+  onCancelar: (id: string, nome: string) => void;
+  onHistorico: (pacienteId: string, nome: string) => void;
   busyId: string | null;
   vazio: string;
 }): JSX.Element {
@@ -485,8 +815,11 @@ function Grupo({
             <ConsultaRow
               key={c.id}
               c={c}
+              nome={nomeDoPaciente(c, nomes)}
               onDefinir={onDefinir}
               onRealizada={onRealizada}
+              onCancelar={onCancelar}
+              onHistorico={onHistorico}
               busyId={busyId}
             />
           ))}
@@ -499,14 +832,28 @@ function Grupo({
 /* ─── componente principal ─── */
 export default function Agenda(): JSX.Element {
   const [consultas, setConsultas] = useState<Consulta[] | null>(null);
+  const [nomes, setNomes] = useState<Record<string, string>>({});
   const [erro, setErro] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [historico, setHistorico] = useState<{ pacienteId: string; nome: string } | null>(null);
 
   const carregar = useCallback(async () => {
     try {
       setErro(null);
       const lista = await profMinhaAgenda();
       setConsultas(lista);
+      // Carrega nomes dos pacientes num único request (RLS 0003 liberou a leitura).
+      const ids = Array.from(new Set(lista.map((c) => c.paciente_id)));
+      if (ids.length > 0) {
+        try {
+          const map = await getNomesPacientes(ids);
+          setNomes(map);
+        } catch {
+          // nomes indisponíveis: fallback para "Paciente #id" cuida da exibição
+        }
+      } else {
+        setNomes({});
+      }
     } catch (e) {
       setConsultas([]);
       setErro(e instanceof Error ? e.message : "Não foi possível carregar a agenda.");
@@ -548,6 +895,29 @@ export default function Agenda(): JSX.Element {
     },
     [carregar]
   );
+
+  const handleCancelar = useCallback(
+    async (id: string, nome: string) => {
+      if (!window.confirm(`Cancelar a consulta de ${nome}? Esta ação não pode ser desfeita.`)) {
+        return;
+      }
+      setBusyId(id);
+      setErro(null);
+      try {
+        await profCancelarConsulta(id);
+        await carregar();
+      } catch (e) {
+        setErro(e instanceof Error ? e.message : "Não foi possível cancelar a consulta.");
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [carregar]
+  );
+
+  const handleHistorico = useCallback((pacienteId: string, nome: string) => {
+    setHistorico({ pacienteId, nome });
+  }, []);
 
   if (consultas === null) {
     return <Spinner />;
@@ -598,19 +968,28 @@ export default function Agenda(): JSX.Element {
 
   if (semAgenda) {
     return (
-      <div
-        role="status"
-        style={{
-          ...card,
-          textAlign: "center",
-          padding: "32px 16px",
-          color: T.gray600,
-          fontFamily: "'Nunito',sans-serif",
-          fontSize: 14,
-        }}
-      >
-        Nenhuma consulta na sua agenda ainda.
-      </div>
+      <>
+        <div
+          role="status"
+          style={{
+            ...card,
+            textAlign: "center",
+            padding: "32px 16px",
+            color: T.gray600,
+            fontFamily: "'Nunito',sans-serif",
+            fontSize: 14,
+          }}
+        >
+          Nenhuma consulta na sua agenda ainda.
+        </div>
+        {historico && (
+          <HistoricoModal
+            pacienteId={historico.pacienteId}
+            pacienteNome={historico.nome}
+            onFechar={() => setHistorico(null)}
+          />
+        )}
+      </>
     );
   }
 
@@ -639,8 +1018,11 @@ export default function Agenda(): JSX.Element {
       <Grupo
         titulo="Pedidos pendentes"
         itens={pendentes}
+        nomes={nomes}
         onDefinir={handleDefinir}
         onRealizada={handleRealizada}
+        onCancelar={handleCancelar}
+        onHistorico={handleHistorico}
         busyId={busyId}
         vazio="Nenhum pedido aguardando agendamento."
       />
@@ -648,11 +1030,22 @@ export default function Agenda(): JSX.Element {
       <Grupo
         titulo="Próximas"
         itens={proximas}
+        nomes={nomes}
         onDefinir={handleDefinir}
         onRealizada={handleRealizada}
+        onCancelar={handleCancelar}
+        onHistorico={handleHistorico}
         busyId={busyId}
         vazio="Nenhuma consulta agendada no momento."
       />
+
+      {historico && (
+        <HistoricoModal
+          pacienteId={historico.pacienteId}
+          pacienteNome={historico.nome}
+          onFechar={() => setHistorico(null)}
+        />
+      )}
     </div>
   );
 }

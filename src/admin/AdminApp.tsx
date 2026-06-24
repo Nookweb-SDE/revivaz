@@ -6,13 +6,16 @@ import type { Profile } from "../lib/types";
 import { T, btnPrimary, btnGhost } from "../conta/ui";
 import { Solicitacoes } from "./sections/Solicitacoes";
 import { Profissionais } from "./sections/Profissionais";
+import Pacientes from "./sections/Pacientes";
 import { Metricas } from "./sections/Metricas";
 
 // ---------------------------------------------------------------------------
 // Layout constants
 // ---------------------------------------------------------------------------
 
-const TABS = ["Solicitações", "Profissionais", "Métricas"] as const;
+// A seção <Solicitacoes/> agora lista TODAS as consultas — só a label visível
+// muda para "Consultas"; o componente continua sendo o mesmo.
+const TABS = ["Consultas", "Profissionais", "Pacientes", "Métricas"] as const;
 type Tab = (typeof TABS)[number];
 
 const baseStyle: React.CSSProperties = {
@@ -166,7 +169,7 @@ export function AdminApp() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileErro, setProfileErro] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<Tab>("Solicitações");
+  const [activeTab, setActiveTab] = useState<Tab>("Consultas");
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
@@ -275,8 +278,9 @@ export function AdminApp() {
 
       {/* Content */}
       <main style={contentStyle}>
-        {activeTab === "Solicitações" && <Solicitacoes />}
+        {activeTab === "Consultas" && <Solicitacoes />}
         {activeTab === "Profissionais" && <Profissionais />}
+        {activeTab === "Pacientes" && <Pacientes />}
         {activeTab === "Métricas" && <Metricas />}
       </main>
     </div>

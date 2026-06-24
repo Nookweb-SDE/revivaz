@@ -34,6 +34,7 @@ export type Consulta = {
   status: StatusConsulta;
   link_ou_local: string | null;
   obs: string | null;
+  obs_profissional: string | null;
   created_at: string;
 };
 

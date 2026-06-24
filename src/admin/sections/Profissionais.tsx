@@ -1,7 +1,22 @@
 import React, { useEffect, useState } from "react";
-import { listProfissionais, adminCriarProfissional } from "../../lib/data";
+import {
+  adminCriarProfissional,
+  adminListProfissionais,
+  adminEditarProfissional,
+  adminVincularProfissional,
+} from "../../lib/data";
 import type { Profissional } from "../../lib/types";
 import { T, card, sectionTitle, btnPrimary, btnGhost } from "../../conta/ui";
+import {
+  Pencil,
+  Power,
+  PowerOff,
+  Link as LinkIcon,
+  CheckCircle2,
+  XCircle,
+  Save,
+  X,
+} from "lucide-react";
 
 const label: React.CSSProperties = {
   display: "block",
@@ -21,7 +36,23 @@ const inputStyle: React.CSSProperties = {
   fontFamily: "'Nunito',sans-serif",
   color: T.gray950,
   boxSizing: "border-box",
-  outline: "none",
+  outline: "2px solid transparent", // foco visível vem da regra :focus-visible global
+};
+
+const iconBtn: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  background: T.gray050,
+  color: T.teal700,
+  border: `1px solid ${T.gray200}`,
+  borderRadius: 10,
+  padding: "7px 12px",
+  fontWeight: 700,
+  fontSize: 12,
+  cursor: "pointer",
+  fontFamily: "'Nunito',sans-serif",
+  minHeight: 36,
 };
 
 // ---------------------------------------------------------------------------
@@ -29,6 +60,7 @@ const inputStyle: React.CSSProperties = {
 // ---------------------------------------------------------------------------
 
 function CriarProfissionalForm({ onDone }: { onDone: () => void }) {
+  const uid = React.useId();
   const [nome, setNome] = useState("");
   const [especialidade, setEspecialidade] = useState("");
   const [registro, setRegistro] = useState("");
@@ -92,8 +124,9 @@ function CriarProfissionalForm({ onDone }: { onDone: () => void }) {
       <h3 style={{ ...sectionTitle, margin: 0 }}>Novo profissional</h3>
 
       <div>
-        <label style={label}>Nome *</label>
+        <label style={label} htmlFor={`${uid}-nome`}>Nome *</label>
         <input
+          id={`${uid}-nome`}
           type="text"
           value={nome}
           onChange={(e) => setNome(e.target.value)}
@@ -103,8 +136,9 @@ function CriarProfissionalForm({ onDone }: { onDone: () => void }) {
         />
       </div>
       <div>
-        <label style={label}>Especialidade</label>
+        <label style={label} htmlFor={`${uid}-esp`}>Especialidade</label>
         <input
+          id={`${uid}-esp`}
           type="text"
           value={especialidade}
           onChange={(e) => setEspecialidade(e.target.value)}
@@ -113,8 +147,9 @@ function CriarProfissionalForm({ onDone }: { onDone: () => void }) {
         />
       </div>
       <div>
-        <label style={label}>Registro (CRP / CRM)</label>
+        <label style={label} htmlFor={`${uid}-reg`}>Registro (CRP / CRM)</label>
         <input
+          id={`${uid}-reg`}
           type="text"
           value={registro}
           onChange={(e) => setRegistro(e.target.value)}
@@ -123,8 +158,9 @@ function CriarProfissionalForm({ onDone }: { onDone: () => void }) {
         />
       </div>
       <div>
-        <label style={label}>Bio</label>
+        <label style={label} htmlFor={`${uid}-bio`}>Bio</label>
         <textarea
+          id={`${uid}-bio`}
           value={bio}
           onChange={(e) => setBio(e.target.value)}
           rows={3}
@@ -158,14 +194,270 @@ function CriarProfissionalForm({ onDone }: { onDone: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
+// Edit Form (inline) — nome/especialidade/registro/bio
+// ---------------------------------------------------------------------------
+
+function EditarProfissionalForm({
+  profissional,
+  onDone,
+  onCancel,
+}: {
+  profissional: Profissional;
+  onDone: () => void;
+  onCancel: () => void;
+}) {
+  const uid = React.useId();
+  const [nome, setNome] = useState(profissional.nome);
+  const [especialidade, setEspecialidade] = useState(
+    profissional.especialidade ?? ""
+  );
+  const [registro, setRegistro] = useState(profissional.registro ?? "");
+  const [bio, setBio] = useState(profissional.bio ?? "");
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!nome.trim()) {
+      setErro("Nome é obrigatório.");
+      return;
+    }
+    setLoading(true);
+    setErro(null);
+    try {
+      await adminEditarProfissional(profissional.id, {
+        nome: nome.trim(),
+        especialidade: especialidade.trim() || null,
+        registro: registro.trim() || null,
+        bio: bio.trim() || null,
+      });
+      onDone();
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Erro ao salvar.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      style={{ display: "flex", flexDirection: "column", gap: 12 }}
+    >
+      <div>
+        <label style={label} htmlFor={`${uid}-nome`}>Nome *</label>
+        <input
+          id={`${uid}-nome`}
+          type="text"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          style={inputStyle}
+          required
+        />
+      </div>
+      <div>
+        <label style={label} htmlFor={`${uid}-esp`}>Especialidade</label>
+        <input
+          id={`${uid}-esp`}
+          type="text"
+          value={especialidade}
+          onChange={(e) => setEspecialidade(e.target.value)}
+          style={inputStyle}
+        />
+      </div>
+      <div>
+        <label style={label} htmlFor={`${uid}-reg`}>Registro (CRP / CRM)</label>
+        <input
+          id={`${uid}-reg`}
+          type="text"
+          value={registro}
+          onChange={(e) => setRegistro(e.target.value)}
+          style={inputStyle}
+        />
+      </div>
+      <div>
+        <label style={label} htmlFor={`${uid}-bio`}>Bio</label>
+        <textarea
+          id={`${uid}-bio`}
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+          rows={3}
+          style={{ ...inputStyle, resize: "vertical" }}
+        />
+      </div>
+
+      {erro && <p style={{ color: T.red, fontSize: 12, margin: 0 }}>{erro}</p>}
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="submit"
+          style={{ ...btnPrimary, padding: "10px 18px" }}
+          disabled={loading}
+        >
+          <Save size={15} style={{ marginRight: 6, verticalAlign: "-3px" }} />
+          {loading ? "Salvando…" : "Salvar"}
+        </button>
+        <button
+          type="button"
+          style={{ ...btnGhost, alignSelf: "center" }}
+          onClick={onCancel}
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Vincular Login (inline) — pede e-mail e chama o endpoint server
+// ---------------------------------------------------------------------------
+
+function VincularLoginForm({
+  profissional,
+  onDone,
+  onCancel,
+}: {
+  profissional: Profissional;
+  onDone: () => void;
+  onCancel: () => void;
+}) {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setErro("Informe um e-mail válido.");
+      return;
+    }
+    setLoading(true);
+    setErro(null);
+    try {
+      await adminVincularProfissional(profissional.id, trimmed);
+      onDone();
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Erro ao vincular login.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        marginTop: 12,
+        padding: 12,
+        borderRadius: 12,
+        background: T.teal050,
+        border: `1px solid ${T.teal300}`,
+      }}
+    >
+      <label style={label}>E-mail de login do profissional</label>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="profissional@exemplo.com"
+        style={inputStyle}
+        autoFocus
+      />
+      <p style={{ margin: 0, fontSize: 11, color: T.gray600, fontFamily: "'Nunito',sans-serif" }}>
+        Cria/encontra o login e dá a este profissional acesso ao painel dele.
+      </p>
+
+      {erro && <p style={{ color: T.red, fontSize: 12, margin: 0 }}>{erro}</p>}
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="submit"
+          style={{ ...btnPrimary, padding: "9px 16px" }}
+          disabled={loading}
+        >
+          {loading ? "Vinculando…" : "Vincular"}
+        </button>
+        <button
+          type="button"
+          style={{ ...btnGhost, alignSelf: "center" }}
+          onClick={onCancel}
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Profissional Card
 // ---------------------------------------------------------------------------
 
-function ProfissionalCard({ profissional }: { profissional: Profissional }) {
+function ProfissionalCard({
+  profissional,
+  onChanged,
+}: {
+  profissional: Profissional;
+  onChanged: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [vinculando, setVinculando] = useState(false);
+  const [toggling, setToggling] = useState(false);
+  const [acaoErro, setAcaoErro] = useState<string | null>(null);
+  const [sucesso, setSucesso] = useState<string | null>(null);
+
+  const temLogin = !!profissional.profile_id;
+
+  async function toggleAtivo() {
+    setToggling(true);
+    setAcaoErro(null);
+    setSucesso(null);
+    try {
+      await adminEditarProfissional(profissional.id, {
+        ativo: !profissional.ativo,
+      });
+      onChanged();
+    } catch (err) {
+      setAcaoErro(
+        err instanceof Error ? err.message : "Erro ao alterar status."
+      );
+    } finally {
+      setToggling(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <div style={{ ...card, marginBottom: 12, border: `1.5px solid ${T.teal300}` }}>
+        <h3 style={{ ...sectionTitle, margin: "0 0 12px" }}>Editar profissional</h3>
+        <EditarProfissionalForm
+          profissional={profissional}
+          onDone={() => {
+            setEditing(false);
+            onChanged();
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div style={{ ...card, marginBottom: 12 }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-        <div>
+    <div style={{ ...card, marginBottom: 12, opacity: profissional.ativo ? 1 : 0.72 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 8,
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
           <p
             style={{
               margin: 0,
@@ -234,6 +526,120 @@ function ProfissionalCard({ profissional }: { profissional: Profissional }) {
           {profissional.ativo ? "Ativo" : "Inativo"}
         </span>
       </div>
+
+      {/* Status do login */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          marginTop: 12,
+          fontSize: 12,
+          fontWeight: 700,
+          fontFamily: "'Nunito',sans-serif",
+          color: temLogin ? T.teal700 : T.gray600,
+        }}
+      >
+        {temLogin ? (
+          <>
+            <CheckCircle2 size={15} />
+            Login vinculado
+          </>
+        ) : (
+          <>
+            <XCircle size={15} />
+            Sem login
+          </>
+        )}
+      </div>
+
+      {/* Ações */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          marginTop: 12,
+          paddingTop: 12,
+          borderTop: `1px solid ${T.gray100}`,
+        }}
+      >
+        <button
+          style={iconBtn}
+          onClick={() => {
+            setEditing(true);
+            setAcaoErro(null);
+            setSucesso(null);
+          }}
+        >
+          <Pencil size={14} />
+          Editar
+        </button>
+
+        <button
+          style={{
+            ...iconBtn,
+            color: profissional.ativo ? T.red : T.green500,
+          }}
+          onClick={toggleAtivo}
+          disabled={toggling}
+        >
+          {profissional.ativo ? <PowerOff size={14} /> : <Power size={14} />}
+          {toggling
+            ? "…"
+            : profissional.ativo
+            ? "Desativar"
+            : "Reativar"}
+        </button>
+
+        {!vinculando && (
+          <button
+            style={iconBtn}
+            onClick={() => {
+              setVinculando(true);
+              setAcaoErro(null);
+              setSucesso(null);
+            }}
+          >
+            <LinkIcon size={14} />
+            {temLogin ? "Trocar login" : "Vincular login"}
+          </button>
+        )}
+      </div>
+
+      {acaoErro && (
+        <p style={{ color: T.red, fontSize: 12, margin: "10px 0 0" }}>
+          {acaoErro}
+        </p>
+      )}
+      {sucesso && (
+        <p
+          style={{
+            color: T.green500,
+            fontSize: 12,
+            margin: "10px 0 0",
+            fontWeight: 700,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <CheckCircle2 size={14} />
+          {sucesso}
+        </p>
+      )}
+
+      {vinculando && (
+        <VincularLoginForm
+          profissional={profissional}
+          onDone={() => {
+            setVinculando(false);
+            setSucesso("Login vinculado com sucesso.");
+            onChanged();
+          }}
+          onCancel={() => setVinculando(false)}
+        />
+      )}
     </div>
   );
 }
@@ -246,12 +652,13 @@ export function Profissionais() {
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [incluirInativos, setIncluirInativos] = useState(false);
 
-  async function load() {
+  async function load(incluir = incluirInativos) {
     setLoading(true);
     setErro(null);
     try {
-      const data = await listProfissionais();
+      const data = await adminListProfissionais(incluir);
       setProfissionais(data);
     } catch (err) {
       setErro(err instanceof Error ? err.message : "Erro ao carregar.");
@@ -261,44 +668,70 @@ export function Profissionais() {
   }
 
   useEffect(() => {
-    load();
-  }, []);
-
-  if (loading) {
-    return (
-      <div
-        style={{
-          textAlign: "center",
-          padding: 40,
-          color: T.gray600,
-          fontFamily: "'Nunito',sans-serif",
-        }}
-      >
-        Carregando profissionais…
-      </div>
-    );
-  }
-
-  if (erro) {
-    return (
-      <div style={{ color: T.red, padding: 20, fontFamily: "'Nunito',sans-serif" }}>
-        {erro}{" "}
-        <button style={btnGhost} onClick={load}>
-          Tentar novamente
-        </button>
-      </div>
-    );
-  }
+    load(incluirInativos);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incluirInativos]);
 
   return (
     <div>
-      <h2 style={{ ...sectionTitle, fontSize: 18, marginBottom: 16 }}>
-        Profissionais ({profissionais.length})
-      </h2>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 8,
+          marginBottom: 16,
+        }}
+      >
+        <h2 style={{ ...sectionTitle, fontSize: 18, margin: 0 }}>
+          Profissionais{!loading && ` (${profissionais.length})`}
+        </h2>
+        <label
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            fontSize: 13,
+            fontWeight: 700,
+            color: T.gray600,
+            fontFamily: "'Nunito',sans-serif",
+            cursor: "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={incluirInativos}
+            onChange={(e) => setIncluirInativos(e.target.checked)}
+            style={{ accentColor: T.teal700, width: 16, height: 16 }}
+          />
+          Mostrar inativos
+        </label>
+      </div>
 
-      <CriarProfissionalForm onDone={load} />
+      <CriarProfissionalForm onDone={() => load(incluirInativos)} />
 
-      {profissionais.length === 0 ? (
+      {loading ? (
+        <div
+          style={{
+            textAlign: "center",
+            padding: 40,
+            color: T.gray600,
+            fontFamily: "'Nunito',sans-serif",
+          }}
+        >
+          Carregando profissionais…
+        </div>
+      ) : erro ? (
+        <div
+          style={{ color: T.red, padding: 20, fontFamily: "'Nunito',sans-serif" }}
+        >
+          {erro}{" "}
+          <button style={btnGhost} onClick={() => load(incluirInativos)}>
+            Tentar novamente
+          </button>
+        </div>
+      ) : profissionais.length === 0 ? (
         <div
           style={{
             ...card,
@@ -308,10 +741,18 @@ export function Profissionais() {
             fontFamily: "'Nunito',sans-serif",
           }}
         >
-          Nenhum profissional cadastrado ainda.
+          {incluirInativos
+            ? "Nenhum profissional cadastrado ainda."
+            : "Nenhum profissional ativo. Marque “Mostrar inativos” para ver todos."}
         </div>
       ) : (
-        profissionais.map((p) => <ProfissionalCard key={p.id} profissional={p} />)
+        profissionais.map((p) => (
+          <ProfissionalCard
+            key={p.id}
+            profissional={p}
+            onChanged={() => load(incluirInativos)}
+          />
+        ))
       )}
     </div>
   );

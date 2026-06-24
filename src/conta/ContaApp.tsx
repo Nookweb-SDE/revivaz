@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { T } from "./ui";
 import {
   usuario as mockUsuario,
@@ -19,6 +19,7 @@ import ChatIA from "./sections/ChatIA";
 import RegistroHumor from "./sections/RegistroHumor";
 import AvaliarNPS from "./sections/AvaliarNPS";
 import Perfil from "./sections/Perfil";
+import ConsultaDetalhe from "./sections/ConsultaDetalhe";
 import CriseBar from "./CriseBar";
 import { supabaseConfigured } from "../lib/supabase";
 import {
@@ -30,9 +31,11 @@ import {
   getAvaliacoes,
   criarSolicitacao,
   registrarHumor,
+  getHumoresUltima7Dias,
+  cancelarConsulta,
 } from "../lib/data";
 import { sair } from "../lib/auth";
-import type { Profissional, Conversa } from "../lib/types";
+import type { Profissional, Conversa, Profile } from "../lib/types";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -67,6 +70,7 @@ function daysUntil(iso: string): number {
 
 function AppShell({
   nome,
+  profile,
   consultas,
   receitas,
   humores,
@@ -75,8 +79,11 @@ function AppShell({
   onAgendar,
   onRegistrarHumor,
   onSair,
+  onEntrar,
+  onCancelar,
 }: {
   nome: string;
+  profile?: Profile | null;
   consultas: ConsultaUI[];
   receitas: ReceitaUI[];
   humores: number[];
@@ -85,19 +92,39 @@ function AppShell({
   onAgendar: () => void;
   onRegistrarHumor: (valor: number) => void;
   onSair: () => void;
+  onEntrar: (c: ConsultaUI) => void;
+  onCancelar: (c: ConsultaUI) => void;
 }) {
   const [chatAberto, setChatAberto] = useState(false);
+  const [detalheAberto, setDetalheAberto] = useState<ConsultaUI | null>(null);
 
   const proximaConsulta = consultas.find((c) => c.status === "agendada");
   const consultaNPS = consultas.find(
     (c) => c.status === "realizada" && !c.avaliada
   );
 
+  // prefs may be untyped jsonb on the real profile — read defensively, mock fallback
+  const prefs = (profile?.prefs ?? {}) as {
+    lembretes?: boolean;
+    modalidade?: "online" | "presencial";
+  };
+
   const usuario: UsuarioUI = {
     nome,
-    emergenciaNome: mockUsuario.emergenciaNome,
-    emergenciaTel: mockUsuario.emergenciaTel,
-    preferencias: mockUsuario.preferencias,
+    emergenciaNome:
+      profile?.emergencia_nome ?? mockUsuario.emergenciaNome,
+    emergenciaTel:
+      profile?.emergencia_tel ?? mockUsuario.emergenciaTel,
+    preferencias: {
+      lembretes:
+        typeof prefs.lembretes === "boolean"
+          ? prefs.lembretes
+          : mockUsuario.preferencias.lembretes,
+      modalidade:
+        prefs.modalidade === "online" || prefs.modalidade === "presencial"
+          ? prefs.modalidade
+          : mockUsuario.preferencias.modalidade,
+    },
   };
 
   return (
@@ -125,9 +152,20 @@ function AppShell({
         ) : (
           <>
             <Header nome={nome} />
-            <ProximaConsulta consulta={proximaConsulta} onAgendar={onAgendar} />
+            <ProximaConsulta
+              consulta={proximaConsulta}
+              onAgendar={onAgendar}
+              onEntrar={onEntrar}
+              onCancelar={onCancelar}
+              onVerDetalhe={(c) => setDetalheAberto(c)}
+            />
             <Atalhos />
-            <ListaConsultas consultas={consultas} />
+            <ListaConsultas
+              consultas={consultas}
+              onEntrar={onEntrar}
+              onCancelar={onCancelar}
+              onVerDetalhe={(c) => setDetalheAberto(c)}
+            />
             <Receitas receitas={receitas} />
             <ContinuarConversa
               conversas={conversas}
@@ -139,6 +177,10 @@ function AppShell({
           </>
         )}
       </div>
+      <ConsultaDetalhe
+        consulta={detalheAberto}
+        onFechar={() => setDetalheAberto(null)}
+      />
       <CriseBar />
     </div>
   );
@@ -180,6 +222,7 @@ function DemoApp() {
       </div>
       <AppShell
         nome={mockUsuario.nome}
+        profile={null}
         consultas={mockConsultasUI}
         receitas={mockReceitasUI}
         humores={mockHumor}
@@ -188,6 +231,12 @@ function DemoApp() {
         onAgendar={() => alert("Modo demonstração — configure o backend.")}
         onRegistrarHumor={() => {}}
         onSair={() => alert("Modo demonstração — não há sessão ativa.")}
+        onEntrar={() =>
+          alert("Modo demonstração — entrar na consulta indisponível.")
+        }
+        onCancelar={() =>
+          alert("Modo demonstração — cancelamento indisponível.")
+        }
       />
     </>
   );
@@ -237,29 +286,35 @@ function AuthenticatedApp({ userId }: { userId: string }) {
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
   const [nome, setNome] = useState<string>("Você");
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [consultas, setConsultas] = useState<ConsultaUI[]>([]);
   const [receitas, setReceitas] = useState<ReceitaUI[]>([]);
   const [conversas, setConversas] = useState<Conversa[]>([]);
-  const [humores] = useState<number[]>(Array(7).fill(0));
+  const [humores, setHumores] = useState<number[]>(Array(7).fill(0));
 
-  useEffect(() => {
-    let mounted = true;
+  const loadData = useCallback(async () => {
+    try {
+      const [
+        profile,
+        rawConsultas,
+        rawReceitas,
+        profissionais,
+        rawConversas,
+        avaliacoes,
+        humores7,
+      ] = await Promise.all([
+        getProfile(),
+        getConsultas(),
+        getReceitas(),
+        listProfissionais(),
+        listConversas(),
+        getAvaliacoes(),
+        getHumoresUltima7Dias(),
+      ]);
 
-    async function loadData() {
-      try {
-        const [profile, rawConsultas, rawReceitas, profissionais, rawConversas, avaliacoes] =
-          await Promise.all([
-            getProfile(),
-            getConsultas(),
-            getReceitas(),
-            listProfissionais(),
-            listConversas(),
-            getAvaliacoes(),
-          ]);
-
-        if (!mounted) return;
-
-        setNome(profile?.nome ?? "Você");
+      setNome(profile?.nome ?? "Você");
+      setProfile(profile ?? null);
+      setHumores(humores7);
 
         // Set of consulta ids that already have an avaliação
         const avaliadas = new Set(avaliacoes.map((a) => a.consulta_id));
@@ -285,6 +340,8 @@ function AuthenticatedApp({ userId }: { userId: string }) {
             status: c.status,
             emDias: days,
             avaliada: avaliadas.has(c.id),
+            link: c.link_ou_local ?? null,
+            obs: c.obs ?? null,
           };
         });
 
@@ -304,21 +361,17 @@ function AuthenticatedApp({ userId }: { userId: string }) {
         setReceitas(receitasUI);
         setConversas(rawConversas);
       } catch (err) {
-        if (mounted) {
-          setDataError(
-            err instanceof Error ? err.message : "Erro ao carregar dados."
-          );
-        }
+        setDataError(
+          err instanceof Error ? err.message : "Erro ao carregar dados."
+        );
       } finally {
-        if (mounted) setDataLoading(false);
+        setDataLoading(false);
       }
-    }
+    }, [userId]);
 
-    loadData();
-    return () => {
-      mounted = false;
-    };
-  }, [userId]);
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   if (dataLoading) return <LoadingState />;
 
@@ -395,8 +448,8 @@ function AuthenticatedApp({ userId }: { userId: string }) {
       alert(
         "Solicitação enviada! Um profissional entrará em contato para confirmar o horário."
       );
-      // Reload page to show new solicitation
-      window.location.reload();
+      // Re-fetch to show the new solicitation (granular, sem recarregar a página)
+      await loadData();
     } catch {
       alert("Não foi possível enviar a solicitação. Tente novamente.");
     }
@@ -415,9 +468,32 @@ function AuthenticatedApp({ userId }: { userId: string }) {
     // After signing out, onAuthChange will fire → useSession → ContaApp re-renders → Login
   }
 
+  function handleEntrar(c: ConsultaUI) {
+    if (c.link) {
+      window.open(c.link, "_blank", "noopener,noreferrer");
+    } else {
+      alert("O link da consulta ainda não foi definido pelo profissional.");
+    }
+  }
+
+  async function handleCancelar(c: ConsultaUI) {
+    const ok = window.confirm(
+      `Deseja realmente cancelar a consulta com ${c.profissional}?`
+    );
+    if (!ok) return;
+    try {
+      await cancelarConsulta(c.id);
+      // Re-fetch para refletir o status cancelado em todas as seções
+      await loadData();
+    } catch {
+      alert("Não foi possível cancelar a consulta. Tente novamente.");
+    }
+  }
+
   return (
     <AppShell
       nome={nome}
+      profile={profile}
       consultas={consultas}
       receitas={receitas}
       humores={humores}
@@ -425,6 +501,8 @@ function AuthenticatedApp({ userId }: { userId: string }) {
       onAgendar={handleAgendar}
       onRegistrarHumor={handleRegistrarHumor}
       onSair={handleSair}
+      onEntrar={handleEntrar}
+      onCancelar={handleCancelar}
     />
   );
 }

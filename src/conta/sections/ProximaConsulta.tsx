@@ -1,5 +1,5 @@
 import React from "react";
-import { Calendar, Clock, Video, MapPin, CalendarPlus, MessageCircleHeart, RefreshCw, X } from "lucide-react";
+import { Calendar, Clock, Video, MapPin, CalendarPlus, MessageCircleHeart, Eye, X } from "lucide-react";
 import { T, btnPrimary } from "../ui";
 import type { ConsultaUI as Consulta } from "../types";
 
@@ -111,9 +111,30 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" });
 }
 
+/* link lives on the data row (consulta.link_ou_local); B-pac-app maps it into
+   ConsultaUI as an optional `link`. Read it defensively to stay type-safe
+   regardless of whether that field has been added to the shared type yet. */
+function getLink(c: Consulta): string | undefined {
+  const v = (c as Consulta & { link?: string }).link;
+  return v && v.trim() ? v : undefined;
+}
+
 /* ─── Filled state ─── */
-function FilledCard({ consulta }: { consulta: Consulta }) {
+function FilledCard({
+  consulta,
+  onEntrar,
+  onCancelar,
+  onVerDetalhe,
+}: {
+  consulta: Consulta;
+  onEntrar: (c: Consulta) => void;
+  onCancelar: (c: Consulta) => void;
+  onVerDetalhe: (c: Consulta) => void;
+}) {
   const isOnline = consulta.tipo === "online";
+  const link = getLink(consulta);
+  const canEntrar = consulta.status === "agendada" && isOnline && !!link;
+  const canCancelar = consulta.status === "solicitada" || consulta.status === "agendada";
 
   return (
     <div
@@ -230,11 +251,11 @@ function FilledCard({ consulta }: { consulta: Consulta }) {
         style={{ borderTop: "1px solid rgba(255,255,255,0.12)", margin: "0 -2px" }}
       />
 
-      {/* CTA */}
-      {isOnline && (
+      {/* CTA: only when agendada + online + link present */}
+      {canEntrar && (
         <button
           style={btnEnter}
-          onClick={() => alert("Abrindo teleconsulta…")}
+          onClick={() => onEntrar(consulta)}
           aria-label="Entrar na consulta online"
         >
           <Video size={18} strokeWidth={2.5} aria-hidden="true" />
@@ -246,27 +267,29 @@ function FilledCard({ consulta }: { consulta: Consulta }) {
       <div style={{ display: "flex", gap: 18 }}>
         <button
           style={ghostActionStyle}
-          onClick={() => alert("Abrindo reagendamento…")}
-          aria-label="Remarcar esta consulta"
+          onClick={() => onVerDetalhe(consulta)}
+          aria-label="Ver detalhe desta consulta"
         >
-          <RefreshCw size={13} strokeWidth={2.5} aria-hidden="true" />
-          Remarcar
+          <Eye size={13} strokeWidth={2.5} aria-hidden="true" />
+          Ver detalhe
         </button>
-        <button
-          style={ghostActionStyle}
-          onClick={() => alert("Solicitando cancelamento…")}
-          aria-label="Cancelar esta consulta"
-        >
-          <X size={13} strokeWidth={2.5} aria-hidden="true" />
-          Cancelar
-        </button>
+        {canCancelar && (
+          <button
+            style={ghostActionStyle}
+            onClick={() => onCancelar(consulta)}
+            aria-label="Cancelar esta consulta"
+          >
+            <X size={13} strokeWidth={2.5} aria-hidden="true" />
+            Cancelar
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
 /* ─── Empty state ─── */
-function EmptyCard({ onAgendar }: { onAgendar?: () => void }) {
+function EmptyCard({ onAgendar }: { onAgendar: () => void }) {
   return (
     <div
       style={{
@@ -342,7 +365,7 @@ function EmptyCard({ onAgendar }: { onAgendar?: () => void }) {
             background: `linear-gradient(90deg, ${T.teal900} 0%, ${T.teal700} 100%)`,
             boxShadow: `0 4px 14px rgba(0,122,140,0.28)`,
           }}
-          onClick={() => onAgendar ? onAgendar() : alert("Abrindo agendamento…")}
+          onClick={onAgendar}
           aria-label="Agendar uma nova consulta"
         >
           <CalendarPlus size={18} strokeWidth={2.5} aria-hidden="true" />
@@ -382,9 +405,24 @@ function EmptyCard({ onAgendar }: { onAgendar?: () => void }) {
 export default function ProximaConsulta({
   consulta,
   onAgendar,
+  onEntrar,
+  onCancelar,
+  onVerDetalhe,
 }: {
   consulta?: Consulta;
-  onAgendar?: () => void;
+  onAgendar: () => void;
+  onEntrar: (c: Consulta) => void;
+  onCancelar: (c: Consulta) => void;
+  onVerDetalhe: (c: Consulta) => void;
 }): JSX.Element {
-  return consulta ? <FilledCard consulta={consulta} /> : <EmptyCard onAgendar={onAgendar} />;
+  return consulta ? (
+    <FilledCard
+      consulta={consulta}
+      onEntrar={onEntrar}
+      onCancelar={onCancelar}
+      onVerDetalhe={onVerDetalhe}
+    />
+  ) : (
+    <EmptyCard onAgendar={onAgendar} />
+  );
 }
