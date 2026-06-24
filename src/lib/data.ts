@@ -186,6 +186,42 @@ export async function getRoomToken(
   return (await res.json()) as { token: string; room: string; domain: string };
 }
 
+/**
+ * Nota clínica assistida por IA: o PROFISSIONAL da consulta envia o que observou
+ * (ditado local ou digitado) e o server (Gemini) devolve uma evolução estruturada.
+ * É um rascunho a revisar — o profissional salva via profSalvarObsClinica.
+ */
+export async function gerarNotaIA(
+  consultaId: string,
+  texto: string
+): Promise<string> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) throw new Error("Usuário não autenticado");
+
+  const res = await fetch("/api/consulta/nota-ia", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ consulta_id: consultaId, texto }),
+  });
+
+  if (!res.ok) {
+    let msg = `Falha ao gerar a nota (${res.status})`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body?.error) msg = body.error;
+    } catch {
+      // resposta sem JSON — mantém msg padrão
+    }
+    throw new Error(msg);
+  }
+
+  return ((await res.json()) as { nota: string }).nota;
+}
+
 // ---------------------------------------------------------------------------
 // Triagem clínica (autoavaliação PHQ-9 / GAD-7) — RLS é a dona do acesso
 // ---------------------------------------------------------------------------

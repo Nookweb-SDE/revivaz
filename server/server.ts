@@ -686,6 +686,144 @@ app.post(
   }
 );
 
+// ─── POST /api/consulta/nota-ia ──────────────────────────────────────────────
+// Nota clínica assistida por IA: o PROFISSIONAL da consulta envia o que observou
+// (ditado local no navegador OU digitado — SEM gravação de áudio/vídeo no server)
+// e o Gemini estrutura numa evolução PT-BR. É um RASCUNHO que o profissional
+// revisa e salva (humano no loop) — não é diagnóstico (compliance CFP/Anvisa).
+// Segurança: só o profissional vinculado da consulta (não o paciente).
+const NOTA_CLINICA_PROMPT = `Você ajuda um(a) profissional de saúde mental a ORGANIZAR a evolução clínica de um atendimento, a partir das anotações/ditado que ele(a) fornece. Você NÃO diagnostica, NÃO inventa fatos e NÃO adiciona nada que não esteja nas anotações.
+
+Estruture o texto recebido em PT-BR, claro e conciso, nestas seções (omita a seção se não houver informação):
+- **Queixa / motivo:** o que a pessoa trouxe.
+- **Observações:** o que o(a) profissional observou/relatou.
+- **Conduta e próximos passos:** orientações, encaminhamentos, combinados.
+- **Sinais de alerta:** riscos mencionados (se houver).
+
+Regras: use só o que está nas anotações; NÃO dê nome de doença como conclusão nem prescreva medicação; mantenha um tom profissional e respeitoso; termine com a linha "_Rascunho gerado por IA a partir das anotações do profissional — revise antes de salvar._". Responda APENAS com a nota estruturada.`;
+
+app.post(
+  "/api/consulta/nota-ia",
+  async (req: Request, res: Response): Promise<void> => {
+    if (!SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      res.status(500).json({ error: "Auth not configured" });
+      return;
+    }
+    if (!GEMINI_KEY) {
+      res.status(503).json({ error: "IA não configurada" });
+      return;
+    }
+
+    const authHeader = String(req.headers["authorization"] ?? "");
+    const token = authHeader.toLowerCase().startsWith("bearer ")
+      ? authHeader.slice(7).trim()
+      : "";
+    if (!token) {
+      res.status(401).json({ error: "Não autenticado" });
+      return;
+    }
+
+    const consulta_id = String(req.body?.consulta_id ?? "").trim();
+    const texto = String(req.body?.texto ?? "").trim();
+    if (!consulta_id || !texto) {
+      res.status(400).json({ error: "consulta_id e texto são obrigatórios" });
+      return;
+    }
+    if (texto.length > 8000) {
+      res.status(413).json({ error: "Texto muito longo." });
+      return;
+    }
+
+    const adminHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    };
+
+    // valida o Bearer
+    let callerUid: string;
+    try {
+      const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` },
+      });
+      if (!userRes.ok) {
+        res.status(401).json({ error: "Sessão inválida" });
+        return;
+      }
+      const u = (await userRes.json()) as { id?: string };
+      if (!u.id) {
+        res.status(401).json({ error: "Sessão inválida" });
+        return;
+      }
+      callerUid = u.id;
+    } catch (err) {
+      console.error("[nota-ia] Erro ao validar token:", err);
+      res.status(500).json({ error: "Erro interno de autenticação" });
+      return;
+    }
+
+    // carrega a consulta + autoriza SÓ o profissional vinculado
+    try {
+      const cRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/consultas?id=eq.${encodeURIComponent(
+          consulta_id
+        )}&select=id,profissional_id`,
+        { headers: adminHeaders }
+      );
+      if (!cRes.ok) {
+        res.status(500).json({ error: "Erro interno" });
+        return;
+      }
+      const rows = (await cRes.json()) as Array<{
+        id: string;
+        profissional_id: string | null;
+      }>;
+      const consulta = rows[0];
+      if (!consulta) {
+        res.status(404).json({ error: "Consulta não encontrada" });
+        return;
+      }
+      let autorizado = false;
+      if (consulta.profissional_id) {
+        const pRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/profissionais?id=eq.${encodeURIComponent(
+            consulta.profissional_id
+          )}&profile_id=eq.${callerUid}&select=id`,
+          { headers: adminHeaders }
+        );
+        if (pRes.ok) {
+          autorizado = ((await pRes.json()) as unknown[]).length > 0;
+        }
+      }
+      if (!autorizado) {
+        res.status(403).json({ error: "Apenas o profissional da consulta" });
+        return;
+      }
+    } catch (err) {
+      console.error("[nota-ia] Erro ao autorizar:", err);
+      res.status(500).json({ error: "Erro interno" });
+      return;
+    }
+
+    // Gemini estrutura a nota (não-streaming; texto curto)
+    try {
+      const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+      const model = genAI.getGenerativeModel({
+        model: GEMINI_MODEL,
+        systemInstruction: NOTA_CLINICA_PROMPT,
+        generationConfig: { maxOutputTokens: 800 },
+      });
+      const result = await model.generateContent(texto);
+      const nota = result.response.text();
+      console.log(`[nota-ia] nota gerada consulta=${consulta_id.slice(0, 8)}…`);
+      res.status(200).json({ nota });
+    } catch (err) {
+      console.error("[nota-ia] Erro Gemini:", err);
+      res.status(500).json({ error: "Falha ao gerar a nota. Tente novamente." });
+    }
+  }
+);
+
 // ─── POST /api/auth/dev-login (LOCAL/DEV ONLY) ───────────────────────────────
 // Atalho de QA: entra em 1 clique como um perfil, sem magic-link/OTP.
 // DUPLA TRAVA: o front só renderiza a faixa sob import.meta.env.DEV, e aqui o

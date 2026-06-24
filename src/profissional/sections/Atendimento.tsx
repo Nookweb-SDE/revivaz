@@ -14,6 +14,7 @@ import { isOnline } from "../../video/room";
 import { jitsiConfigured } from "../../video/config";
 import SalaVideo from "../../video/SalaVideo";
 import TriagemRecente from "./TriagemRecente";
+import NotaClinicaIA from "./NotaClinicaIA";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -423,6 +424,13 @@ function ConsultaCard({
           />
         )}
       </div>
+
+      {/* Nota clínica assistida por IA — só na documentação ativa (a realizar). */}
+      {!readonly && (
+        <div style={{ marginTop: 12 }}>
+          <NotaClinicaIA consultaId={consulta.id} />
+        </div>
+      )}
 
       {/* Triagem recente (autoavaliação PHQ-9 / GAD-7) — read-only, acelera a sessão.
           Já abre nas consultas a realizar; fica recolhida nas realizadas. */}
