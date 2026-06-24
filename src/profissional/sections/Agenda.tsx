@@ -28,6 +28,7 @@ import type { Consulta, Profissional, Receita } from "../../lib/types";
 import { isOnline } from "../../video/room";
 import { jitsiConfigured } from "../../video/config";
 import SalaVideo from "../../video/SalaVideo";
+import TriagemRecente from "./TriagemRecente";
 
 /* ─── helpers ─── */
 function shortId(id: string): string {
@@ -666,6 +667,9 @@ function ConsultaRow({
           {c.link_ou_local}
         </div>
       )}
+
+      {/* triagem recente (autoavaliação PHQ-9 / GAD-7) — read-only, expansível */}
+      <TriagemRecente pacienteId={c.paciente_id} />
 
       {/* ações */}
       {pendente && aberto ? (

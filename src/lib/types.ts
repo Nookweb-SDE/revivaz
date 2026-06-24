@@ -83,6 +83,20 @@ export type Avaliacao = {
   created_at: string;
 };
 
+// --- Triagem clínica (autoavaliação PHQ-9 / GAD-7) ---
+// DADO DE SAÚDE sensível. severidade = FAIXA de pontuação (não diagnóstico);
+// risco_ideacao = PHQ-9 item 9 > 0.
+export type Triagem = {
+  id: string;
+  paciente_id: string;
+  instrumento: "phq9" | "gad7";
+  respostas: number[];
+  score: number;
+  severidade: string;
+  risco_ideacao: boolean;
+  created_at: string;
+};
+
 export type MetricsOverview = {
   pacientes: number;
   consultas_solicitadas: number;

@@ -1,11 +1,27 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Search, X, Phone, Calendar, Star, User as UserIcon } from "lucide-react";
+import {
+  Search,
+  X,
+  Phone,
+  Calendar,
+  Star,
+  User as UserIcon,
+  ClipboardList,
+  AlertTriangle,
+} from "lucide-react";
 import {
   adminListPacientes,
   adminListTodasConsultas,
   adminListAvaliacoes,
+  adminListTriagens,
 } from "../../lib/data";
-import type { Profile, Consulta, Avaliacao, StatusConsulta } from "../../lib/types";
+import type {
+  Profile,
+  Consulta,
+  Avaliacao,
+  Triagem,
+  StatusConsulta,
+} from "../../lib/types";
 import { T, card, sectionTitle, btnGhost } from "../../conta/ui";
 
 // ---------------------------------------------------------------------------
@@ -63,6 +79,77 @@ function StatusBadge({ status }: { status: StatusConsulta }) {
   );
 }
 
+// --- Triagem (autoavaliação PHQ-9 / GAD-7) — read-only ----------------------
+
+// Nome científico do instrumento + construto NEUTRO (sem nome de doença).
+const instrumentoLabel: Record<Triagem["instrumento"], string> = {
+  phq9: "PHQ-9 · Ânimo",
+  gad7: "GAD-7 · Preocupação",
+};
+
+// Escala máxima por instrumento (p/ exibir "score/máx").
+const instrumentoMax: Record<Triagem["instrumento"], number> = {
+  phq9: 27,
+  gad7: 21,
+};
+
+// Faixas de gravidade são SOMENTE pontuação (não diagnóstico). Cores por
+// intensidade — teal → verde → âmbar → laranja → vermelho (zero roxo).
+const severidadeLabel: Record<string, string> = {
+  minima: "Mínima",
+  leve: "Leve",
+  moderada: "Moderada",
+  moderada_grave: "Moderada/grave",
+  grave: "Grave",
+};
+
+const severidadeColors: Record<string, { bg: string; fg: string }> = {
+  minima: { bg: T.teal050, fg: T.teal700 },
+  leve: { bg: "#D1FAE5", fg: "#065F46" },
+  moderada: { bg: "#FEF3C7", fg: "#92400E" },
+  moderada_grave: { bg: "#FFE4D5", fg: "#9A3412" },
+  grave: { bg: "#FEE2E2", fg: "#991B1B" },
+};
+
+function severidadeFallbackColor() {
+  return { bg: T.gray200, fg: T.gray600 };
+}
+
+function SeveridadeBadge({ severidade }: { severidade: string }) {
+  const c = severidadeColors[severidade] ?? severidadeFallbackColor();
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        padding: "2px 10px",
+        borderRadius: 20,
+        fontSize: 11,
+        fontWeight: 700,
+        background: c.bg,
+        color: c.fg,
+        fontFamily: "'Nunito',sans-serif",
+        textTransform: "uppercase",
+        letterSpacing: "0.04em",
+        flexShrink: 0,
+      }}
+    >
+      {severidadeLabel[severidade] ?? severidade}
+    </span>
+  );
+}
+
+function fmtCriadoEmHora(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "10px 12px 10px 38px",
@@ -97,6 +184,7 @@ function PacienteDetalhe({
 }) {
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
+  const [triagens, setTriagens] = useState<Triagem[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -107,15 +195,18 @@ function PacienteDetalhe({
       setErro(null);
       try {
         // Não há função admin de "receitas por paciente" no CONTRATO;
-        // listamos todas as consultas/avaliações (RLS admin) e filtramos
-        // client-side por paciente_id.
-        const [todasConsultas, todasAvaliacoes] = await Promise.all([
+        // listamos tudo via RLS admin (consultas/avaliações/triagens) e
+        // filtramos client-side por paciente_id. adminListTriagens já vem
+        // ordenado por created_at desc.
+        const [todasConsultas, todasAvaliacoes, todasTriagens] = await Promise.all([
           adminListTodasConsultas(),
           adminListAvaliacoes(),
+          adminListTriagens(),
         ]);
         if (cancelado) return;
         setConsultas(todasConsultas.filter((c) => c.paciente_id === paciente.id));
         setAvaliacoes(todasAvaliacoes.filter((a) => a.paciente_id === paciente.id));
+        setTriagens(todasTriagens.filter((t) => t.paciente_id === paciente.id));
       } catch (err) {
         if (!cancelado)
           setErro(err instanceof Error ? err.message : "Erro ao carregar histórico.");
@@ -272,6 +363,135 @@ function PacienteDetalhe({
             <div style={{ color: T.red, fontFamily: "'Nunito',sans-serif" }}>{erro}</div>
           ) : (
             <>
+              {/* Triagens (autoavaliação PHQ-9 / GAD-7) — read-only */}
+              <h3 style={{ ...sectionTitle, fontSize: 15 }}>
+                Autoavaliações ({triagens.length})
+              </h3>
+
+              {/* Disclaimer fixo de compliance */}
+              <p
+                style={{
+                  margin: "0 0 10px",
+                  fontSize: 11,
+                  color: T.gray600,
+                  fontFamily: "'Nunito',sans-serif",
+                  lineHeight: 1.5,
+                }}
+              >
+                Resultados de autoavaliação (PHQ-9 / GAD-7), não são diagnóstico
+                nem atendimento clínico.
+              </p>
+
+              {triagens.length === 0 ? (
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: T.gray600,
+                    fontFamily: "'Nunito',sans-serif",
+                    margin: "0 0 20px",
+                  }}
+                >
+                  Nenhuma autoavaliação registrada.
+                </p>
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                    marginBottom: 20,
+                  }}
+                >
+                  {triagens.map((t) => (
+                    <div
+                      key={t.id}
+                      style={{
+                        padding: 12,
+                        borderRadius: 12,
+                        border: `1px solid ${T.gray200}`,
+                        // borda esquerda em destaque quando há risco de ideação
+                        borderLeft: t.risco_ideacao
+                          ? `4px solid ${T.red}`
+                          : `1px solid ${T.gray200}`,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            fontWeight: 700,
+                            fontSize: 14,
+                            color: T.gray950,
+                            fontFamily: "'Nunito',sans-serif",
+                          }}
+                        >
+                          <ClipboardList size={14} aria-hidden />
+                          {instrumentoLabel[t.instrumento] ?? t.instrumento}
+                        </span>
+                        <SeveridadeBadge severidade={t.severidade} />
+                      </div>
+
+                      <p
+                        style={{
+                          margin: "6px 0 0",
+                          fontSize: 13,
+                          color: T.gray700,
+                          fontFamily: "'Nunito',sans-serif",
+                        }}
+                      >
+                        Pontuação:{" "}
+                        <strong style={{ color: T.gray950 }}>
+                          {t.score}/{instrumentoMax[t.instrumento] ?? "—"}
+                        </strong>
+                      </p>
+
+                      {t.risco_ideacao && (
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            marginTop: 8,
+                            padding: "6px 10px",
+                            borderRadius: 10,
+                            background: "#FEE2E2",
+                            color: "#991B1B",
+                            fontSize: 12,
+                            fontWeight: 700,
+                            fontFamily: "'Nunito',sans-serif",
+                          }}
+                        >
+                          <AlertTriangle size={14} aria-hidden />
+                          Indicou pensamentos de risco — contato humano urgente
+                          (CVV 188 · SAMU 192 · Disque Saúde 136)
+                        </div>
+                      )}
+
+                      <p
+                        style={{
+                          margin: "6px 0 0",
+                          fontSize: 11,
+                          color: T.gray600,
+                          fontFamily: "'Nunito',sans-serif",
+                        }}
+                      >
+                        {fmtCriadoEmHora(t.created_at)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Consultas */}
               <h3 style={{ ...sectionTitle, fontSize: 15 }}>
                 Consultas ({consultas.length})

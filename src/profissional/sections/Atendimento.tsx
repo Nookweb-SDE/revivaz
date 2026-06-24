@@ -13,6 +13,7 @@ import { T, card, sectionTitle, btnPrimary, btnGhost } from "../../conta/ui";
 import { isOnline } from "../../video/room";
 import { jitsiConfigured } from "../../video/config";
 import SalaVideo from "../../video/SalaVideo";
+import TriagemRecente from "./TriagemRecente";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -422,6 +423,10 @@ function ConsultaCard({
           />
         )}
       </div>
+
+      {/* Triagem recente (autoavaliação PHQ-9 / GAD-7) — read-only, acelera a sessão.
+          Já abre nas consultas a realizar; fica recolhida nas realizadas. */}
+      <TriagemRecente pacienteId={consulta.paciente_id} defaultAberto={!readonly} />
 
       {/* Actions */}
       <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>

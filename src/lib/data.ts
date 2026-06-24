@@ -10,6 +10,7 @@ import type {
   Avaliacao,
   MetricsOverview,
   StatusConsulta,
+  Triagem,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -183,6 +184,71 @@ export async function getRoomToken(
   }
 
   return (await res.json()) as { token: string; room: string; domain: string };
+}
+
+// ---------------------------------------------------------------------------
+// Triagem clínica (autoavaliação PHQ-9 / GAD-7) — RLS é a dona do acesso
+// ---------------------------------------------------------------------------
+// DADO DE SAÚDE sensível. severidade/score são calculados no cliente pelo módulo
+// PURO src/triagem/instrumentos.ts; aqui só persistimos e lemos sob RLS.
+
+export async function criarTriagem(input: {
+  instrumento: "phq9" | "gad7";
+  respostas: number[];
+  score: number;
+  severidade: string;
+  risco_ideacao: boolean;
+}): Promise<void> {
+  const paciente_id = await getSessionUserId();
+  if (!paciente_id) throw new Error("Usuário não autenticado");
+
+  const { error } = await supabase.from("triagens").insert({
+    paciente_id,
+    instrumento: input.instrumento,
+    respostas: input.respostas,
+    score: input.score,
+    severidade: input.severidade,
+    risco_ideacao: input.risco_ideacao,
+  });
+
+  if (error) throw error;
+}
+
+export async function getMinhasTriagens(): Promise<Triagem[]> {
+  // RLS triagens_own_all restringe ao próprio paciente.
+  const { data, error } = await supabase
+    .from("triagens")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as Triagem[];
+}
+
+export async function profTriagensPaciente(
+  pacienteId: string
+): Promise<Triagem[]> {
+  // RLS triagens_prof_select já restringe às triagens de pacientes que têm
+  // consulta com este profissional; o filtro recorta o paciente desejado.
+  const { data, error } = await supabase
+    .from("triagens")
+    .select("*")
+    .eq("paciente_id", pacienteId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as Triagem[];
+}
+
+export async function adminListTriagens(): Promise<Triagem[]> {
+  // RLS triagens_admin_select libera todas.
+  const { data, error } = await supabase
+    .from("triagens")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as Triagem[];
 }
 
 // ---------------------------------------------------------------------------
