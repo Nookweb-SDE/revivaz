@@ -28,6 +28,13 @@ function inlineCssPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [react(), inlineCssPlugin()],
+  // DEV: encaminha /api pro servidor Express (tsx server/server.ts em :8080).
+  // Sem isso, /api/* (dev-login, acolhimento, wa) daria 404 no `npm run dev`.
+  server: {
+    proxy: {
+      "/api": { target: "http://localhost:8080", changeOrigin: true },
+    },
+  },
   build: {
     rollupOptions: {
       input: {

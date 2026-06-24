@@ -532,10 +532,12 @@ function WhatsAppLogin() {
 // ─── Faixa de acesso rápido (DEV ONLY) ──────────────────────────────────────
 // O Vite REMOVE este caminho do bundle de produção (import.meta.env.DEV=false).
 // O endpoint /api/auth/dev-login também recusa quando NODE_ENV=production.
+// home aponta pro .html: a faixa SÓ existe em dev (Vite), onde as rotas limpas
+// (/conta, /profissional) não resolvem — o servidor Vite serve <area>.html.
 const DEV_PERFIS: { perfil: string; label: string; icon: React.ElementType; home: string }[] = [
-  { perfil: "paciente", label: "Usuário", icon: User, home: "/conta" },
-  { perfil: "profissional", label: "Profissional", icon: Stethoscope, home: "/profissional" },
-  { perfil: "admin", label: "Admin", icon: Shield, home: "/admin" },
+  { perfil: "paciente", label: "Usuário", icon: User, home: "/conta.html" },
+  { perfil: "profissional", label: "Profissional", icon: Stethoscope, home: "/profissional.html" },
+  { perfil: "admin", label: "Admin", icon: Shield, home: "/admin.html" },
 ];
 
 function DevLoginBand() {
