@@ -11,6 +11,7 @@ import { detectCrisis, CRISIS_RESOURCES } from "../src/acolhimento/crisis";
 import { ACOLHIMENTO_SYSTEM_PROMPT } from "../src/acolhimento/systemPrompt";
 import { mintJitsiJwt } from "./jitsiJwt";
 import { roomName, isOnline } from "../src/video/room";
+import { composeConfirmacao, composeLembrete } from "../src/notificacoes/mensagens";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "..", "dist");
@@ -91,6 +92,36 @@ function normalizePhone(raw: string): string {
   if (digits.startsWith("55") && digits.length >= 12) return digits;
   // Otherwise prepend Brazil country code
   return `55${digits}`;
+}
+
+// ─── Helper: envia uma mensagem WhatsApp via Evolution (reusa /wa/start) ─────
+// Mesmo endpoint sendText. NUNCA loga o telefone inteiro nem o texto.
+// Retorna true só se a Evolution respondeu ok. Não lança.
+async function enviarWhatsApp(phoneDigits: string, texto: string): Promise<boolean> {
+  if (!EVOLUTION_URL || !EVOLUTION_INSTANCE || !EVOLUTION_API_KEY) return false;
+  const number = normalizePhone(phoneDigits);
+  if (number.length < 12) return false;
+  const endpoint = `${EVOLUTION_URL}/message/sendText/${EVOLUTION_INSTANCE}`;
+  try {
+    const evRes = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: EVOLUTION_API_KEY,
+      },
+      body: JSON.stringify({ number, text: texto }),
+    });
+    if (!evRes.ok) {
+      console.error(
+        `[wa/send] Evolution retornou ${evRes.status} para ${number.slice(0, 4)}****`
+      );
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("[wa/send] Falha ao chamar Evolution API:", err);
+    return false;
+  }
 }
 
 const app = express();
@@ -686,6 +717,200 @@ app.post(
   }
 );
 
+// ─── POST /api/consulta/notificar ────────────────────────────────────────────
+// Notifica o PACIENTE por WhatsApp que a consulta foi AGENDADA (confirmação).
+// Segurança: exige Bearer válido; o caller precisa ser admin OU o profissional
+// vinculado da consulta (mesmo padrão do /room-token, via service_role só p/
+// checar associação). Carrega o telefone do paciente em profiles.telefone.
+// Sem telefone → {ok:false, skipped:"sem telefone"} (HTTP 200, não é erro: o
+// front trata best-effort). Erro real de Evolution/servidor → >= 500.
+// NUNCA loga telefone inteiro nem o texto.
+app.post(
+  "/api/consulta/notificar",
+  async (req: Request, res: Response): Promise<void> => {
+    if (!SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      res.status(500).json({ error: "Auth not configured" });
+      return;
+    }
+    // Evolution não configurado → não é erro de negócio: pula silenciosamente.
+    if (!EVOLUTION_URL || !EVOLUTION_INSTANCE || !EVOLUTION_API_KEY) {
+      res.status(200).json({ ok: false, skipped: "whatsapp não configurado" });
+      return;
+    }
+
+    // (0) extrai o Bearer
+    const authHeader = String(req.headers["authorization"] ?? "");
+    const token = authHeader.toLowerCase().startsWith("bearer ")
+      ? authHeader.slice(7).trim()
+      : "";
+    if (!token) {
+      res.status(401).json({ error: "Não autenticado" });
+      return;
+    }
+
+    const consulta_id = String(req.body?.consulta_id ?? "").trim();
+    if (!consulta_id) {
+      res.status(400).json({ error: "consulta_id é obrigatório" });
+      return;
+    }
+
+    const adminHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    };
+
+    // (1) valida o Bearer — getUser via ANON usando o token do chamador
+    let callerUid: string;
+    try {
+      const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` },
+      });
+      if (!userRes.ok) {
+        res.status(401).json({ error: "Sessão inválida" });
+        return;
+      }
+      const u = (await userRes.json()) as { id?: string };
+      if (!u.id) {
+        res.status(401).json({ error: "Sessão inválida" });
+        return;
+      }
+      callerUid = u.id;
+    } catch (err) {
+      console.error("[notificar] Erro ao validar token:", err);
+      res.status(500).json({ error: "Erro interno de autenticação" });
+      return;
+    }
+
+    // (2) carrega a consulta via service_role (ignora RLS p/ checar associação)
+    let consulta: {
+      id: string;
+      paciente_id: string | null;
+      profissional_id: string | null;
+      data: string | null;
+      hora: string | null;
+      tipo: string | null;
+      status: string | null;
+      link_ou_local: string | null;
+    };
+    try {
+      const cRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/consultas?id=eq.${encodeURIComponent(
+          consulta_id
+        )}&select=id,paciente_id,profissional_id,data,hora,tipo,status,link_ou_local`,
+        { headers: adminHeaders }
+      );
+      if (!cRes.ok) {
+        const body = await cRes.text();
+        console.error("[notificar] Erro ao ler consulta:", cRes.status, body);
+        res.status(500).json({ error: "Erro interno" });
+        return;
+      }
+      const rows = (await cRes.json()) as Array<typeof consulta>;
+      if (!rows[0]) {
+        res.status(404).json({ error: "Consulta não encontrada" });
+        return;
+      }
+      consulta = rows[0];
+    } catch (err) {
+      console.error("[notificar] Erro inesperado (consulta):", err);
+      res.status(500).json({ error: "Erro interno" });
+      return;
+    }
+
+    // (3) autorização: caller é admin OU o profissional vinculado da consulta
+    let autorizado = false;
+    try {
+      const roleRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${callerUid}&select=role`,
+        { headers: adminHeaders }
+      );
+      if (roleRes.ok) {
+        const rows = (await roleRes.json()) as Array<{ role?: string }>;
+        if (rows[0]?.role === "admin") autorizado = true;
+      }
+    } catch (err) {
+      console.error("[notificar] Erro ao checar admin:", err);
+      res.status(500).json({ error: "Erro interno" });
+      return;
+    }
+    if (!autorizado && consulta.profissional_id) {
+      try {
+        const pRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/profissionais?id=eq.${encodeURIComponent(
+            consulta.profissional_id
+          )}&profile_id=eq.${callerUid}&select=id`,
+          { headers: adminHeaders }
+        );
+        if (pRes.ok) {
+          autorizado = ((await pRes.json()) as unknown[]).length > 0;
+        }
+      } catch (err) {
+        console.error("[notificar] Erro ao checar profissional:", err);
+        res.status(500).json({ error: "Erro interno" });
+        return;
+      }
+    }
+    if (!autorizado) {
+      res.status(403).json({ error: "Você não pode notificar esta consulta" });
+      return;
+    }
+
+    // (4) carrega nome + telefone do paciente (profiles.id = paciente_id)
+    let nome: string | null = null;
+    let telefone: string | null = null;
+    if (consulta.paciente_id) {
+      try {
+        const pacRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(
+            consulta.paciente_id
+          )}&select=nome,telefone`,
+          { headers: adminHeaders }
+        );
+        if (pacRes.ok) {
+          const rows = (await pacRes.json()) as Array<{
+            nome?: string | null;
+            telefone?: string | null;
+          }>;
+          nome = rows[0]?.nome ?? null;
+          telefone = rows[0]?.telefone ?? null;
+        }
+      } catch (err) {
+        console.error("[notificar] Erro ao ler paciente:", err);
+        res.status(500).json({ error: "Erro interno" });
+        return;
+      }
+    }
+
+    // Sem telefone → não é erro: pula (login por e-mail pode não ter telefone).
+    if (!telefone || !String(telefone).replace(/\D/g, "")) {
+      res.status(200).json({ ok: false, skipped: "sem telefone" });
+      return;
+    }
+
+    // (5) compõe a confirmação (link só p/ online; mapeia link_ou_local → link)
+    const texto = composeConfirmacao({
+      nome,
+      data: consulta.data,
+      hora: consulta.hora,
+      tipo: consulta.tipo,
+      link: consulta.link_ou_local,
+    });
+
+    // (6) envia. Falha de Evolution → 5xx (é o caso que o front trata como erro).
+    const ok = await enviarWhatsApp(String(telefone), texto);
+    if (!ok) {
+      res.status(502).json({ error: "Falha ao enviar WhatsApp" });
+      return;
+    }
+
+    console.log(
+      `[notificar] confirmação enviada consulta=${consulta.id.slice(0, 8)}…`
+    );
+    res.status(200).json({ ok: true });
+  }
+);
+
 // ─── POST /api/consulta/nota-ia ──────────────────────────────────────────────
 // Nota clínica assistida por IA: o PROFISSIONAL da consulta envia o que observou
 // (ditado local no navegador OU digitado — SEM gravação de áudio/vídeo no server)
@@ -1048,6 +1273,165 @@ app.get("/acolhimento", (_req, res) => res.sendFile(path.join(DIST, "acolhimento
 app.use(express.static(DIST, { extensions: ["html"] }));
 // Fallback SPA (Express 5: usar middleware final, não app.get("*"))
 app.use((_req, res) => res.sendFile(path.join(DIST, "index.html")));
+
+// ─── Scheduler de LEMBRETE (24h antes) ───────────────────────────────────────
+// De hora em hora: busca consultas status='agendada' com data = AMANHÃ e
+// lembrete_enviado=false → envia composeLembrete ao paciente → marca a flag
+// (service_role). Idempotente pela flag (não duplica). Só roda se Evolution +
+// Supabase service_role estiverem configurados. NUNCA loga telefone/texto.
+function amanhaISO(): string {
+  // Data (YYYY-MM-DD) de amanhã no fuso do Brasil (America/Sao_Paulo).
+  // A coluna `consultas.data` é `date` sem fuso, preenchida pela UI brasileira
+  // (UTC-3). Calcular em UTC erra o dia entre ~21h e meia-noite BRT (o UTC já
+  // virou o dia seguinte), pulando/antecipando o lembrete. en-CA formata ISO.
+  const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+  }).format(d);
+}
+
+async function enviarLembretesPendentes(): Promise<void> {
+  const adminHeaders: Record<string, string> = {
+    "Content-Type": "application/json",
+    apikey: SUPABASE_SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+  };
+  const dia = amanhaISO();
+
+  let consultas: Array<{
+    id: string;
+    paciente_id: string | null;
+    data: string | null;
+    hora: string | null;
+    tipo: string | null;
+    link_ou_local: string | null;
+  }> = [];
+  try {
+    const cRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/consultas?status=eq.agendada&data=eq.${dia}` +
+        `&lembrete_enviado=eq.false` +
+        `&select=id,paciente_id,data,hora,tipo,link_ou_local`,
+      { headers: adminHeaders }
+    );
+    if (!cRes.ok) {
+      const body = await cRes.text();
+      console.error("[lembrete] Erro ao buscar consultas:", cRes.status, body);
+      return;
+    }
+    consultas = (await cRes.json()) as typeof consultas;
+  } catch (err) {
+    console.error("[lembrete] Erro inesperado (busca):", err);
+    return;
+  }
+
+  if (!consultas.length) return;
+  console.log(`[lembrete] ${consultas.length} consulta(s) p/ amanhã`);
+
+  for (const c of consultas) {
+    if (!c.paciente_id) continue;
+    // telefone + nome do paciente
+    let nome: string | null = null;
+    let telefone: string | null = null;
+    try {
+      const pacRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(
+          c.paciente_id
+        )}&select=nome,telefone`,
+        { headers: adminHeaders }
+      );
+      if (pacRes.ok) {
+        const rows = (await pacRes.json()) as Array<{
+          nome?: string | null;
+          telefone?: string | null;
+        }>;
+        nome = rows[0]?.nome ?? null;
+        telefone = rows[0]?.telefone ?? null;
+      }
+    } catch (err) {
+      console.error("[lembrete] Erro ao ler paciente:", err);
+      continue;
+    }
+
+    // sem telefone → marca como enviado p/ não reprocessar toda hora (degrade)
+    if (!telefone || !String(telefone).replace(/\D/g, "")) {
+      await marcarLembreteEnviado(adminHeaders, c.id);
+      continue;
+    }
+
+    const texto = composeLembrete({
+      nome,
+      data: c.data,
+      hora: c.hora,
+      tipo: c.tipo,
+      link: c.link_ou_local,
+    });
+    const ok = await enviarWhatsApp(String(telefone), texto);
+    if (ok) {
+      const marcado = await marcarLembreteEnviado(adminHeaders, c.id);
+      if (marcado) {
+        console.log(`[lembrete] enviado consulta=${c.id.slice(0, 8)}…`);
+      } else {
+        // Enviou mas NÃO conseguiu marcar a flag → na próxima passada (1h) a
+        // consulta volta no filtro e o paciente recebe DE NOVO. Logamos em
+        // WARN p/ o operador agir (idealmente marcar a flag à mão) antes do
+        // próximo ciclo, evitando spam silencioso.
+        console.warn(
+          `[lembrete] ENVIADO mas flag NÃO marcada consulta=${c.id.slice(
+            0,
+            8
+          )}… (risco de duplicar na próxima passada)`
+        );
+      }
+    }
+    // se falhou o envio: NÃO marca → tenta de novo na próxima passada (1h).
+  }
+}
+
+// Marca lembrete_enviado=true. Retorna true só se o PATCH respondeu 2xx —
+// não confia cegamente que a marcação ocorreu (RLS transitória, 5xx, etc.).
+async function marcarLembreteEnviado(
+  adminHeaders: Record<string, string>,
+  consultaId: string
+): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/consultas?id=eq.${encodeURIComponent(consultaId)}`,
+      {
+        method: "PATCH",
+        headers: { ...adminHeaders, Prefer: "return=minimal" },
+        body: JSON.stringify({ lembrete_enviado: true }),
+      }
+    );
+    if (!res.ok) {
+      console.error("[lembrete] PATCH flag não-2xx:", res.status);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("[lembrete] Erro ao marcar flag:", err);
+    return false;
+  }
+}
+
+// Só agenda se temos como enviar (Evolution) e ler (service_role).
+const lembreteHabilitado =
+  !!EVOLUTION_URL &&
+  !!EVOLUTION_INSTANCE &&
+  !!EVOLUTION_API_KEY &&
+  !!SUPABASE_URL &&
+  !!SUPABASE_SERVICE_ROLE_KEY;
+
+if (lembreteHabilitado) {
+  const LEMBRETE_INTERVAL_MS = 3_600_000; // de hora em hora
+  setInterval(() => {
+    enviarLembretesPendentes().catch((err) =>
+      console.error("[lembrete] passada falhou:", err)
+    );
+  }, LEMBRETE_INTERVAL_MS);
+  console.log("[lembrete] scheduler ativo (de hora em hora)");
+} else {
+  console.log("[lembrete] scheduler inativo (Evolution/Supabase não configurado)");
+}
 
 const PORT = Number(process.env.PORT) || 8080;
 app.listen(PORT, () => console.log(`revivaz on :${PORT}`));

@@ -7,6 +7,7 @@ import {
   adminLancarReceita,
   listProfissionais,
   getNomesPacientes,
+  notificarConsulta,
 } from "../../lib/data";
 import type { Consulta, Profissional, StatusConsulta } from "../../lib/types";
 import { T, card, sectionTitle, btnPrimary, btnGhost } from "../../conta/ui";
@@ -106,6 +107,7 @@ function ConfirmarForm({
   const [link, setLink] = useState("");
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -115,6 +117,7 @@ function ConfirmarForm({
     }
     setLoading(true);
     setErro(null);
+    setAviso(null);
     try {
       await adminConfirmarConsulta(consulta.id, {
         profissional_id: profissionalId,
@@ -122,10 +125,28 @@ function ConfirmarForm({
         hora,
         link_ou_local: link || undefined,
       });
+
+      // Confirmação por WhatsApp — best-effort: nunca trava o fluxo.
+      // A consulta JÁ foi agendada acima; uma falha aqui só vira aviso sutil.
+      try {
+        const r = await notificarConsulta(consulta.id);
+        if (!r.ok && r.skipped) {
+          // Ex.: paciente sem telefone (login por e-mail) — não é erro.
+          setAviso(
+            r.skipped === "sem telefone"
+              ? "Consulta agendada. Paciente sem telefone — confirmação por WhatsApp não enviada."
+              : "Consulta agendada. Confirmação por WhatsApp não enviada."
+          );
+          setLoading(false);
+          return; // mantém o form aberto p/ exibir o aviso
+        }
+      } catch {
+        // Falha real de Evolution/servidor: não bloqueia o agendamento.
+      }
+
       onDone();
     } catch (err) {
       setErro(err instanceof Error ? err.message : "Erro ao confirmar.");
-    } finally {
       setLoading(false);
     }
   }
@@ -199,16 +220,29 @@ function ConfirmarForm({
       {erro && (
         <p style={{ color: T.red, fontSize: 12, margin: 0 }}>{erro}</p>
       )}
+      {aviso && (
+        <p style={{ color: T.gray600, fontSize: 12, margin: 0 }}>{aviso}</p>
+      )}
       <div style={{ display: "flex", gap: 8 }}>
-        <button type="submit" style={{ ...btnPrimary, padding: "10px 18px" }} disabled={loading}>
-          {loading ? "Salvando…" : "Confirmar consulta"}
-        </button>
+        {aviso ? (
+          <button
+            type="button"
+            style={{ ...btnPrimary, padding: "10px 18px" }}
+            onClick={onDone}
+          >
+            Concluir
+          </button>
+        ) : (
+          <button type="submit" style={{ ...btnPrimary, padding: "10px 18px" }} disabled={loading}>
+            {loading ? "Salvando…" : "Confirmar consulta"}
+          </button>
+        )}
         <button
           type="button"
           style={{ ...btnGhost, alignSelf: "center" }}
           onClick={onDone}
         >
-          Cancelar
+          {aviso ? "Fechar" : "Cancelar"}
         </button>
       </div>
     </form>

@@ -35,6 +35,7 @@ export type Consulta = {
   link_ou_local: string | null;
   obs: string | null;
   obs_profissional: string | null;
+  lembrete_enviado: boolean;
   created_at: string;
 };
 
