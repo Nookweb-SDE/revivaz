@@ -22,6 +22,8 @@ RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
 COPY server ./server
 COPY src/acolhimento ./src/acolhimento
+# src/video/room.ts é importado pelo server.ts (sala de vídeo) — precisa no runtime.
+COPY src/video ./src/video
 COPY tsconfig.json ./
 EXPOSE 8080
 CMD ["npx", "tsx", "server/server.ts"]

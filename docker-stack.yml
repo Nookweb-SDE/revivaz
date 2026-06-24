@@ -14,6 +14,9 @@ secrets:
   revivaz_gemini_key: { external: true }
   revivaz_service_role: { external: true }
   revivaz_evolution_key: { external: true }
+  # Atendimento virtual: MESMO secret que o stack do Jitsi (prosody) usa p/ validar
+  # o JWT das salas. O server assina com ele; o Jitsi valida com ele.
+  revivaz_jitsi_jwt_secret: { external: true }
 
 services:
   web:
@@ -29,7 +32,11 @@ services:
       - EVOLUTION_URL=https://evolution.izai.dev
       - EVOLUTION_INSTANCE=revivaz
       - EVOLUTION_API_KEY_FILE=/run/secrets/revivaz_evolution_key
-    secrets: [revivaz_gemini_key, revivaz_service_role, revivaz_evolution_key]
+      # Atendimento virtual (Jitsi). DOMAIN/APP_ID públicos; o JWT_SECRET via secret.
+      - JITSI_DOMAIN=meet.revivaz.com.br
+      - JITSI_APP_ID=revivaz
+      - JITSI_JWT_SECRET_FILE=/run/secrets/revivaz_jitsi_jwt_secret
+    secrets: [revivaz_gemini_key, revivaz_service_role, revivaz_evolution_key, revivaz_jitsi_jwt_secret]
     networks: [traefik-public]
     deploy:
       replicas: 1
