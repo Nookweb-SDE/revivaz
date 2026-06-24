@@ -1,0 +1,234 @@
+version: "3.8"
+
+# ============================================================================
+# Jitsi Meet self-host para Revivaz — meet.revivaz.com.br
+# VPS Contabo izai (194.163.150.113) · Docker Swarm + Traefik v3.
+#
+# Atendimento virtual IN-APP: o app Revivaz embute a sala via external_api.js
+# e entra com um JWT (HS256) emitido pelo server (server/jitsiJwt.ts) só pra
+# quem é paciente/profissional DAQUELA consulta. Prosody valida o JWT
+# (ENABLE_AUTH=1 / AUTH_TYPE=jwt) com o MESMO segredo (revivaz_jitsi_jwt_secret)
+# e o MESMO app_id (JWT_APP_ID == JITSI_APP_ID do server).
+#
+# IMPORTANTE (sala segura): NÃO habilitar guest/anônimo. ENABLE_GUESTS=0 →
+# sem JWT válido a sala não abre. A sala é "consulta-<consultaId>" (room.ts),
+# o JWT trava `room` e `moderator` (profissional). Segredo só via Docker secret.
+#
+# Deploy: ver README.md (criar secrets, DNS, abrir UDP 10000, stack deploy).
+#   docker stack deploy -c infra/jitsi/docker-compose.yml jitsi
+# ============================================================================
+
+# --- Segredos (external: criados UMA vez no Contabo, ver README) -------------
+# revivaz_jitsi_jwt_secret  = MESMO valor que o server usa em JITSI_JWT_SECRET.
+#                             É o que assina/valida o JWT das salas. NUNCA no front.
+# jicofo_component_secret   = segredo interno XMPP (jicofo<->prosody).
+# jicofo_auth_password      = senha do user 'focus' no prosody (jicofo).
+# jvb_auth_password         = senha do user 'jvb' no prosody (videobridge).
+# Todos placeholders → gerar com `openssl rand -hex 16` (ver README).
+secrets:
+  revivaz_jitsi_jwt_secret: { external: true }
+  jicofo_component_secret:  { external: true }
+  jicofo_auth_password:     { external: true }
+  jvb_auth_password:        { external: true }
+
+# --- Shim de entrypoint -----------------------------------------------------
+# As imagens jitsi/* (stable-9646) NÃO resolvem *_FILE para os segredos de auth
+# (JWT_APP_SECRET / JICOFO_* / JVB_AUTH_PASSWORD). Sem a var SEM sufixo, o
+# prosody/jvb dão FATAL ERROR no boot e o JWT_APP_SECRET fica VAZIO (sala sem
+# auth). Este config é um wrapper que exporta as vars a partir de /run/secrets
+# ANTES de chamar o /init original do Jitsi. Segredo continua só via secret.
+# Versionado (script público, sem valores) — não é segredo.
+configs:
+  jitsi_secrets_shim:
+    file: ./secrets-env-shim.sh
+
+# --- Variáveis comuns a todos os serviços do stack --------------------------
+# Mantém domínio/timezone consistentes. Mude TZ se quiser.
+x-jitsi-common: &jitsi-common
+  PUBLIC_URL: "https://meet.revivaz.com.br"
+  TZ: "America/Bahia"
+  # XMPP interno (nomes de host na rede 'meet'). NÃO expor publicamente.
+  XMPP_DOMAIN: meet.jitsi
+  XMPP_AUTH_DOMAIN: auth.meet.jitsi
+  XMPP_MUC_DOMAIN: muc.meet.jitsi
+  XMPP_INTERNAL_MUC_DOMAIN: internal-muc.meet.jitsi
+  XMPP_GUEST_DOMAIN: guest.meet.jitsi
+  XMPP_SERVER: prosody
+  XMPP_BOSH_URL_BASE: http://prosody:5280
+  JICOFO_AUTH_USER: focus
+  JVB_AUTH_USER: jvb
+
+services:
+  # --------------------------------------------------------------------------
+  # web — frontend Jitsi Meet + nginx. Serve external_api.js e a sala.
+  # Traefik publica em meet.revivaz.com.br (porta interna 80).
+  # --------------------------------------------------------------------------
+  web:
+    image: jitsi/web:stable-9646
+    environment:
+      <<: *jitsi-common
+      # JWT auth: sem token válido, a sala não abre (sala de saúde = segura).
+      ENABLE_AUTH: "1"
+      ENABLE_GUESTS: "0"
+      AUTH_TYPE: jwt
+      JWT_APP_ID: revivaz
+      JWT_ACCEPTED_ISSUERS: revivaz
+      JWT_ACCEPTED_AUDIENCES: revivaz
+      JWT_APP_SECRET_FILE: /run/secrets/revivaz_jitsi_jwt_secret
+      # UX: sem tela de prejoin (o app já controla quem entra); P2P off força JVB.
+      ENABLE_PREJOIN_PAGE: "0"
+      ENABLE_P2P: "0"
+      DISABLE_HTTPS: "1"        # TLS é terminado no Traefik, não no nginx do jitsi.
+      ENABLE_LETSENCRYPT: "0"   # idem — quem cuida do cert é o Traefik (resolver le).
+      ENABLE_HTTP_REDIRECT: "0"
+      ENABLE_COLIBRI_WEBSOCKET: "1"
+    # Shim resolve JWT_APP_SECRET de /run/secrets antes do /init (imagem não lê *_FILE).
+    entrypoint: ["/jitsi-secrets-env-shim.sh"]
+    configs:
+      - source: jitsi_secrets_shim
+        target: /jitsi-secrets-env-shim.sh
+        mode: 0555
+    secrets: [revivaz_jitsi_jwt_secret]
+    networks: [meet, traefik-public]
+    depends_on: [prosody]
+    deploy:
+      replicas: 1
+      placement: { constraints: [node.role == manager] }
+      resources:
+        limits:       { cpus: "0.40", memory: 256M }
+        reservations: { memory: 48M }
+      restart_policy: { condition: on-failure, delay: 10s, max_attempts: 5 }
+      update_config: { parallelism: 1, delay: 12s, order: start-first }
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-public
+        - "traefik.http.routers.meet-revivaz.rule=Host(`meet.revivaz.com.br`)"
+        - traefik.http.routers.meet-revivaz.entrypoints=websecure
+        - traefik.http.routers.meet-revivaz.tls.certresolver=le
+        - traefik.http.routers.meet-revivaz.priority=420
+        - traefik.http.services.meet-revivaz.loadbalancer.server.port=80
+
+  # --------------------------------------------------------------------------
+  # prosody — servidor XMPP. Valida o JWT (token plugin) e hospeda os MUCs.
+  # NÃO exposto ao público (só rede interna 'meet').
+  # --------------------------------------------------------------------------
+  prosody:
+    image: jitsi/prosody:stable-9646
+    environment:
+      <<: *jitsi-common
+      # Mesmo JWT do server/web — é aqui que o token é de fato validado.
+      ENABLE_AUTH: "1"
+      ENABLE_GUESTS: "0"
+      AUTH_TYPE: jwt
+      JWT_APP_ID: revivaz
+      JWT_ACCEPTED_ISSUERS: revivaz
+      JWT_ACCEPTED_AUDIENCES: revivaz
+      JWT_APP_SECRET_FILE: /run/secrets/revivaz_jitsi_jwt_secret
+      JWT_ALLOW_EMPTY: "0"
+      JWT_AUTH_TYPE: token
+      # Segredos internos XMPP (jicofo/jvb) — via *_FILE (Docker secret).
+      JICOFO_COMPONENT_SECRET_FILE: /run/secrets/jicofo_component_secret
+      JICOFO_AUTH_PASSWORD_FILE: /run/secrets/jicofo_auth_password
+      JVB_AUTH_PASSWORD_FILE: /run/secrets/jvb_auth_password
+    # Shim resolve JWT_APP_SECRET + JICOFO_* + JVB_AUTH_PASSWORD de /run/secrets
+    # antes do /init. Sem ele, o cont-init do prosody dá FATAL ERROR no boot.
+    entrypoint: ["/jitsi-secrets-env-shim.sh"]
+    configs:
+      - source: jitsi_secrets_shim
+        target: /jitsi-secrets-env-shim.sh
+        mode: 0555
+    secrets:
+      - revivaz_jitsi_jwt_secret
+      - jicofo_component_secret
+      - jicofo_auth_password
+      - jvb_auth_password
+    networks:
+      meet:
+        aliases: [prosody, meet.jitsi, auth.meet.jitsi, muc.meet.jitsi]
+    deploy:
+      replicas: 1
+      placement: { constraints: [node.role == manager] }
+      resources:
+        limits:       { cpus: "0.40", memory: 256M }
+        reservations: { memory: 48M }
+      restart_policy: { condition: on-failure, delay: 10s, max_attempts: 5 }
+      update_config: { parallelism: 1, delay: 12s, order: stop-first }
+
+  # --------------------------------------------------------------------------
+  # jicofo — conferência focus. Aloca o JVB e gerencia as salas.
+  # --------------------------------------------------------------------------
+  jicofo:
+    image: jitsi/jicofo:stable-9646
+    environment:
+      <<: *jitsi-common
+      JICOFO_COMPONENT_SECRET_FILE: /run/secrets/jicofo_component_secret
+      JICOFO_AUTH_PASSWORD_FILE: /run/secrets/jicofo_auth_password
+      ENABLE_AUTH: "1"
+      AUTH_TYPE: jwt
+    # Shim resolve JICOFO_COMPONENT_SECRET + JICOFO_AUTH_PASSWORD antes do /init.
+    entrypoint: ["/jitsi-secrets-env-shim.sh"]
+    configs:
+      - source: jitsi_secrets_shim
+        target: /jitsi-secrets-env-shim.sh
+        mode: 0555
+    secrets:
+      - jicofo_component_secret
+      - jicofo_auth_password
+    networks: [meet]
+    depends_on: [prosody]
+    deploy:
+      replicas: 1
+      placement: { constraints: [node.role == manager] }
+      resources:
+        limits:       { cpus: "0.40", memory: 384M }
+        reservations: { memory: 64M }
+      restart_policy: { condition: on-failure, delay: 10s, max_attempts: 5 }
+      update_config: { parallelism: 1, delay: 12s, order: stop-first }
+
+  # --------------------------------------------------------------------------
+  # jvb — Jitsi VideoBridge. Roteia o MÍDIA (SFU). Precisa de UDP 10000 público.
+  # ⚠️ FIREWALL: abrir UDP 10000 no Contabo (ver README). Sem isso, sala conecta
+  #    mas NÃO transmite áudio/vídeo (fica preto).
+  # mode: global → 1 por nó (aqui só o manager). published port = host port.
+  # --------------------------------------------------------------------------
+  jvb:
+    image: jitsi/jvb:stable-9646
+    environment:
+      <<: *jitsi-common
+      JVB_AUTH_PASSWORD_FILE: /run/secrets/jvb_auth_password
+      # Porta UDP por onde o mídia entra. DOCKER_HOST_ADDRESS = IP público da VPS.
+      JVB_PORT: "10000"
+      DOCKER_HOST_ADDRESS: "194.163.150.113"
+      # Desliga o canal TCP de fallback (mantém só UDP 10000; simplifica firewall).
+      JVB_TCP_HARVESTER_DISABLED: "true"
+      # Healthcheck/colibri websocket habilitado (web faz proxy).
+      JVB_ENABLE_APIS: rest,colibri
+    # Shim resolve JVB_AUTH_PASSWORD de /run/secrets antes do /init (senão FATAL).
+    entrypoint: ["/jitsi-secrets-env-shim.sh"]
+    configs:
+      - source: jitsi_secrets_shim
+        target: /jitsi-secrets-env-shim.sh
+        mode: 0555
+    ports:
+      - target: 10000
+        published: 10000
+        protocol: udp
+        mode: host
+    secrets: [jvb_auth_password]
+    networks: [meet]
+    depends_on: [prosody]
+    deploy:
+      mode: global
+      placement: { constraints: [node.role == manager] }
+      resources:
+        limits:       { cpus: "1.00", memory: 512M }
+        reservations: { memory: 96M }
+      restart_policy: { condition: on-failure, delay: 10s, max_attempts: 5 }
+
+networks:
+  # Rede pública do Traefik (já existe na VPS). Só o `web` a usa.
+  traefik-public: { external: true }
+  # Rede interna do stack Jitsi (XMPP/colibri). NÃO expor portas aqui.
+  meet:
+    driver: overlay
+    attachable: false

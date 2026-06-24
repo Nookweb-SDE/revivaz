@@ -125,15 +125,25 @@ function FilledCard({
   onEntrar,
   onCancelar,
   onVerDetalhe,
+  salaInApp,
+  salaLoadingId,
 }: {
   consulta: Consulta;
   onEntrar: (c: Consulta) => void;
   onCancelar: (c: Consulta) => void;
   onVerDetalhe: (c: Consulta) => void;
+  salaInApp?: (c: Consulta) => boolean;
+  salaLoadingId?: string | null;
 }) {
   const isOnline = consulta.tipo === "online";
   const link = getLink(consulta);
-  const canEntrar = consulta.status === "agendada" && isOnline && !!link;
+  // Sala IN-APP (Jitsi): online + agendada + Jitsi configurado. Nesse caso o
+  // botão entra na videochamada embutida e NÃO exige link externo. Sem Jitsi,
+  // mantém o fluxo legado (precisa do link p/ window.open).
+  const inApp = salaInApp ? salaInApp(consulta) : false;
+  const canEntrar =
+    consulta.status === "agendada" && isOnline && (inApp || !!link);
+  const entrando = salaLoadingId === consulta.id;
   const canCancelar = consulta.status === "solicitada" || consulta.status === "agendada";
 
   return (
@@ -251,15 +261,17 @@ function FilledCard({
         style={{ borderTop: "1px solid rgba(255,255,255,0.12)", margin: "0 -2px" }}
       />
 
-      {/* CTA: only when agendada + online + link present */}
+      {/* CTA: agendada + online (sala IN-APP via Jitsi, ou link externo) */}
       {canEntrar && (
         <button
-          style={btnEnter}
+          style={{ ...btnEnter, opacity: entrando ? 0.7 : 1 }}
           onClick={() => onEntrar(consulta)}
-          aria-label="Entrar na consulta online"
+          disabled={entrando}
+          aria-busy={entrando}
+          aria-label={inApp ? "Entrar na sala de atendimento" : "Entrar na consulta online"}
         >
           <Video size={18} strokeWidth={2.5} aria-hidden="true" />
-          Entrar na consulta
+          {entrando ? "Entrando…" : inApp ? "Entrar na sala" : "Entrar na consulta"}
         </button>
       )}
 
@@ -408,12 +420,16 @@ export default function ProximaConsulta({
   onEntrar,
   onCancelar,
   onVerDetalhe,
+  salaInApp,
+  salaLoadingId,
 }: {
   consulta?: Consulta;
   onAgendar: () => void;
   onEntrar: (c: Consulta) => void;
   onCancelar: (c: Consulta) => void;
   onVerDetalhe: (c: Consulta) => void;
+  salaInApp?: (c: Consulta) => boolean;
+  salaLoadingId?: string | null;
 }): JSX.Element {
   return consulta ? (
     <FilledCard
@@ -421,6 +437,8 @@ export default function ProximaConsulta({
       onEntrar={onEntrar}
       onCancelar={onCancelar}
       onVerDetalhe={onVerDetalhe}
+      salaInApp={salaInApp}
+      salaLoadingId={salaLoadingId}
     />
   ) : (
     <EmptyCard onAgendar={onAgendar} />

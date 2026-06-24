@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { X, Calendar, Clock, Video, MapPin, Link2, FileText, Stethoscope } from "lucide-react";
-import { T } from "../ui";
+import { T, btnPrimary } from "../ui";
 import type { ConsultaUI as Consulta } from "../types";
 
 const LABEL: Record<Consulta["status"], string> = {
@@ -78,9 +78,15 @@ function Field({
 export default function ConsultaDetalhe({
   consulta,
   onFechar,
+  onEntrar,
+  salaInApp,
+  salaLoadingId,
 }: {
   consulta: Consulta | null;
   onFechar: () => void;
+  onEntrar?: (c: Consulta) => void;
+  salaInApp?: (c: Consulta) => boolean;
+  salaLoadingId?: string | null;
 }): JSX.Element | null {
   const closeRef = useRef<HTMLButtonElement>(null);
   const titleId = "consulta-detalhe-titulo";
@@ -110,6 +116,17 @@ export default function ConsultaDetalhe({
   const link = getLink(consulta);
   const obs = getObs(consulta);
   const sc = statusColor(consulta.status);
+
+  // Sala IN-APP (Jitsi): online + agendada + Jitsi configurado. Quando ativa,
+  // o detalhe mostra um botão "Entrar na sala" que abre a videochamada embutida
+  // (não depende de link externo). Sem isso, segue só o link/local legado.
+  const inApp = salaInApp ? salaInApp(consulta) : false;
+  const canEntrar =
+    !!onEntrar &&
+    consulta.status === "agendada" &&
+    isOnline &&
+    (inApp || !!link);
+  const entrando = salaLoadingId === consulta.id;
 
   return (
     <div
@@ -261,7 +278,37 @@ export default function ConsultaDetalhe({
             </span>
           </Field>
 
-          {link && (
+          {canEntrar && (
+            <button
+              onClick={() => onEntrar!(consulta)}
+              disabled={entrando}
+              aria-busy={entrando}
+              aria-label={
+                inApp ? "Entrar na sala de atendimento" : "Entrar na consulta online"
+              }
+              style={{
+                ...btnPrimary,
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                minHeight: 52,
+                fontSize: 15,
+                fontWeight: 800,
+                borderRadius: 14,
+                background: `linear-gradient(90deg, ${T.teal900} 0%, ${T.teal700} 100%)`,
+                boxShadow: "0 4px 14px rgba(0,122,140,0.28)",
+                opacity: entrando ? 0.7 : 1,
+              }}
+            >
+              <Video size={18} strokeWidth={2.5} aria-hidden="true" />
+              {entrando ? "Entrando…" : inApp ? "Entrar na sala" : "Entrar na consulta"}
+            </button>
+          )}
+
+          {/* Link externo só faz sentido quando NÃO é sala in-app (Jitsi) */}
+          {link && !inApp && (
             <Field label={isOnline ? "Link da consulta" : "Local"}>
               {isOnline ? (
                 <>

@@ -7,8 +7,11 @@ COPY . .
 # VITE_* são PÚBLICAS (anon + RLS) — passadas como build-arg (a .env é dockerignored).
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
+# VITE_JITSI_DOMAIN é PÚBLICA (só o domínio da sala; segredo JWT fica server-side).
+ARG VITE_JITSI_DOMAIN
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+ENV VITE_JITSI_DOMAIN=$VITE_JITSI_DOMAIN
 RUN npm run build
 
 FROM node:20-bookworm-slim

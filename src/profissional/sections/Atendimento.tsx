@@ -4,10 +4,15 @@ import {
   profMarcarRealizada,
   profSalvarObsClinica,
   profHistoricoPaciente,
+  profMinhaFicha,
   getNomesPacientes,
+  getRoomToken,
 } from "../../lib/data";
-import type { Consulta, Receita } from "../../lib/types";
+import type { Consulta, Profissional, Receita } from "../../lib/types";
 import { T, card, sectionTitle, btnPrimary, btnGhost } from "../../conta/ui";
+import { isOnline } from "../../video/room";
+import { jitsiConfigured } from "../../video/config";
+import SalaVideo from "../../video/SalaVideo";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -245,12 +250,16 @@ function ConsultaCard({
   nome,
   onRealizada,
   onHistorico,
+  onEntrar,
+  entrando,
   readonly,
 }: {
   consulta: Consulta;
   nome: string;
   onRealizada: (id: string, obs: string) => Promise<void>;
   onHistorico: (pacienteId: string, nome: string) => void;
+  onEntrar?: (c: Consulta) => void;
+  entrando?: boolean;
   readonly?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
@@ -290,6 +299,8 @@ function ConsultaCard({
 
   const dataHora = formatDataHora(consulta);
   const obsTextareaId = `obs-${consulta.id}`;
+  // Sala de vídeo: consulta online ainda a realizar (não readonly).
+  const podeEntrar = !readonly && isOnline(consulta.tipo) && onEntrar != null;
 
   const textareaStyle: React.CSSProperties = {
     width: "100%",
@@ -420,6 +431,22 @@ function ConsultaCard({
         >
           Histórico do paciente
         </button>
+        {podeEntrar && (
+          <button
+            style={{
+              ...btnPrimary,
+              padding: "8px 16px",
+              fontSize: 13,
+              opacity: entrando ? 0.7 : 1,
+              cursor: entrando ? "default" : "pointer",
+            }}
+            onClick={() => onEntrar?.(consulta)}
+            disabled={entrando}
+            aria-label={`Entrar na sala de atendimento de ${nome}`}
+          >
+            {entrando ? "Entrando…" : "Entrar na sala"}
+          </button>
+        )}
         {!readonly && (
           <button
             style={{ ...btnPrimary, padding: "8px 16px", fontSize: 13 }}
@@ -460,6 +487,10 @@ export default function Atendimento() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [historico, setHistorico] = useState<{ pacienteId: string; nome: string } | null>(null);
+  // Atendimento virtual (sala in-app)
+  const [ficha, setFicha] = useState<Profissional | null>(null);
+  const [entrandoId, setEntrandoId] = useState<string | null>(null);
+  const [sala, setSala] = useState<{ domain: string; room: string; token: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -467,6 +498,12 @@ export default function Atendimento() {
     try {
       const c = await profMinhaAgenda();
       setConsultas(c);
+      // Ficha p/ usar o nome do profissional como displayName na sala (best-effort).
+      void profMinhaFicha()
+        .then((f) => setFicha(f))
+        .catch(() => {
+          /* sem ficha: cai no fallback "Profissional" */
+        });
       const ids = Array.from(new Set(c.map((x) => x.paciente_id)));
       if (ids.length > 0) {
         try {
@@ -500,6 +537,28 @@ export default function Atendimento() {
   function handleHistorico(pacienteId: string, nome: string) {
     setHistorico({ pacienteId, nome });
   }
+
+  const handleEntrar = useCallback(async (c: Consulta) => {
+    // Degrade com elegância: sem Jitsi configurado, abre o link externo (comportamento atual).
+    if (!jitsiConfigured) {
+      if (c.link_ou_local) {
+        window.open(c.link_ou_local, "_blank", "noopener,noreferrer");
+      } else {
+        setErro("Sala de vídeo indisponível: nenhum link foi definido para esta consulta.");
+      }
+      return;
+    }
+    setEntrandoId(c.id);
+    setErro(null);
+    try {
+      const { token, room, domain } = await getRoomToken(c.id);
+      setSala({ token, room, domain });
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Não foi possível entrar na sala.");
+    } finally {
+      setEntrandoId(null);
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -545,6 +604,8 @@ export default function Atendimento() {
             nome={nomeDoPaciente(c, nomes)}
             onRealizada={handleRealizada}
             onHistorico={handleHistorico}
+            onEntrar={handleEntrar}
+            entrando={entrandoId === c.id}
           />
         ))
       )}
@@ -571,6 +632,16 @@ export default function Atendimento() {
           pacienteId={historico.pacienteId}
           pacienteNome={historico.nome}
           onFechar={() => setHistorico(null)}
+        />
+      )}
+
+      {sala && (
+        <SalaVideo
+          domain={sala.domain}
+          room={sala.room}
+          token={sala.token}
+          displayName={ficha?.nome?.trim() || "Profissional"}
+          onSair={() => setSala(null)}
         />
       )}
     </div>

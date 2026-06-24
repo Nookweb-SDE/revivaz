@@ -21,6 +21,8 @@ import AvaliarNPS from "./sections/AvaliarNPS";
 import Perfil from "./sections/Perfil";
 import ConsultaDetalhe from "./sections/ConsultaDetalhe";
 import CriseBar from "./CriseBar";
+import SalaVideo from "../video/SalaVideo";
+import { jitsiConfigured } from "../video/config";
 import { supabaseConfigured } from "../lib/supabase";
 import {
   getProfile,
@@ -33,6 +35,7 @@ import {
   registrarHumor,
   getHumoresUltima7Dias,
   cancelarConsulta,
+  getRoomToken,
 } from "../lib/data";
 import { sair } from "../lib/auth";
 import type { Profissional, Conversa, Profile } from "../lib/types";
@@ -98,6 +101,47 @@ function AppShell({
   const [chatAberto, setChatAberto] = useState(false);
   const [detalheAberto, setDetalheAberto] = useState<ConsultaUI | null>(null);
 
+  // Atendimento virtual (vídeo IN-APP). A sala só abre quando o Jitsi está
+  // configurado E a consulta é online E está agendada; nesse caso buscamos o
+  // room-token (JWT server-side) e montamos a <SalaVideo> fullscreen. Caso
+  // contrário, caímos no comportamento atual (onEntrar → window.open do link).
+  const [salaLoading, setSalaLoading] = useState<string | null>(null); // consultaId em loading
+  const [sala, setSala] = useState<{
+    domain: string;
+    room: string;
+    token: string;
+  } | null>(null);
+
+  function isSalaInApp(c: ConsultaUI): boolean {
+    // Demo não tem backend p/ emitir o room-token → nunca abre sala in-app.
+    return (
+      !demo && jitsiConfigured && c.tipo === "online" && c.status === "agendada"
+    );
+  }
+
+  async function handleEntrarSala(c: ConsultaUI) {
+    // Degrade com elegância: sem Jitsi (ou consulta não-online/não-agendada)
+    // mantém o fluxo legado (link externo / alert no demo).
+    if (!isSalaInApp(c)) {
+      onEntrar(c);
+      return;
+    }
+    if (salaLoading) return; // evita duplo clique
+    setSalaLoading(c.id);
+    try {
+      const { domain, room, token } = await getRoomToken(c.id);
+      setSala({ domain, room, token });
+    } catch (err) {
+      alert(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível entrar na sala. Tente novamente."
+      );
+    } finally {
+      setSalaLoading(null);
+    }
+  }
+
   const proximaConsulta = consultas.find((c) => c.status === "agendada");
   const consultaNPS = consultas.find(
     (c) => c.status === "realizada" && !c.avaliada
@@ -155,16 +199,20 @@ function AppShell({
             <ProximaConsulta
               consulta={proximaConsulta}
               onAgendar={onAgendar}
-              onEntrar={onEntrar}
+              onEntrar={handleEntrarSala}
               onCancelar={onCancelar}
               onVerDetalhe={(c) => setDetalheAberto(c)}
+              salaInApp={isSalaInApp}
+              salaLoadingId={salaLoading}
             />
             <Atalhos />
             <ListaConsultas
               consultas={consultas}
-              onEntrar={onEntrar}
+              onEntrar={handleEntrarSala}
               onCancelar={onCancelar}
               onVerDetalhe={(c) => setDetalheAberto(c)}
+              salaInApp={isSalaInApp}
+              salaLoadingId={salaLoading}
             />
             <Receitas receitas={receitas} />
             <ContinuarConversa
@@ -180,7 +228,23 @@ function AppShell({
       <ConsultaDetalhe
         consulta={detalheAberto}
         onFechar={() => setDetalheAberto(null)}
+        onEntrar={(c) => {
+          // Fecha o detalhe e abre a sala (ou cai no fluxo legado via handleEntrarSala)
+          setDetalheAberto(null);
+          void handleEntrarSala(c);
+        }}
+        salaInApp={isSalaInApp}
+        salaLoadingId={salaLoading}
       />
+      {sala && (
+        <SalaVideo
+          domain={sala.domain}
+          room={sala.room}
+          token={sala.token}
+          displayName={nome}
+          onSair={() => setSala(null)}
+        />
+      )}
       <CriseBar />
     </div>
   );

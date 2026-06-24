@@ -20,9 +20,14 @@ import {
   profMarcarRealizada,
   profCancelarConsulta,
   profHistoricoPaciente,
+  profMinhaFicha,
   getNomesPacientes,
+  getRoomToken,
 } from "../../lib/data";
-import type { Consulta, Receita } from "../../lib/types";
+import type { Consulta, Profissional, Receita } from "../../lib/types";
+import { isOnline } from "../../video/room";
+import { jitsiConfigured } from "../../video/config";
+import SalaVideo from "../../video/SalaVideo";
 
 /* ─── helpers ─── */
 function shortId(id: string): string {
@@ -554,7 +559,9 @@ function ConsultaRow({
   onRealizada,
   onCancelar,
   onHistorico,
+  onEntrar,
   busyId,
+  entrandoId,
 }: {
   c: Consulta;
   nome: string;
@@ -562,11 +569,16 @@ function ConsultaRow({
   onRealizada: (id: string) => void;
   onCancelar: (id: string, nome: string) => void;
   onHistorico: (pacienteId: string, nome: string) => void;
+  onEntrar: (c: Consulta) => void;
   busyId: string | null;
+  entrandoId: string | null;
 }): JSX.Element {
   const [aberto, setAberto] = useState(false);
   const busy = busyId === c.id;
   const pendente = c.status === "solicitada";
+  // Sala de vídeo só p/ consulta online já agendada.
+  const podeEntrar = c.status === "agendada" && isOnline(c.tipo);
+  const entrando = entrandoId === c.id;
 
   return (
     <div style={{ ...card, display: "flex", flexDirection: "column", gap: 12, padding: "14px 16px" }}>
@@ -704,6 +716,27 @@ function ConsultaRow({
             </button>
           ) : (
             <>
+              {podeEntrar && (
+                <button
+                  onClick={() => onEntrar(c)}
+                  disabled={entrando}
+                  style={{
+                    ...btnPrimary,
+                    padding: "8px 16px",
+                    fontSize: 13,
+                    minHeight: 38,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    opacity: entrando ? 0.7 : 1,
+                    cursor: entrando ? "default" : "pointer",
+                  }}
+                  aria-label={`Entrar na sala de atendimento de ${nome}`}
+                >
+                  <Video size={15} strokeWidth={2.5} aria-hidden="true" />
+                  {entrando ? "Entrando…" : "Entrar na sala"}
+                </button>
+              )}
               <button
                 onClick={() => onCancelar(c.id, nome)}
                 disabled={busy}
@@ -765,7 +798,9 @@ function Grupo({
   onRealizada,
   onCancelar,
   onHistorico,
+  onEntrar,
   busyId,
+  entrandoId,
   vazio,
 }: {
   titulo: string;
@@ -775,7 +810,9 @@ function Grupo({
   onRealizada: (id: string) => void;
   onCancelar: (id: string, nome: string) => void;
   onHistorico: (pacienteId: string, nome: string) => void;
+  onEntrar: (c: Consulta) => void;
   busyId: string | null;
+  entrandoId: string | null;
   vazio: string;
 }): JSX.Element {
   return (
@@ -820,7 +857,9 @@ function Grupo({
               onRealizada={onRealizada}
               onCancelar={onCancelar}
               onHistorico={onHistorico}
+              onEntrar={onEntrar}
               busyId={busyId}
+              entrandoId={entrandoId}
             />
           ))}
         </div>
@@ -836,12 +875,22 @@ export default function Agenda(): JSX.Element {
   const [erro, setErro] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [historico, setHistorico] = useState<{ pacienteId: string; nome: string } | null>(null);
+  // Atendimento virtual (sala in-app)
+  const [ficha, setFicha] = useState<Profissional | null>(null);
+  const [entrandoId, setEntrandoId] = useState<string | null>(null);
+  const [sala, setSala] = useState<{ domain: string; room: string; token: string } | null>(null);
 
   const carregar = useCallback(async () => {
     try {
       setErro(null);
       const lista = await profMinhaAgenda();
       setConsultas(lista);
+      // Ficha do profissional p/ usar o nome como displayName na sala (best-effort).
+      void profMinhaFicha()
+        .then((f) => setFicha(f))
+        .catch(() => {
+          /* sem ficha: cai no fallback "Profissional" */
+        });
       // Carrega nomes dos pacientes num único request (RLS 0003 liberou a leitura).
       const ids = Array.from(new Set(lista.map((c) => c.paciente_id)));
       if (ids.length > 0) {
@@ -918,6 +967,31 @@ export default function Agenda(): JSX.Element {
   const handleHistorico = useCallback((pacienteId: string, nome: string) => {
     setHistorico({ pacienteId, nome });
   }, []);
+
+  const handleEntrar = useCallback(
+    async (c: Consulta) => {
+      // Degrade com elegância: sem Jitsi configurado, abre o link externo (comportamento atual).
+      if (!jitsiConfigured) {
+        if (c.link_ou_local) {
+          window.open(c.link_ou_local, "_blank", "noopener,noreferrer");
+        } else {
+          setErro("Sala de vídeo indisponível: nenhum link foi definido para esta consulta.");
+        }
+        return;
+      }
+      setEntrandoId(c.id);
+      setErro(null);
+      try {
+        const { token, room, domain } = await getRoomToken(c.id);
+        setSala({ token, room, domain });
+      } catch (e) {
+        setErro(e instanceof Error ? e.message : "Não foi possível entrar na sala.");
+      } finally {
+        setEntrandoId(null);
+      }
+    },
+    []
+  );
 
   if (consultas === null) {
     return <Spinner />;
@@ -1023,7 +1097,9 @@ export default function Agenda(): JSX.Element {
         onRealizada={handleRealizada}
         onCancelar={handleCancelar}
         onHistorico={handleHistorico}
+        onEntrar={handleEntrar}
         busyId={busyId}
+        entrandoId={entrandoId}
         vazio="Nenhum pedido aguardando agendamento."
       />
 
@@ -1035,7 +1111,9 @@ export default function Agenda(): JSX.Element {
         onRealizada={handleRealizada}
         onCancelar={handleCancelar}
         onHistorico={handleHistorico}
+        onEntrar={handleEntrar}
         busyId={busyId}
+        entrandoId={entrandoId}
         vazio="Nenhuma consulta agendada no momento."
       />
 
@@ -1044,6 +1122,16 @@ export default function Agenda(): JSX.Element {
           pacienteId={historico.pacienteId}
           pacienteNome={historico.nome}
           onFechar={() => setHistorico(null)}
+        />
+      )}
+
+      {sala && (
+        <SalaVideo
+          domain={sala.domain}
+          room={sala.room}
+          token={sala.token}
+          displayName={ficha?.nome?.trim() || "Profissional"}
+          onSair={() => setSala(null)}
         />
       )}
     </div>

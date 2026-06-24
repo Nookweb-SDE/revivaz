@@ -85,19 +85,27 @@ function ConsultaRow({
   onEntrar,
   onCancelar,
   onVerDetalhe,
+  salaInApp,
+  salaLoadingId,
 }: {
   c: Consulta;
   isProxima: boolean;
   onEntrar: (c: Consulta) => void;
   onCancelar: (c: Consulta) => void;
   onVerDetalhe: (c: Consulta) => void;
+  salaInApp?: (c: Consulta) => boolean;
+  salaLoadingId?: string | null;
 }) {
   const tipoIcon = c.tipo === "online"
     ? <Video size={13} color={T.teal500} aria-label="Online" />
     : <MapPin size={13} color={T.teal500} aria-label="Presencial" />;
 
   const link = getLink(c);
-  const canEntrar = c.status === "agendada" && c.tipo === "online" && !!link;
+  // Sala IN-APP (Jitsi): dispensa link externo; senão exige o link (fluxo legado).
+  const inApp = salaInApp ? salaInApp(c) : false;
+  const canEntrar =
+    c.status === "agendada" && c.tipo === "online" && (inApp || !!link);
+  const entrando = salaLoadingId === c.id;
   const canCancelar = c.status === "solicitada" || c.status === "agendada";
 
   const renderAction = () => {
@@ -106,12 +114,23 @@ function ConsultaRow({
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
           {canEntrar && (
             <button
-              style={{ ...actionBtnBase, background: T.teal700, color: T.white }}
+              style={{
+                ...actionBtnBase,
+                background: T.teal700,
+                color: T.white,
+                opacity: entrando ? 0.7 : 1,
+              }}
               onClick={() => onEntrar(c)}
-              aria-label={`Entrar na consulta com ${c.profissional}`}
+              disabled={entrando}
+              aria-busy={entrando}
+              aria-label={
+                inApp
+                  ? `Entrar na sala de atendimento com ${c.profissional}`
+                  : `Entrar na consulta com ${c.profissional}`
+              }
             >
               <LogIn size={13} aria-hidden="true" />
-              Entrar
+              {entrando ? "Entrando…" : inApp ? "Entrar na sala" : "Entrar"}
             </button>
           )}
           <button
@@ -243,11 +262,15 @@ export default function ListaConsultas({
   onEntrar,
   onCancelar,
   onVerDetalhe,
+  salaInApp,
+  salaLoadingId,
 }: {
   consultas: Consulta[];
   onEntrar: (c: Consulta) => void;
   onCancelar: (c: Consulta) => void;
   onVerDetalhe: (c: Consulta) => void;
+  salaInApp?: (c: Consulta) => boolean;
+  salaLoadingId?: string | null;
 }): JSX.Element {
   const [aba, setAba] = useState<Aba>("proximas");
 
@@ -367,6 +390,8 @@ export default function ListaConsultas({
                   onEntrar={onEntrar}
                   onCancelar={onCancelar}
                   onVerDetalhe={onVerDetalhe}
+                  salaInApp={salaInApp}
+                  salaLoadingId={salaLoadingId}
                 />
               ))
             )}

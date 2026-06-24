@@ -149,6 +149,43 @@ export async function cancelarConsulta(consultaId: string): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Atendimento virtual (vídeo) — room-token p/ a sala Jitsi da consulta
+// ---------------------------------------------------------------------------
+
+export async function getRoomToken(
+  consultaId: string
+): Promise<{ token: string; room: string; domain: string }> {
+  // O JWT da sala é emitido SÓ no server (segredo server-side). O server valida
+  // via service_role que o caller é o paciente OU o profissional DAQUELA
+  // consulta. Manda o access_token do usuário logado p/ essa validação.
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) throw new Error("Usuário não autenticado");
+
+  const res = await fetch("/api/consulta/room-token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ consulta_id: consultaId }),
+  });
+
+  if (!res.ok) {
+    let msg = `Falha ao entrar na sala (${res.status})`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body?.error) msg = body.error;
+    } catch {
+      // resposta sem JSON — mantém msg padrão
+    }
+    throw new Error(msg);
+  }
+
+  return (await res.json()) as { token: string; room: string; domain: string };
+}
+
+// ---------------------------------------------------------------------------
 // Admin functions
 // ---------------------------------------------------------------------------
 

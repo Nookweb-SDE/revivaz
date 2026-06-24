@@ -7,7 +7,7 @@ export interface CrisisResource {
 export const CRISIS_RESOURCES: CrisisResource[] = [
   { nome: "CVV — Centro de Valorização da Vida", contato: "188", descricao: "Apoio emocional 24h, ligação gratuita e sigilosa." },
   { nome: "SAMU", contato: "192", descricao: "Emergência médica, risco imediato à vida." },
-  { nome: "Linha Vida", contato: "196", descricao: "Linha do Ministério da Saúde de apoio em saúde mental e prevenção do suicídio." },
+  { nome: "Disque Saúde", contato: "136", descricao: "Canal do Ministério da Saúde (SUS), orientação e encaminhamento." },
   { nome: "CAPS", contato: "Procure a unidade mais próxima", descricao: "Atenção em saúde mental pelo SUS." },
 ];
 
