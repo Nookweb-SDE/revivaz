@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Mail, Phone, ArrowRight, CheckCircle, AlertCircle, MessageCircle } from "lucide-react";
+import { Mail, Phone, ArrowRight, CheckCircle, AlertCircle, MessageCircle, User, Stethoscope, Shield } from "lucide-react";
 import { T, btnPrimary } from "./ui";
 import { enviarLinkEmail } from "../lib/auth";
 import { supabase } from "../lib/supabase";
@@ -529,6 +529,136 @@ function WhatsAppLogin() {
   );
 }
 
+// ─── Faixa de acesso rápido (DEV ONLY) ──────────────────────────────────────
+// O Vite REMOVE este caminho do bundle de produção (import.meta.env.DEV=false).
+// O endpoint /api/auth/dev-login também recusa quando NODE_ENV=production.
+const DEV_PERFIS: { perfil: string; label: string; icon: React.ElementType; home: string }[] = [
+  { perfil: "paciente", label: "Usuário", icon: User, home: "/conta" },
+  { perfil: "profissional", label: "Profissional", icon: Stethoscope, home: "/profissional" },
+  { perfil: "admin", label: "Admin", icon: Shield, home: "/admin" },
+];
+
+function DevLoginBand() {
+  const [loading, setLoading] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  async function entrar(perfil: string, home: string) {
+    if (loading) return;
+    setLoading(perfil);
+    setErro(null);
+    try {
+      const res = await fetch("/api/auth/dev-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ perfil }),
+      });
+      const data = (await res.json()) as {
+        access_token?: string;
+        refresh_token?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.access_token || !data.refresh_token) {
+        setErro(data.error ?? "Falha no dev-login");
+        setLoading(null);
+        return;
+      }
+      const { error } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+      if (error) {
+        setErro("Erro ao iniciar sessão.");
+        setLoading(null);
+        return;
+      }
+      window.location.href = home;
+    } catch {
+      setErro("Erro de conexão.");
+      setLoading(null);
+    }
+  }
+
+  return (
+    <div style={{ width: "100%", maxWidth: 400, marginTop: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <span style={{ flex: 1, height: 1, background: T.gray200 }} />
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: T.gray600,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            fontFamily: "'Nunito',sans-serif",
+          }}
+        >
+          Acesso rápido (dev)
+        </span>
+        <span style={{ flex: 1, height: 1, background: T.gray200 }} />
+      </div>
+      <div style={{ display: "flex", gap: 10 }}>
+        {DEV_PERFIS.map(({ perfil, label, icon: Icon, home }) => {
+          const busy = loading === perfil;
+          return (
+            <button
+              key={perfil}
+              type="button"
+              onClick={() => entrar(perfil, home)}
+              disabled={loading !== null}
+              aria-label={`Entrar como ${label} (dev)`}
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 6,
+                padding: "14px 8px",
+                borderRadius: 14,
+                border: `1.5px solid ${T.teal100}`,
+                background: busy ? T.teal100 : T.white,
+                cursor: loading ? "default" : "pointer",
+                fontFamily: "'Nunito',sans-serif",
+                color: T.teal700,
+                transition: "background .15s",
+              }}
+            >
+              <Icon size={22} aria-hidden="true" />
+              <span style={{ fontSize: 12, fontWeight: 700 }}>
+                {busy ? "Entrando…" : label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {erro && (
+        <div
+          role="alert"
+          style={{
+            marginTop: 10,
+            fontSize: 12,
+            color: T.red,
+            textAlign: "center",
+            fontFamily: "'Nunito',sans-serif",
+          }}
+        >
+          {erro}
+        </div>
+      )}
+      <p
+        style={{
+          marginTop: 8,
+          fontSize: 10,
+          color: T.gray600,
+          textAlign: "center",
+          fontFamily: "'Nunito',sans-serif",
+        }}
+      >
+        Só em ambiente de desenvolvimento.
+      </p>
+    </div>
+  );
+}
+
 // ─── Root component ───────────────────────────────────────────────────────────
 export default function Login(): JSX.Element {
   const [method, setMethod] = useState<LoginMethod>("email");
@@ -621,6 +751,9 @@ export default function Login(): JSX.Element {
       >
         Saúde mental acessível para todos.
       </p>
+
+      {/* Acesso rápido por perfil — só em dev (removido do build de produção) */}
+      {import.meta.env.DEV && <DevLoginBand />}
 
       {/* Spinner keyframe injected inline via a style tag */}
       <style>{`
