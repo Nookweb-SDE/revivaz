@@ -19,7 +19,9 @@ describe("detectCrisis", () => {
     expect(detectCrisis("QUERO ME MATAR")).toBe(true);
     expect(detectCrisis("nao quero mais viver")).toBe(true);
   });
-  it("expõe recursos de emergência com CVV", () => {
+  it("expõe recursos de emergência brasileiros (CVV 188, SAMU 192, Linha Vida 196)", () => {
     expect(CRISIS_RESOURCES.some(r => r.contato.includes("188"))).toBe(true);
+    expect(CRISIS_RESOURCES.some(r => r.contato.includes("192"))).toBe(true);
+    expect(CRISIS_RESOURCES.some(r => r.contato.includes("196"))).toBe(true);
   });
 });
