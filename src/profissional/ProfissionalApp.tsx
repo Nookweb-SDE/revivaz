@@ -214,8 +214,8 @@ export function ProfissionalApp() {
     );
   }
 
-  // Wrong role
-  if (!profile || profile.role !== "profissional") {
+  // Wrong role — profissional OU admin (admin supervisiona o portal).
+  if (!profile || (profile.role !== "profissional" && profile.role !== "admin")) {
     return (
       <Gate message="Acesso restrito a profissionais." />
     );
