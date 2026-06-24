@@ -145,6 +145,10 @@ app.post("/api/wa/start", async (req: Request, res: Response): Promise<void> => 
 });
 
 // ─── POST /api/wa/verify ─────────────────────────────────────────────────────
+// TODO (fase futura): account-linking. Hoje a conta criada/identificada pelo
+// telefone do WhatsApp é tratada de forma independente da conta de e-mail —
+// não há vínculo automático entre o mesmo usuário logado por WhatsApp e por
+// e-mail (magic link). Unificar identidades é trabalho de uma fase futura.
 app.post("/api/wa/verify", async (req: Request, res: Response): Promise<void> => {
   if (!SUPABASE_SERVICE_ROLE_KEY) {
     res.status(500).json({ error: "Auth not configured" });

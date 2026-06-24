@@ -6,12 +6,13 @@ import type { Profile } from "../lib/types";
 import { T, btnPrimary, btnGhost } from "../conta/ui";
 import { Solicitacoes } from "./sections/Solicitacoes";
 import { Profissionais } from "./sections/Profissionais";
+import { Metricas } from "./sections/Metricas";
 
 // ---------------------------------------------------------------------------
 // Layout constants
 // ---------------------------------------------------------------------------
 
-const TABS = ["Solicitações", "Profissionais"] as const;
+const TABS = ["Solicitações", "Profissionais", "Métricas"] as const;
 type Tab = (typeof TABS)[number];
 
 const baseStyle: React.CSSProperties = {
@@ -276,6 +277,7 @@ export function AdminApp() {
       <main style={contentStyle}>
         {activeTab === "Solicitações" && <Solicitacoes />}
         {activeTab === "Profissionais" && <Profissionais />}
+        {activeTab === "Métricas" && <Metricas />}
       </main>
     </div>
   );

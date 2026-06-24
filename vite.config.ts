@@ -35,6 +35,7 @@ export default defineConfig({
         acolhimento: "acolhimento.html",
         conta: "conta.html",
         admin: "admin.html",
+        profissional: "profissional.html",
       },
     },
   },

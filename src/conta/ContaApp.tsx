@@ -4,7 +4,6 @@ import {
   usuario as mockUsuario,
   consultas as mockConsultas,
   receitas as mockReceitas,
-  sessoesIA,
   humorSemana as mockHumor,
 } from "./sampleData";
 import type { ConsultaUI, ReceitaUI, UsuarioUI } from "./types";
@@ -16,6 +15,7 @@ import Atalhos from "./sections/Atalhos";
 import ListaConsultas from "./sections/ListaConsultas";
 import Receitas from "./sections/Receitas";
 import ContinuarConversa from "./sections/ContinuarConversa";
+import ChatIA from "./sections/ChatIA";
 import RegistroHumor from "./sections/RegistroHumor";
 import AvaliarNPS from "./sections/AvaliarNPS";
 import Perfil from "./sections/Perfil";
@@ -26,11 +26,13 @@ import {
   getConsultas,
   getReceitas,
   listProfissionais,
+  listConversas,
+  getAvaliacoes,
   criarSolicitacao,
   registrarHumor,
 } from "../lib/data";
 import { sair } from "../lib/auth";
-import type { Profissional } from "../lib/types";
+import type { Profissional, Conversa } from "../lib/types";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -68,6 +70,8 @@ function AppShell({
   consultas,
   receitas,
   humores,
+  conversas,
+  demo = false,
   onAgendar,
   onRegistrarHumor,
   onSair,
@@ -76,10 +80,14 @@ function AppShell({
   consultas: ConsultaUI[];
   receitas: ReceitaUI[];
   humores: number[];
+  conversas: Conversa[];
+  demo?: boolean;
   onAgendar: () => void;
   onRegistrarHumor: (valor: number) => void;
   onSair: () => void;
 }) {
+  const [chatAberto, setChatAberto] = useState(false);
+
   const proximaConsulta = consultas.find((c) => c.status === "agendada");
   const consultaNPS = consultas.find(
     (c) => c.status === "realizada" && !c.avaliada
@@ -112,15 +120,24 @@ function AppShell({
           gap: 20,
         }}
       >
-        <Header nome={nome} />
-        <ProximaConsulta consulta={proximaConsulta} onAgendar={onAgendar} />
-        <Atalhos />
-        <ListaConsultas consultas={consultas} />
-        <Receitas receitas={receitas} />
-        <ContinuarConversa sessoes={sessoesIA} />
-        <RegistroHumor semana={humores} onRegistrar={onRegistrarHumor} />
-        <AvaliarNPS consulta={consultaNPS} />
-        <Perfil usuario={usuario} onSair={onSair} />
+        {chatAberto ? (
+          <ChatIA demo={demo} onFechar={() => setChatAberto(false)} />
+        ) : (
+          <>
+            <Header nome={nome} />
+            <ProximaConsulta consulta={proximaConsulta} onAgendar={onAgendar} />
+            <Atalhos />
+            <ListaConsultas consultas={consultas} />
+            <Receitas receitas={receitas} />
+            <ContinuarConversa
+              conversas={conversas}
+              onAbrir={() => setChatAberto(true)}
+            />
+            <RegistroHumor semana={humores} onRegistrar={onRegistrarHumor} />
+            <AvaliarNPS consulta={consultaNPS} />
+            <Perfil usuario={usuario} onSair={onSair} />
+          </>
+        )}
       </div>
       <CriseBar />
     </div>
@@ -166,6 +183,8 @@ function DemoApp() {
         consultas={mockConsultasUI}
         receitas={mockReceitasUI}
         humores={mockHumor}
+        conversas={[]}
+        demo
         onAgendar={() => alert("Modo demonstração — configure o backend.")}
         onRegistrarHumor={() => {}}
         onSair={() => alert("Modo demonstração — não há sessão ativa.")}
@@ -220,6 +239,7 @@ function AuthenticatedApp({ userId }: { userId: string }) {
   const [nome, setNome] = useState<string>("Você");
   const [consultas, setConsultas] = useState<ConsultaUI[]>([]);
   const [receitas, setReceitas] = useState<ReceitaUI[]>([]);
+  const [conversas, setConversas] = useState<Conversa[]>([]);
   const [humores] = useState<number[]>(Array(7).fill(0));
 
   useEffect(() => {
@@ -227,16 +247,22 @@ function AuthenticatedApp({ userId }: { userId: string }) {
 
     async function loadData() {
       try {
-        const [profile, rawConsultas, rawReceitas, profissionais] = await Promise.all([
-          getProfile(),
-          getConsultas(),
-          getReceitas(),
-          listProfissionais(),
-        ]);
+        const [profile, rawConsultas, rawReceitas, profissionais, rawConversas, avaliacoes] =
+          await Promise.all([
+            getProfile(),
+            getConsultas(),
+            getReceitas(),
+            listProfissionais(),
+            listConversas(),
+            getAvaliacoes(),
+          ]);
 
         if (!mounted) return;
 
         setNome(profile?.nome ?? "Você");
+
+        // Set of consulta ids that already have an avaliação
+        const avaliadas = new Set(avaliacoes.map((a) => a.consulta_id));
 
         // Map consultas to ConsultaUI
         const consultasUI: ConsultaUI[] = rawConsultas.map((c) => {
@@ -258,7 +284,7 @@ function AuthenticatedApp({ userId }: { userId: string }) {
             tipo: c.tipo,
             status: c.status,
             emDias: days,
-            avaliada: undefined,
+            avaliada: avaliadas.has(c.id),
           };
         });
 
@@ -276,6 +302,7 @@ function AuthenticatedApp({ userId }: { userId: string }) {
 
         setConsultas(consultasUI);
         setReceitas(receitasUI);
+        setConversas(rawConversas);
       } catch (err) {
         if (mounted) {
           setDataError(
@@ -394,6 +421,7 @@ function AuthenticatedApp({ userId }: { userId: string }) {
       consultas={consultas}
       receitas={receitas}
       humores={humores}
+      conversas={conversas}
       onAgendar={handleAgendar}
       onRegistrarHumor={handleRegistrarHumor}
       onSair={handleSair}

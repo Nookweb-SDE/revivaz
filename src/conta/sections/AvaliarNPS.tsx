@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { T, card, sectionTitle, btnPrimary } from "../ui";
 import type { ConsultaUI as Consulta } from "../types";
+import { enviarAvaliacao } from "../../lib/data";
 
 /* ─── score color helper ─── */
 function scoreColor(score: number | null, selected: number): string {
@@ -35,8 +36,28 @@ export default function AvaliarNPS({ consulta }: { consulta?: Consulta }): JSX.E
   const [score, setScore] = useState<number | null>(null);
   const [comentario, setComentario] = useState("");
   const [enviado, setEnviado] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
   if (!consulta) return <></>;
+
+  async function handleEnviar() {
+    if (score === null || enviando || !consulta) return;
+    setErro(null);
+    setEnviando(true);
+    try {
+      await enviarAvaliacao(consulta.id, score, comentario.trim() || undefined);
+      setEnviado(true);
+    } catch (err) {
+      setErro(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível enviar sua avaliação. Tente novamente."
+      );
+    } finally {
+      setEnviando(false);
+    }
+  }
 
   if (enviado) {
     return (
@@ -251,6 +272,23 @@ export default function AvaliarNPS({ consulta }: { consulta?: Consulta }): JSX.E
           />
         </div>
 
+        {/* error */}
+        {erro && (
+          <p
+            role="alert"
+            style={{
+              margin: 0,
+              fontFamily: "'Nunito',sans-serif",
+              fontWeight: 600,
+              fontSize: 13,
+              color: T.red,
+              textAlign: "center",
+            }}
+          >
+            {erro}
+          </p>
+        )}
+
         {/* submit */}
         <button
           style={{
@@ -261,18 +299,15 @@ export default function AvaliarNPS({ consulta }: { consulta?: Consulta }): JSX.E
             fontWeight: 800,
             borderRadius: 14,
             minHeight: 52,
-            opacity: score === null ? 0.55 : 1,
-            cursor: score === null ? "not-allowed" : "pointer",
+            opacity: score === null || enviando ? 0.55 : 1,
+            cursor: score === null || enviando ? "not-allowed" : "pointer",
             transition: "opacity 0.2s",
           }}
-          disabled={score === null}
-          onClick={() => {
-            if (score === null) return;
-            setEnviado(true);
-          }}
-          aria-disabled={score === null}
+          disabled={score === null || enviando}
+          onClick={handleEnviar}
+          aria-disabled={score === null || enviando}
         >
-          Enviar avaliação
+          {enviando ? "Enviando…" : "Enviar avaliação"}
         </button>
       </div>
     </section>

@@ -1,42 +1,56 @@
 import React from "react";
 import { T, card, sectionTitle, btnPrimary } from "../ui";
-import type { SessaoIA } from "../sampleData";
+import type { Conversa } from "../../lib/types";
 
+/** "2026-06-20T14:30:00Z" | "2026-06-20" → "20/06/2026" */
 function formatData(iso: string): string {
-  const [year, month, day] = iso.split("-");
+  const datePart = iso.slice(0, 10);
+  const [year, month, day] = datePart.split("-");
+  if (!year || !month || !day) return iso;
   return `${day}/${month}/${year}`;
 }
 
-export default function ContinuarConversa({ sessoes }: { sessoes: SessaoIA[] }): JSX.Element {
-  if (!sessoes || sessoes.length === 0) {
+function tituloOuPadrao(c: Conversa): string {
+  const t = (c.titulo ?? "").trim();
+  return t.length > 0 ? t : "Conversa de apoio";
+}
+
+export default function ContinuarConversa({
+  conversas,
+  onAbrir,
+}: {
+  conversas: Conversa[];
+  onAbrir: () => void;
+}): JSX.Element {
+  if (!conversas || conversas.length === 0) {
     return (
       <section style={{ marginBottom: 24 }}>
         <h2 style={sectionTitle}>Conversa com IA</h2>
         <div style={{ ...card, textAlign: "center", padding: 32 }}>
           <p style={{ color: T.gray600, fontSize: 14, margin: 0 }}>
-            Nenhuma sessão encontrada. Inicie uma conversa para começar.
+            Nenhuma conversa ainda. Inicie um bate-papo para começar.
           </p>
-          <a
-            href="/acolhimento"
-            style={{ textDecoration: "none", display: "inline-block", marginTop: 16 }}
+          <button
+            type="button"
+            onClick={onAbrir}
+            style={{ ...btnPrimary, marginTop: 16 }}
           >
-            <button style={btnPrimary}>Iniciar chat</button>
-          </a>
+            Iniciar chat
+          </button>
         </div>
       </section>
     );
   }
 
-  // Sort by date descending and pick the most recent
-  const sorted = [...sessoes].sort((a, b) => b.data.localeCompare(a.data));
-  const recente = sorted[0];
-  const historico = sorted.slice(1);
+  // listConversas already orders by updated_at desc → first is most recent
+  const recente = conversas[0];
+  const historico = conversas.slice(1);
 
   return (
     <section style={{ marginBottom: 24 }}>
       <h2 style={sectionTitle}>Conversa com IA</h2>
 
-      {/* Main card — most recent session */}
+      {/* Main card — most recent conversation */}
       <div
         style={{
           ...card,
@@ -76,12 +90,12 @@ export default function ContinuarConversa({ sessoes }: { sessoes: SessaoIA[] }):
               Continue de onde parou…
             </p>
             <p style={{ margin: 0, fontSize: 12, color: T.gray600 }}>
-              {formatData(recente.data)}
+              {formatData(recente.updated_at)}
             </p>
           </div>
         </div>
 
-        {/* Last excerpt */}
+        {/* Conversation title / summary */}
         <blockquote
           style={{
             margin: "0 0 16px",
@@ -95,24 +109,24 @@ export default function ContinuarConversa({ sessoes }: { sessoes: SessaoIA[] }):
             lineHeight: 1.5,
           }}
         >
-          "{recente.ultimoTrecho}"
+          {tituloOuPadrao(recente)}
         </blockquote>
 
         {/* CTA */}
-        <a href="/acolhimento" style={{ textDecoration: "none" }}>
-          <button
-            style={{
-              ...btnPrimary,
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-            }}
-          >
-            <span>💬</span> Abrir chat
-          </button>
-        </a>
+        <button
+          type="button"
+          onClick={onAbrir}
+          style={{
+            ...btnPrimary,
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+          }}
+        >
+          <span>💬</span> Abrir chat
+        </button>
       </div>
 
       {/* Mini history */}
@@ -132,9 +146,9 @@ export default function ContinuarConversa({ sessoes }: { sessoes: SessaoIA[] }):
             Histórico
           </p>
           <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
-            {historico.map((sessao, idx) => (
+            {historico.map((conversa, idx) => (
               <li
-                key={sessao.id}
+                key={conversa.id}
                 style={{
                   display: "flex",
                   alignItems: "flex-start",
@@ -155,10 +169,10 @@ export default function ContinuarConversa({ sessoes }: { sessoes: SessaoIA[] }):
                     minWidth: 52,
                   }}
                 >
-                  {formatData(sessao.data)}
+                  {formatData(conversa.updated_at)}
                 </span>
                 <span style={{ fontSize: 13, color: T.gray700, lineHeight: 1.4 }}>
-                  {sessao.resumo}
+                  {tituloOuPadrao(conversa)}
                 </span>
               </li>
             ))}

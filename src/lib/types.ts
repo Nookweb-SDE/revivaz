@@ -18,6 +18,7 @@ export type Profissional = {
   registro: string | null;
   bio: string | null;
   ativo: boolean;
+  profile_id: string | null;
   created_at: string;
 };
 
@@ -52,4 +53,41 @@ export type HumorRegistro = {
   valor: number;
   dia: string;
   created_at: string;
+};
+
+// --- Fase 3/4 + IA persistida + NPS ---
+
+export type Conversa = {
+  id: string;
+  paciente_id: string;
+  titulo: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Mensagem = {
+  id: string;
+  conversa_id: string;
+  papel: "user" | "assistant";
+  conteudo: string;
+  created_at: string;
+};
+
+export type Avaliacao = {
+  id: string;
+  consulta_id: string | null;
+  paciente_id: string;
+  nota: number;
+  comentario: string | null;
+  created_at: string;
+};
+
+export type MetricsOverview = {
+  pacientes: number;
+  consultas_solicitadas: number;
+  consultas_agendadas: number;
+  consultas_realizadas: number;
+  taxa_realizacao: number; // 0..1
+  nps: number | null; // -100..100
+  humor_medio_7d: number | null; // 0..4
 };

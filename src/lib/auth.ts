@@ -47,13 +47,3 @@ export function onAuthChange(
 export async function sair(): Promise<void> {
   await supabase.auth.signOut();
 }
-
-/**
- * Stub para envio de código por SMS.
- * O provedor de SMS será integrado em fase futura.
- */
-export async function enviarCodigoSms(
-  _tel: string
-): Promise<{ ok: false; erro: "sms-indisponivel" }> {
-  return { ok: false, erro: "sms-indisponivel" };
-}
