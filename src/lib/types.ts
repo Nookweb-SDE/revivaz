@@ -44,8 +44,11 @@ export type Receita = {
   consulta_id: string | null;
   paciente_id: string;
   profissional_id: string | null;
+  /** Texto formatado compondo medicamento + dosagem + posologia + observacoes */
   resumo: string;
   arquivo_url: string | null;
+  /** ISO date (YYYY-MM-DD) da validade da receita — null se não definida */
+  validade: string | null;
   created_at: string;
 };
 
@@ -106,6 +109,32 @@ export type MetricsOverview = {
   taxa_realizacao: number; // 0..1
   nps: number | null; // -100..100
   humor_medio_7d: number | null; // 0..4
+};
+
+// --- PRD Fase 0 — métricas reais com comparação semanal ---
+
+export type MetricaTrend = {
+  /** Valor nos últimos 7 dias. */
+  atual: number;
+  /** Valor nos 7 dias anteriores (semana -2 a -1). */
+  anterior: number;
+  /** atual − anterior */
+  diff: number;
+};
+
+export type MetricasReais = {
+  /** Nº de conversas criadas (acolhimento pela IA). */
+  pessoas_acolhidas: MetricaTrend;
+  /** Nº de consultas não-canceladas criadas (encaminhamentos para humano). */
+  encaminhamentos: MetricaTrend;
+  /** Triagens com risco_ideacao=true OU (phq9 AND score >= 20). */
+  urgentes: MetricaTrend;
+  /** Consultas com status='realizada'. */
+  consultas_realizadas: MetricaTrend;
+  /** NPS calculado sobre TODAS as avaliações (-100..100). null se sem avaliações. */
+  nps_medio: number | null;
+  /** Total de avaliações existentes (denominador do NPS). */
+  total_avaliacoes: number;
 };
 
 // --- Video room (Jitsi) ---

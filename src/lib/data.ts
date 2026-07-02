@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { getSessionUserId } from "./auth";
+import { npsFromNotas } from "./metrics";
 import type {
   Profile,
   Profissional,
@@ -9,6 +10,8 @@ import type {
   Mensagem,
   Avaliacao,
   MetricsOverview,
+  MetricasReais,
+  MetricaTrend,
   StatusConsulta,
   Triagem,
   HumorRegistro,
@@ -479,7 +482,16 @@ export async function profDefinirAgenda(
 export async function profLancarReceita(input: {
   consulta_id: string;
   paciente_id: string;
-  resumo: string;
+  /** Medicamento prescrito (ex.: "Sertralina") */
+  medicamento: string;
+  /** Dosagem (ex.: "50 mg") */
+  dosagem: string;
+  /** Posologia — frequência e modo de uso */
+  posologia: string;
+  /** Observações opcionais para o paciente */
+  observacoes?: string;
+  /** Data de validade ISO YYYY-MM-DD */
+  validade: string;
 }): Promise<void> {
   const userId = await getSessionUserId();
   if (!userId) throw new Error("Usuário não autenticado");
@@ -487,11 +499,22 @@ export async function profLancarReceita(input: {
   const ficha = await profMinhaFicha();
   if (!ficha) throw new Error("Profissional não encontrado");
 
+  // Compõe o texto resumido para exibição e histórico
+  const linhas = [
+    `Medicamento: ${input.medicamento.trim()} — ${input.dosagem.trim()}`,
+    `Posologia: ${input.posologia.trim()}`,
+  ];
+  if (input.observacoes?.trim()) {
+    linhas.push(`Observações: ${input.observacoes.trim()}`);
+  }
+  const resumo = linhas.join("\n");
+
   const { error } = await supabase.from("receitas").insert({
     consulta_id: input.consulta_id,
     paciente_id: input.paciente_id,
     profissional_id: ficha.id,
-    resumo: input.resumo,
+    resumo,
+    validade: input.validade,
   });
 
   if (error) throw error;
@@ -552,6 +575,17 @@ export async function profSalvarObsClinica(
     .eq("id", consultaId);
 
   if (error) throw error;
+}
+
+export async function profListAvaliacoes(): Promise<Avaliacao[]> {
+  // RLS avaliacoes_prof_select restringe às avaliações das consultas deste profissional.
+  const { data, error } = await supabase
+    .from("avaliacoes")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as Avaliacao[];
 }
 
 export async function profHistoricoPaciente(
@@ -822,4 +856,124 @@ export async function adminVincularProfissional(
     }
     throw new Error(msg);
   }
+}
+
+// ---------------------------------------------------------------------------
+// PRD Fase 0 — métricas reais com comparação semanal (admin)
+// ---------------------------------------------------------------------------
+// Cobre as 5 métricas do PRD:
+//   1. Pessoas acolhidas pela IA   → conversas.count()
+//   2. Encaminhamentos para humano → consultas não-canceladas.count()
+//   3. Urgentes                    → triagens com risco_ideacao OU phq9 score ≥ 20
+//   4. Consultas realizadas        → consultas status='realizada'.count()
+//   5. NPS médio                   → npsFromNotas(todas as notas de avaliacoes)
+//
+// Trend: semana atual (últimos 7 dias) vs semana anterior (dias -14 a -7).
+// Cada contagem temporal usa created_at para delimitar as janelas.
+
+export async function adminGetMetricasReais(): Promise<MetricasReais> {
+  const agora = new Date();
+  // ISO strings para filtros de janela temporal
+  const sSemAtual = new Date(agora.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const sSemAnt = new Date(agora.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
+
+  // Disparamos todas as queries em paralelo para mínima latência.
+  // Urgentes usa .select("id") sem head:true pois o or() aninhado com and()
+  // é mais seguro assim no cliente JS (retorna array, contamos .length).
+  const [
+    cAt,    // conversas semana atual
+    cAnt,   // conversas semana anterior
+    encAt,  // encaminhamentos semana atual
+    encAnt, // encaminhamentos semana anterior
+    urgAtData,  // urgentes semana atual
+    urgAntData, // urgentes semana anterior
+    realAt,  // realizadas semana atual
+    realAnt, // realizadas semana anterior
+    avalData, // todas avaliações (para NPS)
+  ] = await Promise.all([
+    supabase
+      .from("conversas")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", sSemAtual),
+
+    supabase
+      .from("conversas")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", sSemAnt)
+      .lt("created_at", sSemAtual),
+
+    supabase
+      .from("consultas")
+      .select("*", { count: "exact", head: true })
+      .neq("status", "cancelada")
+      .gte("created_at", sSemAtual),
+
+    supabase
+      .from("consultas")
+      .select("*", { count: "exact", head: true })
+      .neq("status", "cancelada")
+      .gte("created_at", sSemAnt)
+      .lt("created_at", sSemAtual),
+
+    // or() aninhado: risco_ideacao=true OR (instrumento=phq9 AND score>=20)
+    // Sintaxe PostgREST: or=(a.eq.x,and(b.eq.y,c.gte.z))
+    supabase
+      .from("triagens")
+      .select("id")
+      .or("risco_ideacao.eq.true,and(instrumento.eq.phq9,score.gte.20)")
+      .gte("created_at", sSemAtual),
+
+    supabase
+      .from("triagens")
+      .select("id")
+      .or("risco_ideacao.eq.true,and(instrumento.eq.phq9,score.gte.20)")
+      .gte("created_at", sSemAnt)
+      .lt("created_at", sSemAtual),
+
+    supabase
+      .from("consultas")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "realizada")
+      .gte("created_at", sSemAtual),
+
+    supabase
+      .from("consultas")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "realizada")
+      .gte("created_at", sSemAnt)
+      .lt("created_at", sSemAtual),
+
+    supabase.from("avaliacoes").select("nota"),
+  ]);
+
+  // Propagar qualquer erro Supabase
+  if (cAt.error) throw cAt.error;
+  if (cAnt.error) throw cAnt.error;
+  if (encAt.error) throw encAt.error;
+  if (encAnt.error) throw encAnt.error;
+  if (urgAtData.error) throw urgAtData.error;
+  if (urgAntData.error) throw urgAntData.error;
+  if (realAt.error) throw realAt.error;
+  if (realAnt.error) throw realAnt.error;
+  if (avalData.error) throw avalData.error;
+
+  const notas = ((avalData.data ?? []) as { nota: number }[]).map((a) => a.nota);
+
+  const mk = (atual: number, anterior: number): MetricaTrend => ({
+    atual,
+    anterior,
+    diff: atual - anterior,
+  });
+
+  return {
+    pessoas_acolhidas: mk(cAt.count ?? 0, cAnt.count ?? 0),
+    encaminhamentos: mk(encAt.count ?? 0, encAnt.count ?? 0),
+    urgentes: mk(
+      urgAtData.data?.length ?? 0,
+      urgAntData.data?.length ?? 0,
+    ),
+    consultas_realizadas: mk(realAt.count ?? 0, realAnt.count ?? 0),
+    nps_medio: notas.length > 0 ? npsFromNotas(notas) : null,
+    total_avaliacoes: notas.length,
+  };
 }

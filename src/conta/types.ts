@@ -26,6 +26,7 @@ export type ReceitaUI = {
   profissional: string;       // display name
   data: string;               // ISO date from created_at
   resumo: string;
+  validade?: string;          // ISO date YYYY-MM-DD da validade (opcional)
 };
 
 export type UsuarioUI = {

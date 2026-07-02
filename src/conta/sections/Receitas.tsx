@@ -10,6 +10,10 @@ function formatDate(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+function isVencida(validade: string): boolean {
+  return new Date(validade + "T00:00:00") < new Date(new Date().toISOString().slice(0, 10) + "T00:00:00");
+}
+
 /* ── sub-components ───────────────────────────────────────── */
 
 function ReceitaIcon() {
@@ -132,10 +136,37 @@ function ReceitaCard({ receita }: { receita: Receita }) {
             borderRadius: 10,
             padding: "10px 12px",
             borderLeft: `3px solid ${T.teal300}`,
+            whiteSpace: "pre-wrap",
           }}
         >
           {receita.resumo}
         </p>
+
+        {/* Validade */}
+        {receita.validade && (() => {
+          const vencida = isVencida(receita.validade);
+          return (
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 10px",
+                borderRadius: 20,
+                fontSize: 11,
+                fontWeight: 700,
+                fontFamily: "'Nunito',sans-serif",
+                background: vencida ? "#FEE2E2" : "#D1FAE5",
+                color: vencida ? "#991B1B" : "#065F46",
+                alignSelf: "flex-start",
+              }}
+              aria-label={vencida ? `Receita vencida em ${formatDate(receita.validade)}` : `Válida até ${formatDate(receita.validade)}`}
+            >
+              {vencida ? "Vencida em " : "Válida até "}
+              {formatDate(receita.validade)}
+            </div>
+          );
+        })()}
 
         {/* Actions */}
         <div

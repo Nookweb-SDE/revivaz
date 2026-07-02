@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Activity, ChevronRight, Leaf } from "lucide-react";
+import { Activity, ChevronRight, Heart, Leaf } from "lucide-react";
 import { T } from "./ui";
 import {
   usuario as mockUsuario,
@@ -23,6 +23,7 @@ import AvaliarNPS from "./sections/AvaliarNPS";
 import Perfil from "./sections/Perfil";
 import ConsultaDetalhe from "./sections/ConsultaDetalhe";
 import Autocuidado from "./sections/Autocuidado";
+import Apoiar from "./sections/Apoiar";
 import CriseBar from "./CriseBar";
 import SalaVideo from "../video/SalaVideo";
 import { jitsiConfigured } from "../video/config";
@@ -140,6 +141,114 @@ function TriagemEntryCard({ onAbrir }: { onAbrir: () => void }) {
   );
 }
 
+// ─── NPS callout banner ───────────────────────────────────────────────────────
+
+function NPSCalloutBanner({
+  consulta,
+  onDismiss,
+}: {
+  consulta: ConsultaUI;
+  onDismiss: () => void;
+}) {
+  function scrollToNPS() {
+    document.getElementById("nps-section")?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  return (
+    <section style={{ padding: "0 16px" }}>
+      <div
+        role="status"
+        style={{
+          background: `linear-gradient(135deg, ${T.teal050} 0%, #E8F7F9 100%)`,
+          border: `1.5px solid ${T.teal300}`,
+          borderRadius: 16,
+          padding: "14px 16px",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        <span
+          aria-hidden="true"
+          style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}
+        >
+          ⭐
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p
+            style={{
+              margin: 0,
+              fontFamily: "'Nunito',sans-serif",
+              fontWeight: 800,
+              fontSize: 14,
+              color: T.teal900,
+              lineHeight: 1.3,
+            }}
+          >
+            Como foi sua consulta com {consulta.profissional}?
+          </p>
+          <p
+            style={{
+              margin: "2px 0 0",
+              fontFamily: "'Nunito',sans-serif",
+              fontWeight: 500,
+              fontSize: 12,
+              color: T.teal700,
+            }}
+          >
+            Avalie em 30 segundos — sua opinião melhora os atendimentos.
+          </p>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+            flexShrink: 0,
+          }}
+        >
+          <button
+            type="button"
+            onClick={scrollToNPS}
+            style={{
+              background: T.teal700,
+              color: T.white,
+              border: "none",
+              borderRadius: 10,
+              padding: "8px 14px",
+              fontFamily: "'Nunito',sans-serif",
+              fontWeight: 800,
+              fontSize: 13,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Avaliar
+          </button>
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label="Dispensar aviso de avaliação"
+            style={{
+              background: "transparent",
+              color: T.gray600,
+              border: "none",
+              padding: "2px 0",
+              fontFamily: "'Nunito',sans-serif",
+              fontWeight: 600,
+              fontSize: 11,
+              cursor: "pointer",
+              textAlign: "center",
+            }}
+          >
+            Agora não
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── Autocuidado entry card ───────────────────────────────────────────────────
 
 function AutocuidadoEntryCard({ onAbrir }: { onAbrir: () => void }) {
@@ -207,6 +316,73 @@ function AutocuidadoEntryCard({ onAbrir }: { onAbrir: () => void }) {
   );
 }
 
+// ─── Apoiar entry card ────────────────────────────────────────────────────────
+
+function ApoiarEntryCard({ onAbrir }: { onAbrir: () => void }) {
+  return (
+    <section style={{ padding: "0 16px" }}>
+      <button
+        type="button"
+        onClick={onAbrir}
+        style={{
+          width: "100%",
+          textAlign: "left",
+          cursor: "pointer",
+          background: "#f0fdf4",
+          border: `1px solid ${T.teal100}`,
+          borderRadius: 16,
+          padding: 16,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          minHeight: 44,
+          fontFamily: "'Nunito', sans-serif",
+        }}
+      >
+        <div
+          aria-hidden="true"
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            flexShrink: 0,
+            background: T.white,
+            border: `1px solid ${T.teal100}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Heart size={22} color="#0d9488" fill="#0d9488" strokeWidth={0} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontWeight: 800,
+              fontSize: 15,
+              color: T.teal900,
+            }}
+          >
+            Apoiar a Revivaz 💚
+          </div>
+          <div
+            style={{
+              fontWeight: 600,
+              fontSize: 13,
+              color: T.teal700,
+              marginTop: 2,
+              lineHeight: 1.35,
+            }}
+          >
+            Doe via PIX e ajude mais pessoas a acessar saúde mental gratuita.
+          </div>
+        </div>
+        <ChevronRight size={20} color={T.teal700} aria-hidden="true" />
+      </button>
+    </section>
+  );
+}
+
 // ─── layout wrapper (shared between demo + real modes) ──────────────────────
 
 function AppShell({
@@ -239,7 +415,9 @@ function AppShell({
   const [chatAberto, setChatAberto] = useState(false);
   const [triagemAberta, setTriagemAberta] = useState(false);
   const [autocuidadoAberto, setAutocuidadoAberto] = useState(false);
+  const [apoiarAberto, setApoiarAberto] = useState(false);
   const [detalheAberto, setDetalheAberto] = useState<ConsultaUI | null>(null);
+  const [npsBannerDismissed, setNpsBannerDismissed] = useState(false);
 
   // Atendimento virtual (vídeo IN-APP). A sala só abre quando o Jitsi está
   // configurado E a consulta é online E está agendada; nesse caso buscamos o
@@ -344,9 +522,17 @@ function AppShell({
           />
         ) : autocuidadoAberto ? (
           <Autocuidado onFechar={() => setAutocuidadoAberto(false)} />
+        ) : apoiarAberto ? (
+          <Apoiar onFechar={() => setApoiarAberto(false)} />
         ) : (
           <>
             <Header nome={nome} />
+            {consultaNPS && !npsBannerDismissed && (
+              <NPSCalloutBanner
+                consulta={consultaNPS}
+                onDismiss={() => setNpsBannerDismissed(true)}
+              />
+            )}
             <ProximaConsulta
               consulta={proximaConsulta}
               onAgendar={onAgendar}
@@ -373,7 +559,10 @@ function AppShell({
               onAbrir={() => setChatAberto(true)}
             />
             <RegistroHumor semana={humores} onRegistrar={onRegistrarHumor} />
-            <AvaliarNPS consulta={consultaNPS} />
+            <div id="nps-section">
+              <AvaliarNPS consulta={consultaNPS} />
+            </div>
+            <ApoiarEntryCard onAbrir={() => setApoiarAberto(true)} />
             <Perfil usuario={usuario} onSair={onSair} />
           </>
         )}
@@ -571,6 +760,7 @@ function AuthenticatedApp({ userId }: { userId: string }) {
             profissional: profNome,
             data: r.created_at.slice(0, 10),
             resumo: r.resumo,
+            validade: r.validade ?? undefined,
           };
         });
 

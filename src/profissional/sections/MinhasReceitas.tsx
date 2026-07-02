@@ -28,6 +28,33 @@ function formatHora(hora: string | null): string {
   return hora.slice(0, 5);
 }
 
+/* ── form state ───────────────────────────────────────────── */
+
+type FormState = {
+  medicamento: string;
+  dosagem: string;
+  posologia: string;
+  observacoes: string;
+  validade: string;
+};
+
+const emptyForm = (): FormState => ({
+  medicamento: "",
+  dosagem: "",
+  posologia: "",
+  observacoes: "",
+  validade: "",
+});
+
+function isFormValido(f: FormState): boolean {
+  return (
+    f.medicamento.trim().length > 0 &&
+    f.dosagem.trim().length > 0 &&
+    f.posologia.trim().length > 0 &&
+    f.validade.length > 0
+  );
+}
+
 /* ── sub-components ───────────────────────────────────────── */
 
 function ConsultaIcon() {
@@ -51,6 +78,50 @@ function ConsultaIcon() {
   );
 }
 
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  boxSizing: "border-box",
+  fontFamily: "'Nunito',sans-serif",
+  fontSize: 13,
+  color: T.gray950,
+  lineHeight: 1.55,
+  background: T.gray050,
+  border: `1.5px solid ${T.gray200}`,
+  borderRadius: 10,
+  padding: "9px 12px",
+  outline: "none",
+};
+
+function Field({
+  label,
+  id,
+  required,
+  children,
+}: {
+  label: string;
+  id: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <label
+        htmlFor={id}
+        style={{
+          fontFamily: "'Nunito',sans-serif",
+          fontWeight: 700,
+          fontSize: 12,
+          color: T.gray700,
+        }}
+      >
+        {label}
+        {required && <span aria-hidden="true" style={{ color: T.red, marginLeft: 2 }}>*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
 function ConsultaReceitaCard({
   consulta,
   nome,
@@ -62,7 +133,7 @@ function ConsultaReceitaCard({
   jaLancada: boolean;
   onLancada: () => void;
 }) {
-  const [resumo, setResumo] = useState("");
+  const [form, setForm] = useState<FormState>(emptyForm());
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -72,11 +143,16 @@ function ConsultaReceitaCard({
   // never offer the form again — prevents duplicate receitas for one consulta.
   const lancada = jaLancada || done;
 
-  const podeSalvar = resumo.trim().length > 0 && !saving;
+  const podeSalvar = isFormValido(form) && !saving;
+
+  function patch(key: keyof FormState, value: string) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    if (erro) setErro(null);
+  }
 
   async function handleLancar() {
-    if (resumo.trim().length === 0) {
-      setErro("Escreva um resumo antes de lançar.");
+    if (!isFormValido(form)) {
+      setErro("Preencha medicamento, dosagem, posologia e validade.");
       return;
     }
     setSaving(true);
@@ -85,9 +161,13 @@ function ConsultaReceitaCard({
       await profLancarReceita({
         consulta_id: consulta.id,
         paciente_id: consulta.paciente_id,
-        resumo: resumo.trim(),
+        medicamento: form.medicamento.trim(),
+        dosagem: form.dosagem.trim(),
+        posologia: form.posologia.trim(),
+        observacoes: form.observacoes.trim() || undefined,
+        validade: form.validade,
       });
-      setResumo("");
+      setForm(emptyForm());
       setDone(true);
       onLancada();
     } catch (e) {
@@ -100,6 +180,8 @@ function ConsultaReceitaCard({
       setSaving(false);
     }
   }
+
+  const idPfx = consulta.id;
 
   return (
     <article
@@ -122,7 +204,7 @@ function ConsultaReceitaCard({
         }}
       />
 
-      <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
         {/* Header row */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
           <ConsultaIcon />
@@ -177,56 +259,87 @@ function ConsultaReceitaCard({
             }}
           >
             <CheckCircle2 size={16} color={T.green500} aria-hidden="true" />
-            Receita lançada 💚
+            Receita lançada
           </div>
         ) : (
           <>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label
-                htmlFor={`resumo-${consulta.id}`}
-                style={{
-                  fontFamily: "'Nunito',sans-serif",
-                  fontWeight: 700,
-                  fontSize: 12,
-                  color: T.gray700,
-                }}
-              >
-                Resumo da receita
-              </label>
-              <textarea
-                id={`resumo-${consulta.id}`}
-                value={resumo}
-                onChange={(e) => {
-                  setResumo(e.target.value);
-                  if (erro) setErro(null);
-                }}
-                disabled={saving}
-                rows={4}
-                placeholder="Ex.: Sertralina 50mg — 1 comprimido pela manhã por 30 dias…"
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  resize: "vertical",
-                  minHeight: 88,
-                  fontFamily: "'Nunito',sans-serif",
-                  fontSize: 13,
-                  color: T.gray950,
-                  lineHeight: 1.55,
-                  background: T.gray050,
-                  border: `1.5px solid ${T.gray200}`,
-                  borderRadius: 10,
-                  padding: "10px 12px",
-                  outline: "none",
-                  opacity: saving ? 0.7 : 1,
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = T.teal500;
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = T.gray200;
-                }}
-              />
+            {/* Linha 1: Medicamento + Dosagem */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 8 }}>
+              <Field label="Medicamento" id={`med-${idPfx}`} required>
+                <input
+                  id={`med-${idPfx}`}
+                  type="text"
+                  value={form.medicamento}
+                  onChange={(e) => patch("medicamento", e.target.value)}
+                  disabled={saving}
+                  placeholder="Ex.: Sertralina"
+                  style={inputStyle}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = T.teal500; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = T.gray200; }}
+                />
+              </Field>
+              <Field label="Dosagem" id={`dos-${idPfx}`} required>
+                <input
+                  id={`dos-${idPfx}`}
+                  type="text"
+                  value={form.dosagem}
+                  onChange={(e) => patch("dosagem", e.target.value)}
+                  disabled={saving}
+                  placeholder="Ex.: 50 mg"
+                  style={{ ...inputStyle, width: 100 }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = T.teal500; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = T.gray200; }}
+                />
+              </Field>
             </div>
+
+            {/* Posologia */}
+            <Field label="Posologia" id={`pos-${idPfx}`} required>
+              <input
+                id={`pos-${idPfx}`}
+                type="text"
+                value={form.posologia}
+                onChange={(e) => patch("posologia", e.target.value)}
+                disabled={saving}
+                placeholder="Ex.: 1 comprimido pela manhã por 30 dias"
+                style={inputStyle}
+                onFocus={(e) => { e.currentTarget.style.borderColor = T.teal500; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = T.gray200; }}
+              />
+            </Field>
+
+            {/* Validade */}
+            <Field label="Válida até" id={`val-${idPfx}`} required>
+              <input
+                id={`val-${idPfx}`}
+                type="date"
+                value={form.validade}
+                onChange={(e) => patch("validade", e.target.value)}
+                disabled={saving}
+                style={{ ...inputStyle, width: "fit-content" }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = T.teal500; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = T.gray200; }}
+              />
+            </Field>
+
+            {/* Observações (opcional) */}
+            <Field label="Observações (opcional)" id={`obs-${idPfx}`}>
+              <textarea
+                id={`obs-${idPfx}`}
+                value={form.observacoes}
+                onChange={(e) => patch("observacoes", e.target.value)}
+                disabled={saving}
+                rows={3}
+                placeholder="Instruções adicionais, contraindicações, retorno…"
+                style={{
+                  ...inputStyle,
+                  resize: "vertical",
+                  minHeight: 64,
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = T.teal500; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = T.gray200; }}
+              />
+            </Field>
 
             {erro ? (
               <p
@@ -362,7 +475,9 @@ function SkeletonCard() {
           <div style={{ height: 10, width: "65%", borderRadius: 6, background: T.gray100 }} />
         </div>
       </div>
-      <div style={{ height: 72, borderRadius: 10, background: T.gray100 }} />
+      <div style={{ height: 32, borderRadius: 10, background: T.gray100 }} />
+      <div style={{ height: 32, borderRadius: 10, background: T.gray100 }} />
+      <div style={{ height: 32, borderRadius: 10, background: T.gray100 }} />
     </div>
   );
 }

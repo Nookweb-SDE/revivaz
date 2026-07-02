@@ -1,49 +1,255 @@
 import React, { useEffect, useState } from "react";
-import { getMetricsOverview, adminListAvaliacoes } from "../../lib/data";
-import type { MetricsOverview, Avaliacao } from "../../lib/types";
+import {
+  adminGetMetricasReais,
+  getMetricsOverview,
+  adminListAvaliacoes,
+} from "../../lib/data";
+import type {
+  MetricasReais,
+  MetricsOverview,
+  MetricaTrend,
+  Avaliacao,
+} from "../../lib/types";
 import { T, card, sectionTitle } from "../../conta/ui";
-import { fmtPct, fmtMetric } from "../../lib/metrics";
+import { fmtMetric } from "../../lib/metrics";
 
 // ---------------------------------------------------------------------------
-// KPI card
+// Inline SVG icons (24-px viewBox, stroke-only, consistent line weight)
 // ---------------------------------------------------------------------------
 
-const gridStyle: React.CSSProperties = {
+function IconChat() {
+  return (
+    <svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+function IconArrow() {
+  return (
+    <svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 8 16 12 12 16" />
+      <line x1="8" y1="12" x2="16" y2="12" />
+    </svg>
+  );
+}
+
+function IconAlert() {
+  return (
+    <svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
+function IconCheckCircle() {
+  return (
+    <svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
+  );
+}
+
+function IconStar() {
+  return (
+    <svg
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Trend chip
+// ---------------------------------------------------------------------------
+
+/**
+ * trendPositiveIsGood=true  → crescimento é bom (verde) | queda é ruim (vermelho)
+ * trendPositiveIsGood=false → crescimento é ruim (vermelho) | queda é bom (verde)
+ *   usado em "urgentes" onde mais casos = sinal negativo.
+ */
+function TrendChip({
+  trend,
+  positiveIsGood,
+}: {
+  trend: MetricaTrend;
+  positiveIsGood: boolean;
+}) {
+  const { diff } = trend;
+
+  let color: string;
+  let bg: string;
+  let text: string;
+
+  if (diff === 0) {
+    color = T.gray600;
+    bg = T.gray100;
+    text = "= sem mudança";
+  } else if (diff > 0) {
+    const good = positiveIsGood;
+    color = good ? "#059669" : T.red;
+    bg = good ? "#D1FAE5" : "#FEE2E2";
+    text = `+${diff} vs sem. ant.`;
+  } else {
+    const good = !positiveIsGood;
+    color = good ? "#059669" : T.red;
+    bg = good ? "#D1FAE5" : "#FEE2E2";
+    text = `${diff} vs sem. ant.`;
+  }
+
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        marginTop: 8,
+        padding: "2px 7px",
+        borderRadius: 6,
+        fontFamily: "'Nunito',sans-serif",
+        fontWeight: 700,
+        fontSize: 11,
+        letterSpacing: "0.01em",
+        color,
+        background: bg,
+      }}
+    >
+      {text}
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// KPI card (PRD Fase 0)
+// ---------------------------------------------------------------------------
+
+const kpiGridStyle: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
   gap: 12,
   marginBottom: 20,
 };
 
-const kpiValueStyle: React.CSSProperties = {
-  fontFamily: "'Nunito',sans-serif",
-  fontWeight: 900,
-  fontSize: 34,
-  lineHeight: 1.1,
-  color: T.teal700,
-  margin: "0 0 4px",
-  letterSpacing: "-0.02em",
-};
-
-const kpiLabelStyle: React.CSSProperties = {
-  fontFamily: "'Nunito',sans-serif",
-  fontWeight: 600,
-  fontSize: 13,
-  color: T.gray600,
-  margin: 0,
-};
-
-function Kpi({ value, label }: { value: string; label: string }) {
+function KpiCard({
+  icon,
+  value,
+  label,
+  trend,
+  positiveIsGood = true,
+  subtitle,
+}: {
+  icon: React.ReactNode;
+  value: string | number;
+  label: string;
+  trend?: MetricaTrend;
+  positiveIsGood?: boolean;
+  subtitle?: string;
+}) {
   return (
-    <div style={card}>
-      <p style={kpiValueStyle}>{value}</p>
-      <p style={kpiLabelStyle}>{label}</p>
+    <div style={{ ...card, display: "flex", flexDirection: "column" }}>
+      {/* icon row */}
+      <div style={{ color: T.teal700, marginBottom: 10, lineHeight: 0 }}>
+        {icon}
+      </div>
+      {/* big number */}
+      <p
+        style={{
+          fontFamily: "'Nunito',sans-serif",
+          fontWeight: 900,
+          fontSize: 34,
+          lineHeight: 1,
+          color: T.gray950,
+          margin: "0 0 4px",
+          letterSpacing: "-0.02em",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {value}
+      </p>
+      {/* label */}
+      <p
+        style={{
+          fontFamily: "'Nunito',sans-serif",
+          fontWeight: 600,
+          fontSize: 12,
+          color: T.gray600,
+          margin: 0,
+          lineHeight: 1.35,
+        }}
+      >
+        {label}
+      </p>
+      {/* optional subtitle (e.g. "N avaliações") */}
+      {subtitle && (
+        <p
+          style={{
+            fontFamily: "'Nunito',sans-serif",
+            fontWeight: 600,
+            fontSize: 11,
+            color: T.gray600,
+            margin: "2px 0 0",
+            opacity: 0.7,
+          }}
+        >
+          {subtitle}
+        </p>
+      )}
+      {/* trend chip */}
+      {trend !== undefined && (
+        <TrendChip trend={trend} positiveIsGood={positiveIsGood} />
+      )}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Barra de status simples (divs)
+// Barra de status (consultas totais)
 // ---------------------------------------------------------------------------
 
 const barTrackStyle: React.CSSProperties = {
@@ -92,6 +298,7 @@ function StatusBar({
             fontWeight: 800,
             fontSize: 13,
             color: T.gray950,
+            fontVariantNumeric: "tabular-nums",
           }}
         >
           {value}
@@ -117,6 +324,7 @@ function StatusBar({
             color: T.gray600,
             minWidth: 38,
             textAlign: "right",
+            fontVariantNumeric: "tabular-nums",
           }}
         >
           {pct}%
@@ -130,7 +338,6 @@ function StatusBar({
 // Últimas avaliações (NPS)
 // ---------------------------------------------------------------------------
 
-// Cor por faixa NPS: detrator (<=6) vermelho, neutro (7-8) âmbar, promotor (>=9) teal.
 const AMBAR = "#D97706";
 function corNota(nota: number): string {
   if (nota <= 6) return T.red;
@@ -179,9 +386,7 @@ function UltimasAvaliacoes() {
       .catch((err) => {
         if (alive)
           setErro(
-            err instanceof Error
-              ? err.message
-              : "Erro ao carregar avaliações."
+            err instanceof Error ? err.message : "Erro ao carregar avaliações."
           );
       })
       .finally(() => {
@@ -284,11 +489,12 @@ function UltimasAvaliacoes() {
 }
 
 // ---------------------------------------------------------------------------
-// Metricas
+// Metricas — componente principal
 // ---------------------------------------------------------------------------
 
 export function Metricas() {
-  const [data, setData] = useState<MetricsOverview | null>(null);
+  const [metricas, setMetricas] = useState<MetricasReais | null>(null);
+  const [overview, setOverview] = useState<MetricsOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -296,9 +502,15 @@ export function Metricas() {
     let alive = true;
     setLoading(true);
     setErro(null);
-    getMetricsOverview()
-      .then((m) => {
-        if (alive) setData(m);
+
+    // adminGetMetricasReais  → 5 KPIs com trend (janela 7 dias)
+    // getMetricsOverview     → totais de consultas para as barras de status
+    Promise.all([adminGetMetricasReais(), getMetricsOverview()])
+      .then(([m, ov]) => {
+        if (alive) {
+          setMetricas(m);
+          setOverview(ov);
+        }
       })
       .catch((err) => {
         if (alive)
@@ -309,6 +521,7 @@ export function Metricas() {
       .finally(() => {
         if (alive) setLoading(false);
       });
+
     return () => {
       alive = false;
     };
@@ -342,7 +555,7 @@ export function Metricas() {
     );
   }
 
-  if (!data) {
+  if (!metricas || !overview) {
     return (
       <p
         style={{
@@ -357,53 +570,83 @@ export function Metricas() {
   }
 
   const totalConsultas =
-    data.consultas_solicitadas +
-    data.consultas_agendadas +
-    data.consultas_realizadas;
+    overview.consultas_solicitadas +
+    overview.consultas_agendadas +
+    overview.consultas_realizadas;
+
+  const npsLabel =
+    metricas.total_avaliacoes > 0
+      ? `${metricas.total_avaliacoes} avaliação${metricas.total_avaliacoes !== 1 ? "ões" : ""} no total`
+      : "sem avaliações";
 
   return (
     <div>
-      {/* KPIs principais */}
-      <h2 style={sectionTitle}>Visão geral</h2>
-      <div style={gridStyle}>
-        <Kpi value={String(data.pacientes)} label="Pacientes" />
-        <Kpi value={fmtPct(data.taxa_realizacao)} label="Taxa de realização" />
-        <Kpi value={fmtMetric(data.nps)} label="NPS (-100 a 100)" />
-        <Kpi
-          value={fmtMetric(
-            data.humor_medio_7d === null
-              ? null
-              : Math.round(data.humor_medio_7d * 10) / 10,
-            "/4"
-          )}
-          label="Humor médio (7 dias)"
+      {/* ── PRD Fase 0: 5 KPIs com trend semanal ── */}
+      <h2 style={sectionTitle}>Métricas Fase 0 — últimos 7 dias</h2>
+      <div style={kpiGridStyle}>
+        <KpiCard
+          icon={<IconChat />}
+          value={metricas.pessoas_acolhidas.atual}
+          label="Pessoas acolhidas pela IA"
+          trend={metricas.pessoas_acolhidas}
+          positiveIsGood={true}
+        />
+        <KpiCard
+          icon={<IconArrow />}
+          value={metricas.encaminhamentos.atual}
+          label="Encaminhamentos para humano"
+          trend={metricas.encaminhamentos}
+          positiveIsGood={true}
+        />
+        <KpiCard
+          icon={<IconAlert />}
+          value={metricas.urgentes.atual}
+          label="Casos urgentes (PHQ-9 ≥ 20 ou risco)"
+          trend={metricas.urgentes}
+          positiveIsGood={false}
+        />
+        <KpiCard
+          icon={<IconCheckCircle />}
+          value={metricas.consultas_realizadas.atual}
+          label="Consultas realizadas"
+          trend={metricas.consultas_realizadas}
+          positiveIsGood={true}
+        />
+        <KpiCard
+          icon={<IconStar />}
+          value={fmtMetric(metricas.nps_medio)}
+          label="NPS médio (−100 a 100)"
+          subtitle={npsLabel}
+          // NPS não tem trend semanal — é calculado sobre todo o histórico
         />
       </div>
 
-      {/* Consultas por status */}
-      <h2 style={sectionTitle}>Consultas por status</h2>
+      {/* ── Consultas por status (total histórico) ── */}
+      <h2 style={{ ...sectionTitle, marginTop: 20 }}>
+        Consultas por status (total)
+      </h2>
       <div style={card}>
         <StatusBar
           label="Solicitadas"
-          value={data.consultas_solicitadas}
+          value={overview.consultas_solicitadas}
           total={totalConsultas}
           color={T.teal300}
         />
         <StatusBar
           label="Agendadas"
-          value={data.consultas_agendadas}
+          value={overview.consultas_agendadas}
           total={totalConsultas}
           color={T.teal500}
         />
         <StatusBar
           label="Realizadas"
-          value={data.consultas_realizadas}
+          value={overview.consultas_realizadas}
           total={totalConsultas}
           color={T.green500}
         />
       </div>
 
-      {/* Últimas avaliações (NPS) */}
+      {/* ── Últimas avaliações (NPS) ── */}
       <div style={{ marginTop: 20 }}>
         <UltimasAvaliacoes />
       </div>
