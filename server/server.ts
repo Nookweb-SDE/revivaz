@@ -12,6 +12,7 @@ import { ACOLHIMENTO_SYSTEM_PROMPT } from "../src/acolhimento/systemPrompt";
 import { mintJitsiJwt } from "./jitsiJwt";
 import { roomName, isOnline } from "../src/video/room";
 import { composeConfirmacao, composeLembrete } from "../src/notificacoes/mensagens";
+import { makeRequireAuth } from "./middleware/auth";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "..", "dist");
@@ -49,6 +50,9 @@ const SUPABASE_SERVICE_ROLE_KEY = resolveSecret(
   "SUPABASE_SERVICE_ROLE_KEY",
   "SUPABASE_SERVICE_ROLE_KEY_FILE"
 );
+
+// ─── Auth middleware (Supabase Bearer → res.locals.uid) ─────────────────────
+const requireAuth = makeRequireAuth(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ─── Jitsi (vídeo) ──────────────────────────────────────────────────────────
 // Domínio e app_id podem ser env simples (públicos); o secret do JWT é o único
@@ -212,18 +216,17 @@ app.post("/api/wa/verify", async (req: Request, res: Response): Promise<void> =>
 
   if (!entry || Date.now() > entry.expiresAt) {
     otpStore.delete(phone);
-    res.status(400).json({ error: "Código expirado ou inválido" });
+    res.status(401).json({ error: "Código expirado ou inválido" });
     return;
   }
 
   entry.attempts++;
-  if (entry.attempts > 5) {
-    otpStore.delete(phone);
-    res.status(400).json({ error: "Muitas tentativas. Solicite um novo código." });
-    return;
-  }
-
   if (inputCode !== entry.code) {
+    if (entry.attempts >= 3) {
+      otpStore.delete(phone);
+      res.status(401).json({ error: "Muitas tentativas. Solicite um novo código." });
+      return;
+    }
     res.status(400).json({ error: "Código incorreto" });
     return;
   }
@@ -357,21 +360,15 @@ app.post("/api/wa/verify", async (req: Request, res: Response): Promise<void> =>
 // Segurança: exige Bearer válido do usuário logado E que ele seja role='admin'.
 app.post(
   "/api/admin/profissional-link",
+  requireAuth,
   async (req: Request, res: Response): Promise<void> => {
-    if (!SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    if (!SUPABASE_SERVICE_ROLE_KEY) {
       res.status(500).json({ error: "Auth not configured" });
       return;
     }
 
-    // (0) extrai o Bearer do header Authorization
-    const authHeader = String(req.headers["authorization"] ?? "");
-    const token = authHeader.toLowerCase().startsWith("bearer ")
-      ? authHeader.slice(7).trim()
-      : "";
-    if (!token) {
-      res.status(401).json({ error: "Não autenticado" });
-      return;
-    }
+    // uid validado pelo middleware requireAuth
+    const callerUid = res.locals.uid as string;
 
     const profissional_id = String(req.body?.profissional_id ?? "").trim();
     const email = String(req.body?.email ?? "").trim().toLowerCase();
@@ -385,31 +382,6 @@ app.post(
       apikey: SUPABASE_SERVICE_ROLE_KEY,
       Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
     };
-
-    // (1) valida o Bearer — getUser via ANON usando o token do chamador
-    let callerUid: string;
-    try {
-      const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!userRes.ok) {
-        res.status(401).json({ error: "Sessão inválida" });
-        return;
-      }
-      const u = (await userRes.json()) as { id?: string };
-      if (!u.id) {
-        res.status(401).json({ error: "Sessão inválida" });
-        return;
-      }
-      callerUid = u.id;
-    } catch (err) {
-      console.error("[prof-link] Erro ao validar token:", err);
-      res.status(500).json({ error: "Erro interno de autenticação" });
-      return;
-    }
 
     // (2) confere que o chamador é admin (service_role, ignora RLS)
     try {
@@ -550,8 +522,9 @@ app.post(
 // server e o token/secret nunca são logados.
 app.post(
   "/api/consulta/room-token",
+  requireAuth,
   async (req: Request, res: Response): Promise<void> => {
-    if (!SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    if (!SUPABASE_SERVICE_ROLE_KEY) {
       res.status(500).json({ error: "Auth not configured" });
       return;
     }
@@ -561,15 +534,8 @@ app.post(
       return;
     }
 
-    // (0) extrai o Bearer do header Authorization
-    const authHeader = String(req.headers["authorization"] ?? "");
-    const token = authHeader.toLowerCase().startsWith("bearer ")
-      ? authHeader.slice(7).trim()
-      : "";
-    if (!token) {
-      res.status(401).json({ error: "Não autenticado" });
-      return;
-    }
+    // uid validado pelo middleware requireAuth
+    const callerUid = res.locals.uid as string;
 
     const consulta_id = String(req.body?.consulta_id ?? "").trim();
     if (!consulta_id) {
@@ -582,31 +548,6 @@ app.post(
       apikey: SUPABASE_SERVICE_ROLE_KEY,
       Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
     };
-
-    // (1) valida o Bearer — getUser via ANON usando o token do chamador
-    let callerUid: string;
-    try {
-      const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!userRes.ok) {
-        res.status(401).json({ error: "Sessão inválida" });
-        return;
-      }
-      const u = (await userRes.json()) as { id?: string };
-      if (!u.id) {
-        res.status(401).json({ error: "Sessão inválida" });
-        return;
-      }
-      callerUid = u.id;
-    } catch (err) {
-      console.error("[room-token] Erro ao validar token:", err);
-      res.status(500).json({ error: "Erro interno de autenticação" });
-      return;
-    }
 
     // (2) carrega a consulta via service_role (ignora RLS p/ checar associação)
     let consulta: {
@@ -727,8 +668,9 @@ app.post(
 // NUNCA loga telefone inteiro nem o texto.
 app.post(
   "/api/consulta/notificar",
+  requireAuth,
   async (req: Request, res: Response): Promise<void> => {
-    if (!SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    if (!SUPABASE_SERVICE_ROLE_KEY) {
       res.status(500).json({ error: "Auth not configured" });
       return;
     }
@@ -738,15 +680,8 @@ app.post(
       return;
     }
 
-    // (0) extrai o Bearer
-    const authHeader = String(req.headers["authorization"] ?? "");
-    const token = authHeader.toLowerCase().startsWith("bearer ")
-      ? authHeader.slice(7).trim()
-      : "";
-    if (!token) {
-      res.status(401).json({ error: "Não autenticado" });
-      return;
-    }
+    // uid validado pelo middleware requireAuth
+    const callerUid = res.locals.uid as string;
 
     const consulta_id = String(req.body?.consulta_id ?? "").trim();
     if (!consulta_id) {
@@ -759,28 +694,6 @@ app.post(
       apikey: SUPABASE_SERVICE_ROLE_KEY,
       Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
     };
-
-    // (1) valida o Bearer — getUser via ANON usando o token do chamador
-    let callerUid: string;
-    try {
-      const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` },
-      });
-      if (!userRes.ok) {
-        res.status(401).json({ error: "Sessão inválida" });
-        return;
-      }
-      const u = (await userRes.json()) as { id?: string };
-      if (!u.id) {
-        res.status(401).json({ error: "Sessão inválida" });
-        return;
-      }
-      callerUid = u.id;
-    } catch (err) {
-      console.error("[notificar] Erro ao validar token:", err);
-      res.status(500).json({ error: "Erro interno de autenticação" });
-      return;
-    }
 
     // (2) carrega a consulta via service_role (ignora RLS p/ checar associação)
     let consulta: {
@@ -1433,5 +1346,10 @@ if (lembreteHabilitado) {
   console.log("[lembrete] scheduler inativo (Evolution/Supabase não configurado)");
 }
 
+// ─── Exports for testing + conditional listen ────────────────────────────────
+export { app, otpStore, startRateMap };
+
 const PORT = Number(process.env.PORT) || 8080;
-app.listen(PORT, () => console.log(`revivaz on :${PORT}`));
+if (!process.env.VITEST) {
+  app.listen(PORT, () => console.log(`revivaz on :${PORT}`));
+}

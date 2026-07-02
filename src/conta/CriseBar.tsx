@@ -5,6 +5,8 @@ export default function CriseBar(): JSX.Element {
     <div
       role="complementary"
       aria-label="Barra de emergência"
+      aria-live="assertive"
+      aria-atomic="true"
       style={{
         position: "fixed",
         bottom: 0,
@@ -33,7 +35,7 @@ export default function CriseBar(): JSX.Element {
         🆘 Emergência:{" "}
         <a
           href="tel:188"
-          aria-label="Ligar para CVV 188"
+          aria-label="CVV – Centro de Valorização da Vida, ligue 188"
           style={{
             color: "#FFB3B3",
             textDecoration: "underline",
@@ -45,7 +47,7 @@ export default function CriseBar(): JSX.Element {
         ·{" "}
         <a
           href="tel:192"
-          aria-label="Ligar para SAMU 192"
+          aria-label="SAMU – Serviço de Atendimento Móvel de Urgência, ligue 192"
           style={{
             color: "#FFB3B3",
             textDecoration: "underline",

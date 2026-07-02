@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Activity, ChevronRight } from "lucide-react";
+import { Activity, ChevronRight, Leaf } from "lucide-react";
 import { T } from "./ui";
 import {
   usuario as mockUsuario,
@@ -22,6 +22,7 @@ import RegistroHumor from "./sections/RegistroHumor";
 import AvaliarNPS from "./sections/AvaliarNPS";
 import Perfil from "./sections/Perfil";
 import ConsultaDetalhe from "./sections/ConsultaDetalhe";
+import Autocuidado from "./sections/Autocuidado";
 import CriseBar from "./CriseBar";
 import SalaVideo from "../video/SalaVideo";
 import { jitsiConfigured } from "../video/config";
@@ -139,6 +140,73 @@ function TriagemEntryCard({ onAbrir }: { onAbrir: () => void }) {
   );
 }
 
+// ─── Autocuidado entry card ───────────────────────────────────────────────────
+
+function AutocuidadoEntryCard({ onAbrir }: { onAbrir: () => void }) {
+  return (
+    <section style={{ padding: "0 16px" }}>
+      <button
+        type="button"
+        onClick={onAbrir}
+        style={{
+          width: "100%",
+          textAlign: "left",
+          cursor: "pointer",
+          background: "#f0fdf4",
+          border: `1px solid ${T.teal100}`,
+          borderRadius: 16,
+          padding: 16,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          minHeight: 44,
+          fontFamily: "'Nunito', sans-serif",
+        }}
+      >
+        <div
+          aria-hidden="true"
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            flexShrink: 0,
+            background: T.white,
+            border: `1px solid ${T.teal100}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Leaf size={24} color={T.teal700} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontWeight: 800,
+              fontSize: 15,
+              color: T.teal900,
+            }}
+          >
+            Autocuidado guiado
+          </div>
+          <div
+            style={{
+              fontWeight: 600,
+              fontSize: 13,
+              color: T.teal700,
+              marginTop: 2,
+              lineHeight: 1.35,
+            }}
+          >
+            Respiração 4-7-8 e Grounding 5-4-3-2-1 — para acalmar em minutos.
+          </div>
+        </div>
+        <ChevronRight size={20} color={T.teal700} aria-hidden="true" />
+      </button>
+    </section>
+  );
+}
+
 // ─── layout wrapper (shared between demo + real modes) ──────────────────────
 
 function AppShell({
@@ -170,6 +238,7 @@ function AppShell({
 }) {
   const [chatAberto, setChatAberto] = useState(false);
   const [triagemAberta, setTriagemAberta] = useState(false);
+  const [autocuidadoAberto, setAutocuidadoAberto] = useState(false);
   const [detalheAberto, setDetalheAberto] = useState<ConsultaUI | null>(null);
 
   // Atendimento virtual (vídeo IN-APP). A sala só abre quando o Jitsi está
@@ -273,6 +342,8 @@ function AppShell({
               onAgendar();
             }}
           />
+        ) : autocuidadoAberto ? (
+          <Autocuidado onFechar={() => setAutocuidadoAberto(false)} />
         ) : (
           <>
             <Header nome={nome} />
@@ -286,6 +357,7 @@ function AppShell({
               salaLoadingId={salaLoading}
             />
             <TriagemEntryCard onAbrir={() => setTriagemAberta(true)} />
+            <AutocuidadoEntryCard onAbrir={() => setAutocuidadoAberto(true)} />
             <Atalhos />
             <ListaConsultas
               consultas={consultas}

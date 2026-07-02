@@ -107,3 +107,12 @@ export type MetricsOverview = {
   nps: number | null; // -100..100
   humor_medio_7d: number | null; // 0..4
 };
+
+// --- Video room (Jitsi) ---
+
+/** Payload returned by GET /api/consulta/room-token and getRoomToken(). */
+export type RoomTokenResponse = {
+  token: string;
+  room: string;
+  domain: string;
+};

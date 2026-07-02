@@ -27,6 +27,7 @@ import {
 import { CRISIS_RESOURCES } from "../../acolhimento/crisis";
 import { criarTriagem, getMinhasTriagens } from "../../lib/data";
 import type { Triagem as TriagemRow } from "../../lib/types";
+import CriseForcada from "./CriseForcada";
 
 // ─── COMPLIANCE: disclaimer fixo, exibido em todas as telas ──────────────────
 // "Isto é uma autoavaliação, não um diagnóstico nem atendimento clínico;
@@ -301,6 +302,7 @@ function LikertGroup({
       <div
         role="radiogroup"
         aria-labelledby={labelId}
+        aria-describedby="triagem-enunciado"
         onKeyDown={onKeyDownGrupo}
         style={{ display: "flex", flexDirection: "column", gap: 8 }}
       >
@@ -614,6 +616,7 @@ export default function Triagem({
   const [salvando, setSalvando] = useState(false);
   const [erroSalvar, setErroSalvar] = useState<string | null>(null);
   const [historico, setHistorico] = useState<TriagemRow[]>([]);
+  const [mostrarCrise, setMostrarCrise] = useState(false);
 
   const cfg = useMemo(
     () => INSTRUMENTOS.find((i) => i.id === instrumento) ?? null,
@@ -679,6 +682,10 @@ export default function Triagem({
     setResultado(res);
     setEtapa("resultado");
 
+    // Mostra tela de crise forçada antes do resultado quando há risco de
+    // ideação (PHQ-9 item 9 > 0) OU score na faixa "grave" (PHQ-9 >= 20).
+    if (risco || severidade === "grave") setMostrarCrise(true);
+
     if (demo) return; // modo demo: não persiste
 
     setSalvando(true);
@@ -710,6 +717,7 @@ export default function Triagem({
     setRespostas([]);
     setResultado(null);
     setErroSalvar(null);
+    setMostrarCrise(false);
   }
 
   // ── Header da tela cheia ──
@@ -749,6 +757,16 @@ export default function Triagem({
       style={{ display: "flex", flexDirection: "column", gap: 16 }}
     >
       {Topbar}
+
+      {/* Tela de crise forçada: aparece quando PHQ-9 item 9 > 0 OU "grave".
+          A posição fixed faz com que sobreponha tudo (z-index 9999).
+          onContinuar desfaz o overlay e exibe o resultado normalmente. */}
+      {mostrarCrise && resultado && (
+        <CriseForcada
+          onAgendar={onAgendar}
+          onContinuar={() => setMostrarCrise(false)}
+        />
+      )}
 
       {etapa === "escolha" && (
         <>
@@ -818,6 +836,7 @@ export default function Triagem({
         <>
           <DisclaimerBox />
           <p
+            id="triagem-enunciado"
             style={{
               margin: 0,
               fontFamily: "'Nunito',sans-serif",

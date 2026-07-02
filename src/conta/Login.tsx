@@ -3,6 +3,7 @@ import { Mail, Phone, ArrowRight, CheckCircle, AlertCircle, MessageCircle, User,
 import { T, btnPrimary } from "./ui";
 import { enviarLinkEmail } from "../lib/auth";
 import { supabase } from "../lib/supabase";
+import ConsentimentoLGPD, { CONSENT_KEY } from "./sections/ConsentimentoLGPD";
 
 type LoginMethod = "email" | "whatsapp";
 
@@ -52,8 +53,11 @@ function TabToggle({ method, onChange }: TabToggleProps) {
     return (
       <button
         type="button"
+        id={`tab-${value}`}
+        role="tab"
+        aria-selected={active}
+        aria-controls={`panel-${value}`}
         onClick={() => onChange(value)}
-        aria-pressed={active}
         style={{
           flex: 1,
           display: "flex",
@@ -664,11 +668,64 @@ function DevLoginBand() {
 // ─── Root component ───────────────────────────────────────────────────────────
 export default function Login(): JSX.Element {
   const [method, setMethod] = useState<LoginMethod>("email");
+  // Consent gate: check once on mount. Re-render when user accepts.
+  const [consentido, setConsentido] = useState<boolean>(
+    () => !!localStorage.getItem(CONSENT_KEY)
+  );
 
   const subtitle =
     method === "email"
       ? "Informe seu e-mail e enviaremos um link de acesso."
       : "Você receberá um código de 6 dígitos via WhatsApp.";
+
+  // Show LGPD consent modal before anything else
+  if (!consentido) {
+    return (
+      <>
+        {/* Blurred background preview of the login page */}
+        <div
+          aria-hidden="true"
+          style={{
+            background: T.gray050,
+            minHeight: "100vh",
+            fontFamily: "'Nunito', sans-serif",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "24px 16px",
+            filter: "blur(3px)",
+            pointerEvents: "none",
+            userSelect: "none",
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 400,
+              background: T.white,
+              borderRadius: 20,
+              padding: "32px 28px",
+              boxShadow: "0 8px 40px rgba(0,122,140,0.13), 0 2px 8px rgba(0,0,0,0.06)",
+              border: `1px solid ${T.gray200}`,
+            }}
+          >
+            <p style={{ margin: "0 0 6px", fontWeight: 800, fontSize: 26, color: T.teal700, letterSpacing: "-0.5px", lineHeight: 1 }}>
+              Revivaz
+            </p>
+            <p style={{ margin: "0 0 8px", fontWeight: 800, fontSize: 20, color: T.gray950 }}>
+              Acessar minha conta
+            </p>
+            <p style={{ margin: 0, fontWeight: 500, fontSize: 14, color: T.gray600 }}>
+              Informe seu e-mail e enviaremos um link de acesso.
+            </p>
+          </div>
+        </div>
+        {/* Consent modal on top */}
+        <ConsentimentoLGPD onAceitar={() => setConsentido(true)} />
+      </>
+    );
+  }
 
   return (
     <div
@@ -737,7 +794,13 @@ export default function Login(): JSX.Element {
         <TabToggle method={method} onChange={setMethod} />
 
         {/* Active login form */}
-        {method === "email" ? <EmailLogin /> : <WhatsAppLogin />}
+        <div
+          role="tabpanel"
+          id={`panel-${method}`}
+          aria-labelledby={`tab-${method}`}
+        >
+          {method === "email" ? <EmailLogin /> : <WhatsAppLogin />}
+        </div>
       </div>
 
       {/* Tagline */}

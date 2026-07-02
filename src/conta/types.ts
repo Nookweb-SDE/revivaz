@@ -4,6 +4,7 @@
  * they carry denormalised/derived fields (profissional name, avatar initials)
  * so sections never need to fetch or join data themselves.
  */
+import type { StatusConsulta } from "../lib/types";
 
 export type ConsultaUI = {
   id: string;
@@ -13,7 +14,7 @@ export type ConsultaUI = {
   data: string;               // ISO date string (YYYY-MM-DD)
   hora: string;               // "HH:MM"
   tipo: "online" | "presencial";
-  status: "solicitada" | "agendada" | "realizada" | "cancelada";
+  status: StatusConsulta;
   emDias?: number;            // days until appointment (computed by ContaApp)
   avaliada?: boolean;
   link?: string | null;       // link_ou_local — used by "Entrar na consulta" (window.open)

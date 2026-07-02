@@ -11,6 +11,8 @@ import type {
   MetricsOverview,
   StatusConsulta,
   Triagem,
+  HumorRegistro,
+  RoomTokenResponse,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -131,7 +133,7 @@ export async function getHumoresUltima7Dias(): Promise<number[]> {
 
   // base de comparação de datas em UTC (mesma base do dia gravado)
   const baseHoje = Date.parse(hojeStr + "T00:00:00Z");
-  for (const r of (data ?? []) as { valor: number; dia: string }[]) {
+  for (const r of (data ?? []) as Pick<HumorRegistro, "valor" | "dia">[]) {
     const diaMs = Date.parse(r.dia + "T00:00:00Z");
     const idx = 6 - Math.round((baseHoje - diaMs) / 86400000);
     if (idx >= 0 && idx <= 6) out[idx] = r.valor; // último registro do dia prevalece
@@ -155,7 +157,7 @@ export async function cancelarConsulta(consultaId: string): Promise<void> {
 
 export async function getRoomToken(
   consultaId: string
-): Promise<{ token: string; room: string; domain: string }> {
+): Promise<RoomTokenResponse> {
   // O JWT da sala é emitido SÓ no server (segredo server-side). O server valida
   // via service_role que o caller é o paciente OU o profissional DAQUELA
   // consulta. Manda o access_token do usuário logado p/ essa validação.
@@ -183,7 +185,7 @@ export async function getRoomToken(
     throw new Error(msg);
   }
 
-  return (await res.json()) as { token: string; room: string; domain: string };
+  return (await res.json()) as RoomTokenResponse;
 }
 
 /**

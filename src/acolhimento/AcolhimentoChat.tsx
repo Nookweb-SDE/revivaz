@@ -60,7 +60,7 @@ export default function AcolhimentoChat() {
 
   return (
     <div style={{ maxWidth: 560, margin: "24px auto", padding: 16, fontFamily: "system-ui" }}>
-      <div role="complementary" aria-label="Números de emergência" style={{ borderTop: `2px solid ${teal}`, paddingTop: 8, marginBottom: 12, fontSize: 12, color: "#007A8C" }}>
+      <div role="complementary" aria-label="Números de emergência" aria-live="polite" aria-atomic="true" style={{ borderTop: `2px solid ${teal}`, paddingTop: 8, marginBottom: 12, fontSize: 12, color: "#007A8C" }}>
         Em emergência ligue <b>188</b> (CVV, 24h) ou <b>192</b> (SAMU).
       </div>
       {crisis && (
@@ -69,7 +69,13 @@ export default function AcolhimentoChat() {
           <ul>{crisis.map((r) => <li key={r.nome}><b>{r.nome}</b> — {r.contato}. {r.descricao}</li>)}</ul>
         </div>
       )}
-      <div style={{ minHeight: 280 }}>
+      <div
+        role="log"
+        aria-live="polite"
+        aria-label="Conversa de acolhimento"
+        aria-relevant="additions"
+        style={{ minHeight: 280 }}
+      >
         {messages.map((m, i) => (
           <div key={i} style={{ textAlign: m.role === "user" ? "right" : "left", margin: "8px 0" }}>
             <span style={{ display: "inline-block", padding: "10px 14px", borderRadius: 14, background: m.role === "user" ? teal : "#EDF9FB", color: m.role === "user" ? "#fff" : "#0D1117", maxWidth: "85%" }}>{m.content || "…"}</span>
@@ -77,8 +83,24 @@ export default function AcolhimentoChat() {
         ))}
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="Escreva o que está sentindo…" style={{ flex: 1, padding: 12, borderRadius: 10, border: "1px solid #ccc" }} />
-        <button type="button" onClick={send} disabled={busy} style={{ background: teal, color: "#fff", border: "none", borderRadius: 10, padding: "0 18px", cursor: "pointer" }}>Enviar</button>
+        <input
+          id="chat-input"
+          aria-label="Escreva o que está sentindo"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && send()}
+          placeholder="Escreva o que está sentindo…"
+          style={{ flex: 1, padding: 12, borderRadius: 10, border: "1px solid #ccc" }}
+        />
+        <button
+          type="button"
+          aria-label="Enviar mensagem"
+          onClick={send}
+          disabled={busy}
+          style={{ background: teal, color: "#fff", border: "none", borderRadius: 10, padding: "0 18px", cursor: "pointer" }}
+        >
+          Enviar
+        </button>
       </div>
     </div>
   );
