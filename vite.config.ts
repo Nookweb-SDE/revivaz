@@ -19,8 +19,10 @@ function inlineCssPlugin(): Plugin {
       }
     },
     transformIndexHtml(html) {
-      // Remove link tags apontando para o CSS gerado e injeta inline
-      const cleaned = html.replace(/<link rel="stylesheet"[^>]*assets\/index[^"]*\.css"[^>]*>/g, '');
+      // Remove o <link> do CSS gerado (qualquer nome hasheado em /assets/*.css,
+      // independente da ordem dos atributos como crossorigin) e injeta inline.
+      // Não casa /fonts/nunito.css (fica fora de /assets/).
+      const cleaned = html.replace(/<link\b[^>]*href="[^"]*\/assets\/[^"]*\.css"[^>]*>/g, '');
       return cleaned.replace('</head>', `<style>${cssContent}</style></head>`);
     },
   };
