@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 import path from "path";
 import { readFileSync, existsSync } from "fs";
 import { randomInt, randomBytes } from "crypto";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { askClaudeBridge, isClaudeBridgeConfigured } from "./lib/claudeBridge";
 import { detectCrisis, CRISIS_RESOURCES } from "../src/acolhimento/crisis";
 import { ACOLHIMENTO_SYSTEM_PROMPT } from "../src/acolhimento/systemPrompt";
 import { mintJitsiJwt } from "./jitsiJwt";
@@ -16,7 +16,6 @@ import { makeRequireAuth } from "./middleware/auth";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "..", "dist");
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 // ─── Secret resolution (env OR Docker secret *_FILE) ────────────────────────
 function resolveSecret(envKey: string, fileKey: string): string {
@@ -26,14 +25,14 @@ function resolveSecret(envKey: string, fileKey: string): string {
   return "";
 }
 
-function resolveGeminiKey(): string {
-  if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY.trim();
-  const f = process.env.GEMINI_API_KEY_FILE;
-  if (f && existsSync(f)) return readFileSync(f, "utf8").trim();
-  return "";
-}
+// Claude bridge (assistente IA da assinatura, via CLI no host — sem token de LLM).
+// URL e secret resolvem via env OU Docker secret *_FILE. O módulo claudeBridge lê
+// process.env.CLAUDE_BRIDGE_{URL,SECRET}, então normalizamos as duas aqui.
+process.env.CLAUDE_BRIDGE_URL =
+  resolveSecret("CLAUDE_BRIDGE_URL", "CLAUDE_BRIDGE_URL_FILE") || process.env.CLAUDE_BRIDGE_URL || "";
+process.env.CLAUDE_BRIDGE_SECRET =
+  resolveSecret("CLAUDE_BRIDGE_SECRET", "CLAUDE_BRIDGE_SECRET_FILE") || process.env.CLAUDE_BRIDGE_SECRET || "";
 
-const GEMINI_KEY = resolveGeminiKey();
 const EVOLUTION_API_KEY = resolveSecret("EVOLUTION_API_KEY", "EVOLUTION_API_KEY_FILE");
 const EVOLUTION_URL = (process.env.EVOLUTION_URL || "").replace(/\/$/, "");
 const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE || "";
@@ -827,7 +826,7 @@ app.post(
 // ─── POST /api/consulta/nota-ia ──────────────────────────────────────────────
 // Nota clínica assistida por IA: o PROFISSIONAL da consulta envia o que observou
 // (ditado local no navegador OU digitado — SEM gravação de áudio/vídeo no server)
-// e o Gemini estrutura numa evolução PT-BR. É um RASCUNHO que o profissional
+// e o Claude (via ponte CLI da assinatura) estrutura numa evolução PT-BR. É um RASCUNHO que o profissional
 // revisa e salva (humano no loop) — não é diagnóstico (compliance CFP/Anvisa).
 // Segurança: só o profissional vinculado da consulta (não o paciente).
 const NOTA_CLINICA_PROMPT = `Você ajuda um(a) profissional de saúde mental a ORGANIZAR a evolução clínica de um atendimento, a partir das anotações/ditado que ele(a) fornece. Você NÃO diagnostica, NÃO inventa fatos e NÃO adiciona nada que não esteja nas anotações.
@@ -847,7 +846,7 @@ app.post(
       res.status(500).json({ error: "Auth not configured" });
       return;
     }
-    if (!GEMINI_KEY) {
+    if (!isClaudeBridgeConfigured()) {
       res.status(503).json({ error: "IA não configurada" });
       return;
     }
@@ -943,20 +942,15 @@ app.post(
       return;
     }
 
-    // Gemini estrutura a nota (não-streaming; texto curto)
+    // Claude CLI (via ponte) estrutura a nota — texto curto, não-streaming.
+    // Prompt = instrução clínica + as anotações do profissional.
     try {
-      const genAI = new GoogleGenerativeAI(GEMINI_KEY);
-      const model = genAI.getGenerativeModel({
-        model: GEMINI_MODEL,
-        systemInstruction: NOTA_CLINICA_PROMPT,
-        generationConfig: { maxOutputTokens: 800 },
-      });
-      const result = await model.generateContent(texto);
-      const nota = result.response.text();
+      const prompt = `${NOTA_CLINICA_PROMPT}\n\nANOTAÇÕES DO PROFISSIONAL:\n${texto}`;
+      const nota = (await askClaudeBridge({ prompt, timeoutMs: 55_000 })).trim();
       console.log(`[nota-ia] nota gerada consulta=${consulta_id.slice(0, 8)}…`);
       res.status(200).json({ nota });
     } catch (err) {
-      console.error("[nota-ia] Erro Gemini:", err);
+      console.error("[nota-ia] Erro ponte Claude:", err);
       res.status(500).json({ error: "Falha ao gerar a nota. Tente novamente." });
     }
   }
@@ -1148,36 +1142,37 @@ app.post("/api/acolhimento", async (req, res) => {
     return;
   }
 
-  if (!GEMINI_KEY) {
+  if (!isClaudeBridgeConfigured()) {
     res.status(500).json({ error: "Serviço indisponível." });
     return;
   }
 
-  // Gemini: roles user/model (assistant -> model); systemInstruction = prompt de acolhimento.
-  const contents = messages.slice(-12).map((m: any) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: String(m.content) }],
-  }));
-  // Gemini exige que o histórico comece com 'user'.
-  while (contents.length && contents[0].role === "model") contents.shift();
+  // Monta um prompt único p/ o Claude CLI: system de acolhimento + histórico recente
+  // (últimas 12 msgs) + a pergunta atual. O CLI não tem "system role" separado, então
+  // o prompt de acolhimento entra como instrução inicial e as regras são reforçadas no fim.
+  const historico = messages
+    .slice(-12)
+    .map((m: any) => `${m.role === "assistant" ? "ASSISTENTE" : "PESSOA"}: ${String(m.content)}`)
+    .join("\n");
 
-  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  const prompt = [
+    ACOLHIMENTO_SYSTEM_PROMPT,
+    "",
+    "CONVERSA ATÉ AGORA:",
+    historico,
+    "",
+    "Responda à ÚLTIMA fala da PESSOA seguindo as regras acima. Responda APENAS com a fala do assistente, sem prefixo, sem aspas, 2 a 5 frases.",
+  ].join("\n");
+
   try {
-    const genAI = new GoogleGenerativeAI(GEMINI_KEY);
-    const model = genAI.getGenerativeModel({
-      model: GEMINI_MODEL,
-      systemInstruction: ACOLHIMENTO_SYSTEM_PROMPT,
-      generationConfig: { maxOutputTokens: 600 },
-    });
-    const result = await model.generateContentStream({ contents });
-    for await (const chunk of result.stream) {
-      const t = chunk.text();
-      if (t) res.write(t);
-    }
-    res.end();
+    const reply = (await askClaudeBridge({ prompt, timeoutMs: 55_000 })).trim();
+    res.status(200).json({ reply });
   } catch (e) {
     console.error("acolhimento error:", e);
-    res.end("Desculpe, tive um problema agora. Se for urgente, ligue 188 (CVV).");
+    // Degrada gracioso: mensagem segura + recurso de crise sempre visível.
+    res.status(200).json({
+      reply: "Desculpe, tive um problema agora. Se for urgente, ligue 188 (CVV).",
+    });
   }
 });
 

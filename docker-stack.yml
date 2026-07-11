@@ -4,14 +4,21 @@ version: "3.8"
 # Node (tsx) serve o build estático (landing + /acolhimento) + a API /api/acolhimento.
 # Cutover de DNS feito 22/jun: revivaz.com.br + www apontam pro Contabo (saiu do Vercel).
 # (Host de staging revivaz-contabo NÃO usado: NXDOMAIN negativo-cacheado 24h pelo meu 1º registro errado.)
-# Chat IA = Gemini (gemini-2.5-flash). Chave via Docker secret `revivaz_gemini_key` (external, *_FILE).
-# Criar o secret no Contabo: `printf '%s' "<chave>" | docker secret create revivaz_gemini_key -`
-# (sem o secret, o chat degrada gracioso: 500 + rodapé 188/192 sempre visível).
+#
+# Chat IA + nota-IA = Claude CLI da ASSINATURA (sem token de LLM), via a MESMA ponte
+# do Tecnopano no host (deploy/claude-vps/bridge.mjs em host.docker.internal:8787).
+# O app fala com a ponte por HTTP local com um secret. Dois secrets external *_FILE:
+#   revivaz_claude_bridge_url    → conteúdo: http://host.docker.internal:8787/ask
+#   revivaz_claude_bridge_secret → conteúdo: <mesmo BRIDGE_SECRET da ponte no host>
+# Criar:  printf '%s' 'http://host.docker.internal:8787/ask' | docker secret create revivaz_claude_bridge_url -
+#         printf '%s' '<BRIDGE_SECRET>' | docker secret create revivaz_claude_bridge_secret -
+# (sem os secrets, a IA degrada gracioso: 500 + rodapé 188/192 sempre visível).
 
 # Login WhatsApp (Fase 2): OTP self-contained no server → sessão via service_role.
-# Secrets: printf '%s' "<v>" | docker secret create revivaz_{gemini_key,service_role,evolution_key} -
+# Secrets: printf '%s' "<v>" | docker secret create revivaz_{service_role,evolution_key} -
 secrets:
-  revivaz_gemini_key: { external: true }
+  revivaz_claude_bridge_url: { external: true }
+  revivaz_claude_bridge_secret: { external: true }
   revivaz_service_role: { external: true }
   revivaz_evolution_key: { external: true }
   # Atendimento virtual: MESMO secret que o stack do Jitsi (prosody) usa p/ validar
@@ -21,9 +28,14 @@ secrets:
 services:
   web:
     image: revivaz:latest
+    # host.docker.internal → IP do host, p/ alcançar a ponte Claude (bridge.mjs).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - PORT=8080
-      - GEMINI_API_KEY_FILE=/run/secrets/revivaz_gemini_key
+      # IA via ponte Claude CLI (assinatura) — URL + secret via Docker secret *_FILE.
+      - CLAUDE_BRIDGE_URL_FILE=/run/secrets/revivaz_claude_bridge_url
+      - CLAUDE_BRIDGE_SECRET_FILE=/run/secrets/revivaz_claude_bridge_secret
       # Supabase (públicas) + service_role via secret (server-side OTP→sessão)
       - SUPABASE_URL=https://akobilxqkwkcfyqdlzzf.supabase.co
       - SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrb2JpbHhxa3drY2Z5cWRsenpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNDIwNDcsImV4cCI6MjA5NzgxODA0N30.tdEEaZj1BPYTKjgLUrAv-_SOfZWyGzg7jPdbN77nAPs
@@ -36,7 +48,7 @@ services:
       - JITSI_DOMAIN=meet.revivaz.com.br
       - JITSI_APP_ID=revivaz
       - JITSI_JWT_SECRET_FILE=/run/secrets/revivaz_jitsi_jwt_secret
-    secrets: [revivaz_gemini_key, revivaz_service_role, revivaz_evolution_key, revivaz_jitsi_jwt_secret]
+    secrets: [revivaz_claude_bridge_url, revivaz_claude_bridge_secret, revivaz_service_role, revivaz_evolution_key, revivaz_jitsi_jwt_secret]
     networks: [traefik-public]
     deploy:
       replicas: 1

@@ -238,7 +238,7 @@ export async function notificarConsulta(
 
 /**
  * Nota clínica assistida por IA: o PROFISSIONAL da consulta envia o que observou
- * (ditado local ou digitado) e o server (Gemini) devolve uma evolução estruturada.
+ * (ditado local ou digitado) e o server (Claude via ponte CLI) devolve uma evolução estruturada.
  * É um rascunho a revisar — o profissional salva via profSalvarObsClinica.
  */
 export async function gerarNotaIA(

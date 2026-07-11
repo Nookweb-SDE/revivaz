@@ -21,29 +21,31 @@ export default function AcolhimentoChat() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: next }),
       });
-      const ct = resp.headers.get("Content-Type") || "";
-      if (ct.includes("application/json")) {
-        const data = await resp.json();
-        if (data.crisis) { setCrisis(data.resources); return; }
-        setMessages([...next, { role: "assistant", content: "Algo deu errado, tente de novo em instantes." }]);
-        return;
-      }
-      if (!resp.body) return;
-      const reader = resp.body.getReader();
-      const dec = new TextDecoder();
-      let acc = "";
-      setMessages([...next, { role: "assistant", content: "" }]);
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        acc += dec.decode(value, { stream: true });
-        setMessages([...next, { role: "assistant", content: acc }]);
-      }
-      acc += dec.decode();
-      setMessages([...next, { role: "assistant", content: acc }]);
+      const data = await resp.json().catch(() => null);
+      if (data?.crisis) { setCrisis(data.resources); return; }
+      const reply = typeof data?.reply === "string" && data.reply.trim()
+        ? data.reply.trim()
+        : "Algo deu errado, tente de novo em instantes.";
+      // Revela a resposta aos poucos (a IA responde via CLI, sem streaming real —
+      // o efeito de "digitando" mantém a sensação humana do acolhimento).
+      await revelarAosPoucos(reply, next);
     } finally {
       setBusy(false);
     }
+  }
+
+  // Escreve `reply` na última bolha do assistente, algumas palavras por vez.
+  async function revelarAosPoucos(reply: string, base: Msg[]) {
+    const palavras = reply.split(" ");
+    let acc = "";
+    setMessages([...base, { role: "assistant", content: "" }]);
+    for (let i = 0; i < palavras.length; i++) {
+      acc += (i === 0 ? "" : " ") + palavras[i];
+      setMessages([...base, { role: "assistant", content: acc }]);
+      // ~3 palavras por tick; pausa curta o suficiente p/ parecer digitação.
+      if (i % 3 === 2) await new Promise((r) => setTimeout(r, 45));
+    }
+    setMessages([...base, { role: "assistant", content: reply }]);
   }
 
   const teal = "#007A8C";

@@ -112,13 +112,15 @@ export default function ChatIA({
         }),
       });
 
-      const ct = resp.headers.get("Content-Type") || "";
-      if (ct.includes("application/json")) {
-        const data = await resp.json();
-        if (data.crisis) {
-          setCrisis(data.resources);
-          return;
-        }
+      const data = await resp.json().catch(() => null);
+      if (data?.crisis) {
+        setCrisis(data.resources);
+        return;
+      }
+
+      const reply =
+        typeof data?.reply === "string" && data.reply.trim() ? data.reply.trim() : "";
+      if (!reply) {
         setMessages([
           ...afterUser,
           {
@@ -129,29 +131,17 @@ export default function ChatIA({
         return;
       }
 
-      if (!resp.body) {
-        setMessages([
-          ...afterUser,
-          {
-            papel: "assistant",
-            conteudo: "Algo deu errado, tente de novo em instantes.",
-          },
-        ]);
-        return;
-      }
-
-      // Stream the assistant reply
-      const reader = resp.body.getReader();
-      const dec = new TextDecoder();
+      // A IA responde via CLI (sem streaming real) — revelamos aos poucos p/
+      // manter o efeito de "digitando" no acolhimento.
+      const palavras = reply.split(" ");
       let acc = "";
       setMessages([...afterUser, { papel: "assistant", conteudo: "" }]);
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        acc += dec.decode(value, { stream: true });
+      for (let i = 0; i < palavras.length; i++) {
+        acc += (i === 0 ? "" : " ") + palavras[i];
         setMessages([...afterUser, { papel: "assistant", conteudo: acc }]);
+        if (i % 3 === 2) await new Promise((r) => setTimeout(r, 45));
       }
-      acc += dec.decode();
+      acc = reply;
       setMessages([...afterUser, { papel: "assistant", conteudo: acc }]);
 
       // Persist the complete user+assistant pair only after a successful
