@@ -4,6 +4,7 @@
    ══════════════════════════════════════════════════════════════════ */
 
 import { useState, useEffect, useRef } from "react";
+import EcgValor from "./sections/EcgValor";
 import {
   Star, Download, Search, Heart, ArrowRight, ChevronLeft, ChevronRight,
   Clock, MessageCircle, Smartphone, Video, Monitor, Sparkles, Brain,
@@ -211,6 +212,8 @@ export default function RevivazPreview() {
   const Fp = F_r(bp);
   const container = { maxWidth: containerMax(bp), margin: "0 auto" as const, paddingLeft: containerPad(bp), paddingRight: containerPad(bp) };
   const sectionPad = { padding: `${Sp.xl}px ${Sp.m}px` };
+  const btnPrimary = { padding: "13px 24px", fontSize: F.xs, fontWeight: 700 as const, color: T.white, background: `linear-gradient(135deg, ${T.teal500}, ${T.teal700})`, border: "none", borderRadius: 12, cursor: "pointer" as const, fontFamily: "inherit", minHeight: 46, boxShadow: "0 8px 22px rgba(0,168,191,.3)" };
+  const btnGlass = { padding: "13px 24px", fontSize: F.xs, fontWeight: 700 as const, color: T.white, background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.24)", borderRadius: 12, cursor: "pointer" as const, fontFamily: "inherit", minHeight: 46, backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" };
 
   /* state */
   const [tab, setTab] = useState(0);
@@ -324,79 +327,118 @@ export default function RevivazPreview() {
       {/* ═══ BLOCO 3 — Hero (Canvas WebGL-like particle mesh) ═══ */}
       <HeroCanvas heroLines={heroLines} heroIdx={heroIdx} openAgendar={openAgendar} bp={bp} />
 
-      {/* ═══ BLOCO 4 — Pill tabs ═══ */}
-      <section style={{ background: T.white, padding: `${Sp.m}px ${Sp.m}px`, borderBottom: `1px solid ${T.gray200}` }}>
-        <div style={{ display: "flex", gap: Sp.s, flexWrap: "wrap", ...container }}>
-          {["Para pacientes", "Para profissionais", "Como ativar"].map((l, i) => (
-            <button key={l} onClick={() => setTab(i)} style={pill(tab === i)}>{l}</button>
-          ))}
+      {/* ═══ BLOCO 3.5 — ECG "O que é" (réplica EXATA v6 NookTrack, via nookpick) ═══ */}
+      <EcgValor />
+
+      {/* ═══ BLOCO 4 — Segmented control (track claro, pill ativa branca) ═══ */}
+      <section style={{ background: T.white, padding: `${Sp.l}px ${Sp.m}px 0` }}>
+        <div style={{ ...container, display: "flex", justifyContent: bp === "mobile" ? "stretch" : "center" }}>
+          <div style={{ display: "inline-flex", gap: 4, padding: 4, background: T.teal050, border: `1px solid ${T.teal100}`, borderRadius: 9999, width: bp === "mobile" ? "100%" : "auto", boxShadow: "inset 0 1px 3px rgba(0,77,92,.06)" }}>
+            {["Para pacientes", "Para profissionais", "Como ativar"].map((l, i) => (
+              <button key={l} onClick={() => setTab(i)} style={{
+                flex: bp === "mobile" ? 1 : "none",
+                padding: bp === "mobile" ? "10px 8px" : "10px 22px",
+                fontSize: F.xs, fontWeight: 700, border: "none", borderRadius: 9999,
+                cursor: "pointer", fontFamily: "inherit", transition: "all .2s",
+                background: tab === i ? T.white : "transparent",
+                color: tab === i ? T.teal700 : T.gray600,
+                boxShadow: tab === i ? "0 2px 10px rgba(0,77,92,.15)" : "none",
+              }}>{l}</button>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ═══ BLOCO 5 — Tab content (split: text + image) ═══ */}
-      <section style={{ background: T.white, padding: `${Sp.xl}px ${Sp.m}px` }}>
-        <div style={{ display: "flex", gap: Sp.xl, alignItems: "center", ...container, flexWrap: "wrap" }}>
-          <div style={{ flex: "1 1 280px", minWidth: 0 }}>
+      {/* ═══ BLOCO 5 — Card premium split (ref. Conexão Saúde, cores Revivaz + vidro fosco) ═══ */}
+      <section style={{ background: T.white, padding: `${Sp.l}px ${Sp.m}px ${Sp.xl}px` }}>
+        <div style={{ ...container }}>
+        <div style={{
+          display: "flex", gap: bp === "mobile" ? Sp.l : Sp.xxl, alignItems: "stretch", flexWrap: "wrap",
+          background: `linear-gradient(135deg, ${T.navy} 0%, ${T.navy800} 100%)`,
+          border: "1px solid rgba(0,168,191,.18)", borderRadius: 28,
+          padding: bp === "mobile" ? Sp.l : 40,
+          boxShadow: "0 24px 60px rgba(11,29,58,.28)",
+          position: "relative", overflow: "hidden",
+        }}>
+          <div style={{ position: "absolute", top: -80, right: "34%", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,168,191,.18), transparent 70%)", pointerEvents: "none" }} />
+          <div style={{ flex: "1 1 300px", minWidth: 0, position: "relative", zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: Sp.m }}>
+              <span style={{ width: 22, height: 2, background: T.teal300, borderRadius: 2 }} />
+              <span style={{ fontSize: F.xs, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 700, color: T.teal300 }}>
+                {tab === 0 ? "Para você" : tab === 1 ? "Para profissionais" : "Como ativar"}
+              </span>
+            </div>
             {tab === 0 && <>
-              <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.xl, color: T.gray950, marginBottom: S.m }}>O futuro do cuidado em saúde mental</h2>
-              <p style={{ fontSize: F.sm, color: T.gray600, lineHeight: 1.65, marginBottom: S.l }}>Agende presencial ou online, receba receita por WhatsApp e faça parte de uma rede que reduz a fila de espera do SUS.</p>
+              <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: bp === "mobile" ? F.xl : F["2xl"], color: T.white, lineHeight: 1.15, marginBottom: S.m }}>O futuro do cuidado em saúde mental</h2>
+              <p style={{ fontSize: F.sm, color: "rgba(255,255,255,.72)", lineHeight: 1.7, marginBottom: Sp.l, maxWidth: 440 }}>Agende presencial ou online, receba receita por WhatsApp e faça parte de uma rede que reduz a fila de espera do SUS.</p>
               <div style={{ display: "flex", gap: S.m, flexWrap: "wrap" }}>
-                <button onClick={openAgendar} style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.teal700, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", minHeight: 44 }}>Agendar consulta</button>
-                <button style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 600, color: T.teal700, background: T.teal050, border: `2px solid ${T.teal100}`, borderRadius: 12, cursor: "pointer", fontFamily: "inherit", minHeight: 44 }}>Saiba mais</button>
+                <button onClick={openAgendar} style={btnPrimary}>Agendar consulta</button>
+                <button style={btnGlass}>Saiba mais</button>
               </div>
             </>}
             {tab === 1 && <>
-              <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.xl, color: T.gray950, marginBottom: S.m }}>Lidere a transformação solidária</h2>
-              <p style={{ fontSize: F.sm, color: T.gray600, lineHeight: 1.65, marginBottom: S.l }}>Reduza a fila de espera e faça do seu consultório um ponto de atendimento para quem mais precisa.</p>
+              <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: bp === "mobile" ? F.xl : F["2xl"], color: T.white, lineHeight: 1.15, marginBottom: S.m }}>Lidere a transformação solidária</h2>
+              <p style={{ fontSize: F.sm, color: "rgba(255,255,255,.72)", lineHeight: 1.7, marginBottom: Sp.l, maxWidth: 440 }}>Reduza a fila de espera e faça do seu consultório um ponto de atendimento para quem mais precisa.</p>
               <div style={{ display: "flex", gap: S.m, flexWrap: "wrap" }}>
-                <button style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.teal700, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", minHeight: 44 }}>Quero ser voluntário</button>
-                <button style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 600, color: T.teal700, background: T.teal050, border: `2px solid ${T.teal100}`, borderRadius: 12, cursor: "pointer", fontFamily: "inherit", minHeight: 44 }}>Outros parceiros</button>
+                <button style={btnPrimary}>Quero ser voluntário</button>
+                <button style={btnGlass}>Outros parceiros</button>
               </div>
             </>}
             {tab === 2 && <>
-              <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.xl, color: T.gray950, marginBottom: S.m }}>Faça parte do futuro</h2>
-              <p style={{ fontSize: F.sm, color: T.gray600, lineHeight: 1.65, marginBottom: S.l }}>Otimize a gestão do consultório, atenda novos pacientes e integre uma comunidade de profissionais solidários.</p>
+              <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: bp === "mobile" ? F.xl : F["2xl"], color: T.white, lineHeight: 1.15, marginBottom: S.m }}>Faça parte do futuro</h2>
+              <p style={{ fontSize: F.sm, color: "rgba(255,255,255,.72)", lineHeight: 1.7, marginBottom: Sp.l, maxWidth: 440 }}>Otimize a gestão do consultório, atenda novos pacientes e integre uma comunidade de profissionais solidários.</p>
               <div style={{ display: "flex", gap: S.m, flexWrap: "wrap" }}>
-                <button style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.teal700, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", minHeight: 44 }}>Saiba mais</button>
-                <button style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 600, color: T.teal700, background: "none", border: "none", textDecoration: "underline", cursor: "pointer", fontFamily: "inherit" }}>Fale com suporte</button>
+                <button style={btnPrimary}>Saiba mais</button>
+                <button style={btnGlass}>Fale com suporte</button>
               </div>
             </>}
           </div>
-          <div style={{ width: bp === "mobile" ? "100%" : "42%", minWidth: bp === "mobile" ? 0 : 240, borderRadius: 16, overflow: "hidden", position: "relative", flexShrink: 0, boxShadow: "0 8px 32px rgba(0,0,0,.12)" }}>
-            <img src="/revivaz/team.webp" alt="Equipe" fetchPriority="high" decoding="async" width="600" height="180" style={{ width: "100%", height: bp === "mobile" ? 160 : 180, objectFit: "cover", objectPosition: "center 40%", display: "block" }} />
-            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 16px 12px", background: "linear-gradient(transparent,rgba(0,0,0,.6))" }}>
+          <div style={{ width: bp === "mobile" ? "100%" : "44%", minWidth: bp === "mobile" ? 0 : 260, borderRadius: 22, overflow: "hidden", position: "relative", zIndex: 1, flexShrink: 0, minHeight: bp === "mobile" ? 200 : 300, boxShadow: "0 16px 40px rgba(0,0,0,.3)" }}>
+            <img
+              src={tab === 0 ? "/revivaz/team.webp" : tab === 1 ? "/revivaz/pro.webp" : "/revivaz/ativar.webp"}
+              alt={tab === 0 ? "Paciente em consulta online" : tab === 1 ? "Profissional em teleatendimento" : "Agendamento pelo app Revivaz"}
+              fetchPriority="high" decoding="async" width="600" height="300"
+              style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 40%", display: "block", position: "absolute", inset: 0 }} />
+            {/* tratamento teal p/ casar com as cores do site */}
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(150deg, rgba(0,168,191,.22) 0%, transparent 42%, rgba(11,29,58,.6) 100%)", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", bottom: 14, left: 14, display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 13px", background: "rgba(255,255,255,.14)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,.3)", borderRadius: 9999 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.green500, boxShadow: "0 0 0 3px rgba(76,175,80,.25)" }} />
               <span style={{ fontSize: F.xs, color: T.white, fontWeight: 700 }}>+500 profissionais</span>
             </div>
           </div>
         </div>
+        </div>
       </section>
 
-      {/* ═══ BLOCO 6 — "Saúde digital" + mockup ═══ */}
+      {/* ═══ BLOCO 6 — "Saúde digital" (device card polido) ═══ */}
       <section style={{ ...sectionPad, background: T.gray050, textAlign: "center" }}>
         <div style={{ ...container }}>
           <div style={{ fontSize: Fp.xs, color: T.teal700, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 700, marginBottom: Sp.s }}>Saúde digital</div>
           <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp["2xl"], color: T.gray950, marginBottom: Sp.s }}>do jeito que você precisa</h2>
-          <p style={{ fontSize: Fp.sm, color: T.gray600, marginBottom: Sp.l, maxWidth: 420, margin: "0 auto" }}>Atendimentos por agendamento. Presencial ou online por vídeo.</p>
-          <div style={{ maxWidth: bp === "mobile" ? 320 : 360, margin: "0 auto", background: T.gray950, borderRadius: "12px 12px 0 0", padding: "10px 10px 0", position: "relative", boxShadow: "0 12px 40px rgba(0,0,0,.2)" }}>
-            <div style={{ background: T.teal900, borderRadius: 8, height: bp === "mobile" ? 140 : 160, display: "flex", alignItems: "center", justifyContent: "center", gap: Sp.m }}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", background: T.teal700, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <User size={26} color={T.white} />
-              </div>
-              <div style={{ textAlign: "left", color: T.white }}>
-                <div style={{ fontSize: F.sm, fontWeight: 700 }}>Consulta online</div>
-                <div style={{ fontSize: F.xs, opacity: 0.8 }}>Dr. Carlos — Psiquiatria</div>
-                <div style={{ display: "flex", gap: S.s, marginTop: S.s }}>
-                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: T.green500, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Phone size={14} color={T.white} />
-                  </div>
-                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Video size={14} color={T.white} />
-                  </div>
+          <p style={{ fontSize: Fp.sm, color: T.gray600, maxWidth: 420, margin: "0 auto" }}>Atendimentos por agendamento. Presencial ou online por vídeo.</p>
+          <div style={{ maxWidth: bp === "mobile" ? 320 : 380, margin: `${Sp.l}px auto 0` }}>
+            <div style={{ background: `linear-gradient(160deg, ${T.teal900} 0%, ${T.navy} 100%)`, borderRadius: 20, padding: bp === "mobile" ? 18 : 22, position: "relative", overflow: "hidden", border: "1px solid rgba(255,255,255,.06)", boxShadow: "0 20px 50px rgba(11,29,58,.28)" }}>
+              <div style={{ position: "absolute", top: -50, right: -30, width: 170, height: 170, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,191,216,.28), transparent 70%)", pointerEvents: "none" }} />
+              <div style={{ display: "flex", alignItems: "center", gap: Sp.m, position: "relative", zIndex: 1 }}>
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${T.teal500}, ${T.teal700})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 4px 14px rgba(0,168,191,.4)" }}>
+                  <User size={26} color={T.white} />
                 </div>
+                <div style={{ textAlign: "left", color: T.white, flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: F.sm, fontWeight: 700 }}>Consulta online</div>
+                  <div style={{ fontSize: F.xs, opacity: 0.75 }}>Dr. Carlos — Psiquiatria</div>
+                </div>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.green500, boxShadow: "0 0 0 4px rgba(76,175,80,.2)", flexShrink: 0 }} />
+              </div>
+              <div style={{ display: "flex", gap: Sp.s, marginTop: Sp.m, position: "relative", zIndex: 1 }}>
+                <button style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 12, border: "none", background: T.green500, color: T.white, fontSize: F.xs, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
+                  <Phone size={14} /> Atender
+                </button>
+                <button style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 12, border: "1px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.08)", color: T.white, fontSize: F.xs, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}>
+                  <Video size={14} /> Vídeo
+                </button>
               </div>
             </div>
           </div>
-          <div style={{ maxWidth: 380, margin: "0 auto", height: 8, background: T.gray800, borderRadius: "0 0 6px 6px" }} />
         </div>
       </section>
 
