@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import EcgValor from "./sections/EcgValor";
+import HeroTelemedicina from "./sections/HeroTelemedicina";
 import {
   Star, Download, Search, Heart, ArrowRight, ChevronLeft, ChevronRight,
   Clock, MessageCircle, Smartphone, Video, Monitor, Sparkles, Brain,
@@ -70,142 +71,6 @@ const inputBase = {
   boxSizing: "border-box" as const, fontFamily: "inherit", outline: "none",
 };
 
-/* ── Simplex 2D noise for displacement mesh ── */
-const _P = [151,160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,190,6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,88,237,149,56,87,174,20,125,136,171,168,68,175,74,165,71,134,139,48,27,166,77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,102,143,54,65,25,63,161,1,216,80,73,209,76,132,187,208,89,18,169,200,196,135,130,116,188,159,86,164,100,109,198,173,186,3,64,52,217,226,250,124,123,5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,223,183,170,213,119,248,152,2,44,154,163,70,221,153,101,155,167,43,172,9,129,22,39,253,19,98,108,110,79,113,224,232,178,185,112,104,218,246,97,228,251,34,242,193,238,210,144,12,191,179,162,241,81,51,145,235,249,14,239,107,49,192,214,31,181,199,106,157,184,84,204,176,115,121,50,45,127,4,150,254,138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180];
-const _perm = new Array(512); for (let i = 0; i < 512; i++) _perm[i] = _P[i & 255];
-function _g2(h: number, x: number, y: number) { const v = h & 7; const u = v < 4 ? x : y; const w = v < 4 ? y : x; return ((v & 1) ? -u : u) + ((v & 2) ? -2 * w : 2 * w); }
-function simplex2(x: number, y: number) {
-  const F2 = 0.5 * (Math.sqrt(3) - 1), G2 = (3 - Math.sqrt(3)) / 6;
-  const s = (x + y) * F2, i = Math.floor(x + s), j = Math.floor(y + s), t = (i + j) * G2;
-  const x0 = x - i + t, y0 = y - j + t;
-  const i1 = x0 > y0 ? 1 : 0, j1 = x0 > y0 ? 0 : 1;
-  const x1 = x0 - i1 + G2, y1 = y0 - j1 + G2, x2 = x0 - 1 + 2 * G2, y2 = y0 - 1 + 2 * G2;
-  const ii = i & 255, jj = j & 255;
-  let n0 = 0, n1 = 0, n2 = 0;
-  let t0 = 0.5 - x0 * x0 - y0 * y0; if (t0 >= 0) { t0 *= t0; n0 = t0 * t0 * _g2(_perm[ii + _perm[jj]], x0, y0); }
-  let t1 = 0.5 - x1 * x1 - y1 * y1; if (t1 >= 0) { t1 *= t1; n1 = t1 * t1 * _g2(_perm[ii + i1 + _perm[jj + j1]], x1, y1); }
-  let t2 = 0.5 - x2 * x2 - y2 * y2; if (t2 >= 0) { t2 *= t2; n2 = t2 * t2 * _g2(_perm[ii + 1 + _perm[jj + 1]], x2, y2); }
-  return 70 * (n0 + n1 + n2);
-}
-
-/* ── Hero displacement mesh (Aegis/Monosphera-style) ── */
-function HeroCanvas({ heroLines, heroIdx, openAgendar, bp = "desktop" }: { heroLines: string[]; heroIdx: number; openAgendar: () => void; bp?: "mobile" | "tablet" | "desktop" }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const isMobile = bp === "mobile";
-    // rAF garante que lemos layout num frame limpo (evita forced reflow)
-    const rafId = requestAnimationFrame(() => {
-      if (!canvas.parentElement) return;
-      const rect = canvas.parentElement.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 1.5);
-      const w = rect.width, h = rect.height;
-      canvas.width = w * dpr; canvas.height = h * dpr;
-      canvas.style.width = w + "px"; canvas.style.height = h + "px";
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      // Fundo — gradiente navy
-      const bg = ctx.createLinearGradient(0, 0, 0, h);
-      bg.addColorStop(0, "#0d2440"); bg.addColorStop(0.5, "#0B1D3A"); bg.addColorStop(1, "#060d18");
-      ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
-      // Orbs teal estáticas decorativas (sem loop, zero TBT)
-      const orbs = [
-        { x: 0.10, y: 0.25, r: 130, o: 0.09 },
-        { x: 0.05, y: 0.75, r: 100, o: 0.07 },
-        { x: 0.30, y: 0.10, r:  70, o: 0.06 },
-        { x: 0.22, y: 0.88, r:  90, o: 0.07 },
-        { x: 0.42, y: 0.55, r:  60, o: 0.05 },
-      ];
-      for (const o of orbs) {
-        const g = ctx.createRadialGradient(o.x * w, o.y * h, 0, o.x * w, o.y * h, o.r);
-        g.addColorStop(0, `rgba(0,191,216,${o.o})`);
-        g.addColorStop(1, "rgba(0,191,216,0)");
-        ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(o.x * w, o.y * h, o.r, 0, Math.PI * 2); ctx.fill();
-      }
-    });
-    return () => cancelAnimationFrame(rafId);
-  }, [bp]);
-
-  const heroMinH = bp === "mobile" ? 300 : bp === "tablet" ? 360 : 420;
-  const heroPad = bp === "mobile" ? "40px 16px 48px" : bp === "tablet" ? "48px 24px 56px" : "56px 40px 64px";
-  const heroTitleSize = bp === "mobile" ? 26 : bp === "tablet" ? 30 : F["3xl"];
-
-  return (
-    <section style={{ position: "relative", minHeight: heroMinH, color: T.white, overflow: "hidden", background: "#0B1D3A" }}>
-      <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
-      <div style={{
-        position: "relative", zIndex: 1,
-        display: "flex", alignItems: "center",
-        padding: heroPad,
-        maxWidth: 1200, margin: "0 auto",
-        minHeight: heroMinH,
-        gap: bp === "mobile" ? 0 : 48,
-      }}>
-        {/* Esquerda: texto */}
-        <div style={{ flex: "1 1 0", minWidth: 0 }}>
-          <h1 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: heroTitleSize, lineHeight: 1.1, margin: "0 0 8px", letterSpacing: "-0.02em", background: `linear-gradient(90deg, ${T.teal100} 0%, ${T.teal300} 50%, ${T.teal500} 100%)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" } as React.CSSProperties}>
-            Saúde que conecta
-          </h1>
-          <div style={{ fontSize: F.sm, fontWeight: 700, marginBottom: S.m, minHeight: 22, color: T.teal300, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            {heroLines[heroIdx]}
-          </div>
-          <p style={{ fontSize: F.sm, opacity: 0.92, lineHeight: 1.65, marginBottom: S.l, maxWidth: "90%", color: "rgba(214,244,248,0.9)" }}>
-            Cuidado em saúde mental de qualidade, oferecido por psiquiatras e psicólogos em trabalho solidário. Sem filas, sem burocracia.
-          </p>
-          <div style={{ display: "flex", gap: S.m, flexWrap: "wrap", alignItems: "center" }}>
-            <button onClick={openAgendar} style={{ padding: "14px 24px", fontWeight: 700, fontSize: F.sm, color: "#001820", background: `linear-gradient(90deg, ${T.teal300}, ${T.teal500})`, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 20px rgba(0,191,216,.35)", minHeight: 48 }}>
-              Agendar consulta
-            </button>
-            <button style={{ padding: "14px 24px", fontWeight: 700, fontSize: F.sm, color: T.teal300, background: "transparent", border: "2px solid rgba(0,191,216,0.5)", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", minHeight: 48 }}>
-              Saiba como ativar
-            </button>
-          </div>
-        </div>
-
-        {/* Direita: imagem (tablet / desktop) */}
-        {bp !== "mobile" && (
-          <div style={{
-            flex: "0 0 400px",
-            borderRadius: 20,
-            overflow: "hidden",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,191,216,0.18)",
-            position: "relative",
-            flexShrink: 0,
-          }}>
-            <img
-              src="/revivaz/hero-doctors.webp"
-              alt="Profissionais de saúde mental Revivaz"
-              fetchPriority="high"
-              decoding="async"
-              width="800"
-              height="597"
-              style={{ width: "100%", height: 280, objectFit: "cover", objectPosition: "center top", display: "block" }}
-            />
-            {/* overlay: cobre completamente o bottom (onde fica marca Gemini) */}
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,191,216,0.06) 0%, transparent 40%, rgba(6,13,24,0.95) 100%)" }} />
-            {/* badge flutuante — cobre o bottom da imagem */}
-            <div style={{
-              position: "absolute", bottom: 0, left: 0, right: 0,
-              background: "rgba(6,13,24,0.92)", backdropFilter: "blur(10px)",
-              borderRadius: "0 0 20px 20px", padding: "10px 14px",
-              display: "flex", alignItems: "center", gap: 10,
-            }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#25D366", flexShrink: 0, boxShadow: "0 0 6px #25D366" }} />
-              <span style={{ fontSize: 12, color: "rgba(214,244,248,0.95)", fontWeight: 600 }}>
-                +500 profissionais disponíveis agora
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
 export default function RevivazPreview() {
   const bp = useBreakpoint();
   const Sp = S_r(bp);
@@ -267,6 +132,11 @@ export default function RevivazPreview() {
 
   const openAgendar = () => { setModalAgendar(true); setAgendarOk(false); };
 
+  /* lab de decisão do hero: ?variant=2 mostra a rede; default = jornada.
+     Remover assim que a variante for escolhida (spec 2026-07-20). */
+  const heroVariant: 1 | 2 =
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("variant") === "2" ? 2 : 1;
+
   /* ──────────────────── RENDER ──────────────────── */
   return (
     <div id="top" style={{ width: "100%", fontFamily: "'Nunito',system-ui,sans-serif", fontSize: F.sm, background: T.gray050, color: T.gray950, lineHeight: 1.5 }}>
@@ -325,7 +195,7 @@ export default function RevivazPreview() {
 
       <main>
       {/* ═══ BLOCO 3 — Hero (Canvas WebGL-like particle mesh) ═══ */}
-      <HeroCanvas heroLines={heroLines} heroIdx={heroIdx} openAgendar={openAgendar} bp={bp} />
+      <HeroTelemedicina heroLines={heroLines} heroIdx={heroIdx} openAgendar={openAgendar} bp={bp} variant={heroVariant} />
 
       {/* ═══ BLOCO 3.5 — ECG "O que é" (réplica EXATA v6 NookTrack, via nookpick) ═══ */}
       <EcgValor />
@@ -397,7 +267,7 @@ export default function RevivazPreview() {
             <img
               src={tab === 0 ? "/revivaz/team.webp" : tab === 1 ? "/revivaz/pro.webp" : "/revivaz/ativar.webp"}
               alt={tab === 0 ? "Paciente em consulta online" : tab === 1 ? "Profissional em teleatendimento" : "Agendamento pelo app Revivaz"}
-              fetchPriority="high" decoding="async" width="600" height="300"
+              {...{ fetchpriority: "high" }} decoding="async" width="600" height="300"
               style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 40%", display: "block", position: "absolute", inset: 0 }} />
             {/* tratamento teal p/ casar com as cores do site */}
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(150deg, rgba(0,168,191,.22) 0%, transparent 42%, rgba(11,29,58,.6) 100%)", pointerEvents: "none" }} />
