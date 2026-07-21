@@ -169,12 +169,12 @@ export default function HeroScrubFrames({
             qualquer quadro, em vez de depender do acaso do frame. */}
         <div aria-hidden="true" style={{
           ...capa,
-          background: "linear-gradient(90deg,rgba(4,8,15,.96) 0%,rgba(4,8,15,.93) 30%,rgba(4,8,15,.80) 48%,rgba(4,8,15,.34) 68%,transparent 82%)",
+          background: "linear-gradient(90deg,rgba(4,8,15,.62) 0%,rgba(4,8,15,.28) 22%,transparent 44%)",
         }} />
         {/* Véu vertical: escurece sob o header e emenda com a seção seguinte. */}
         <div aria-hidden="true" style={{
           ...capa,
-          background: "linear-gradient(180deg,rgba(4,8,15,.7) 0%,transparent 22%,transparent 68%,rgba(4,8,15,.92) 100%)",
+          background: "linear-gradient(180deg,rgba(4,8,15,.58) 0%,transparent 16%,transparent 74%,rgba(4,8,15,.86) 100%)",
         }} />
         {/* Véu da direita: a coluna de etapas cai fora do véu horizontal, e
             medido contra o quadro mais claro (f052) o texto de 13 px ficava
@@ -182,7 +182,7 @@ export default function HeroScrubFrames({
         {!isMobile && (
           <div aria-hidden="true" style={{
             ...capa,
-            background: "linear-gradient(270deg,rgba(4,8,15,.93) 0%,rgba(4,8,15,.85) 15%,rgba(4,8,15,.48) 28%,transparent 44%)",
+            background: "linear-gradient(270deg,rgba(4,8,15,.72) 0%,rgba(4,8,15,.34) 12%,transparent 26%)",
           }} />
         )}
 
@@ -191,7 +191,17 @@ export default function HeroScrubFrames({
           padding: isMobile ? "72px 16px 40px" : "96px 40px 64px",
           maxWidth: 1200, margin: "0 auto", minHeight: isMobile ? 360 : 520,
         }}>
-          <div style={{ flex: "1 1 0", minWidth: 0, maxWidth: isMobile ? "100%" : "56%" }}>
+          <div style={{
+            flex: "1 1 0", minWidth: 0, maxWidth: isMobile ? "100%" : "56%",
+            position: "relative", padding: isMobile ? "20px 18px" : "30px 34px",
+            margin: isMobile ? "0 -4px" : "0 0 0 -34px",
+            /* Refletor: escurece SÓ atrás do texto e apaga rápido nas bordas.
+               A versão anterior lavava a foto inteira com três gradientes de
+               ponta a ponta — passava no contraste e matava a cor da cena. */
+            background:
+              "radial-gradient(118% 128% at 20% 50%, rgba(3,7,13,.95) 0%, rgba(3,7,13,.88) 40%, rgba(3,7,13,.52) 66%, transparent 86%)",
+            borderRadius: 20,
+          }}>
             <h1 style={{
               fontFamily: "'Nunito',sans-serif", fontWeight: 900,
               fontSize: isMobile ? 30 : 52, lineHeight: 1.1,
@@ -253,6 +263,11 @@ export default function HeroScrubFrames({
             position: "absolute", zIndex: 3, right: 44, top: "50%",
             transform: "translateY(-50%)", display: "flex", flexDirection: "column",
             gap: 20, textAlign: "right", maxWidth: 300,
+            padding: "26px 26px 26px 34px", borderRadius: 20,
+            /* mesmo princípio do texto: refletor colado no conteúdo, não
+               gradiente de ponta a ponta lavando a cena. */
+            background:
+              "radial-gradient(126% 132% at 82% 50%, rgba(3,7,13,.94) 0%, rgba(3,7,13,.86) 42%, rgba(3,7,13,.48) 68%, transparent 88%)",
           }}>
             {ETAPAS.map((e, i) => (
               <div
