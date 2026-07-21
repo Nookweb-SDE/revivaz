@@ -117,6 +117,12 @@ export default function HeroScrubFrames({
         },
         onUpdate: () => desenhar(frameIndex(st.t, TOTAL)),
       });
+      gsap.to('[data-etapa-scrim]', {
+        opacity: 1, ease: "none",
+        scrollTrigger: {
+          trigger: trackRef.current, start: "18% top", end: "30% top", scrub: true,
+        },
+      });
       ETAPAS.forEach((_, i) => {
         gsap.to(`[data-etapa="${i}"]`, {
           opacity: 1, y: 0, ease: "none",
@@ -259,11 +265,15 @@ export default function HeroScrubFrames({
         </div>
 
         {!isMobile && (
-          <div style={{
+          <div data-etapa-scrim="" style={{
             position: "absolute", zIndex: 3, right: 44, top: "50%",
             transform: "translateY(-50%)", display: "flex", flexDirection: "column",
             gap: 20, textAlign: "right", maxWidth: 300,
             padding: "26px 26px 26px 34px", borderRadius: 20,
+            /* Nasce invisível: uma caixa escura sozinha, antes de qualquer
+               texto entrar, lia como defeito na tela. Entra junto com a
+               primeira etapa. */
+            opacity: estatico ? 1 : 0,
             /* mesmo princípio do texto: refletor colado no conteúdo, não
                gradiente de ponta a ponta lavando a cena. */
             background:
