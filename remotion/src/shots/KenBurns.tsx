@@ -1,5 +1,5 @@
 import React from "react";
-import { interpolate, useCurrentFrame, staticFile } from "remotion";
+import { Img, interpolate, useCurrentFrame, staticFile } from "remotion";
 
 export type Box = { x: number; y: number; w: number };
 
@@ -36,7 +36,9 @@ export const KenBurns: React.FC<{
           top: `${-y * scale * 100}%`,
         }}
       >
-        <img
+        {/* Img do Remotion, não <img>: ele segura o render até a imagem
+            carregar. Com a tag pura os primeiros frames saíam pretos. */}
+        <Img
           src={staticFile(src)}
           alt=""
           style={{

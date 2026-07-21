@@ -12,12 +12,12 @@ export function frameIndex(progress: number, total: number): number {
 }
 
 /** Caminho de um frame. O índice é sempre de três dígitos. */
-export function frameSrc(base: string, index: number): string {
-  return `${base}/f${String(index).padStart(3, "0")}.webp`;
+export function frameSrc(base: string, index: number, ext = "webp"): string {
+  return `${base}/f${String(index).padStart(3, "0")}.${ext}`;
 }
 
 /** Todos os caminhos, na ordem — usado para pré-carregar. */
-export function framePaths(base: string, total: number): string[] {
+export function framePaths(base: string, total: number, ext = "webp"): string[] {
   if (!Number.isFinite(total) || total <= 0) return [];
-  return Array.from({ length: total }, (_, i) => frameSrc(base, i));
+  return Array.from({ length: total }, (_, i) => frameSrc(base, i, ext));
 }

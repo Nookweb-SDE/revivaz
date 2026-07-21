@@ -31,6 +31,10 @@ describe("frameSrc", () => {
     expect(frameSrc("/revivaz/hero", 7)).toBe("/revivaz/hero/f007.webp");
     expect(frameSrc("/revivaz/hero", 170)).toBe("/revivaz/hero/f170.webp");
   });
+
+  it("aceita outra extensão — a sequência publicada é AVIF", () => {
+    expect(frameSrc("/revivaz/hero", 85, "avif")).toBe("/revivaz/hero/f085.avif");
+  });
 });
 
 describe("framePaths", () => {
@@ -45,5 +49,12 @@ describe("framePaths", () => {
 
   it("devolve lista vazia para total 0", () => {
     expect(framePaths("/revivaz/hero", 0)).toEqual([]);
+  });
+
+  it("propaga a extensão para todos os caminhos", () => {
+    expect(framePaths("/revivaz/hero", 2, "avif")).toEqual([
+      "/revivaz/hero/f000.avif",
+      "/revivaz/hero/f001.avif",
+    ]);
   });
 });
