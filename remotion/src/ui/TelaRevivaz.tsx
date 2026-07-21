@@ -32,7 +32,19 @@ export const TelaRevivaz: React.FC<{ medico: string }> = ({ medico }) => (
     <img
       src={staticFile(medico)}
       alt=""
-      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+      /* objectPosition: a área recortada pelo clip-path (polígono estreito,
+         ~24%x27% do frame) tem proporção bem diferente do medico.png
+         (quadrado 1:1). Com object-position padrão (centro), o cover
+         mostrava o peito/estetoscópio — a cabeça saía do quadro. Deslocando
+         o foco para o topo (50% 0%), a fatia visível cai sobre olhos e nariz
+         do médico em vez do tórax — a janela é estreita demais (~15% da
+         altura da imagem-fonte) para caber também a boca. Medido para este
+         clip-path específico (ver HeroSequence.tsx); se o polígono mudar,
+         reconferir. O medico.png em si também foi deslocado ~7% para a
+         direita (ver relatório) para que os dois olhos fiquem centralizados
+         na janela — sem esse deslocamento, o cover (sem crop horizontal
+         disponível) mostrava só um dos olhos. */
+      style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "50% 0%", display: "block" }}
     />
 
     {/* faixa superior: só o wordmark */}

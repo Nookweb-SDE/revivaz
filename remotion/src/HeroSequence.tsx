@@ -48,19 +48,25 @@ export const HeroSequence: React.FC = () => (
         from={{ x: 0.06, y: 0.06, w: 0.88 }}
         to={{ x: 0.20, y: 0.14, w: 0.64 }}
         durationInFrames={C}
-      />
-      {/* Corner-pin por clip-path, medido uma vez sobre ots.png.
-          A spec previa gerar a imagem com a tela em verde e fazer chroma key;
-          clip-path chega ao mesmo resultado sem regerar a imagem nem
-          implementar recorte por cor — a tela desenhada em ots.png fica
-          simplesmente coberta. A imagem é estática, então os cantos não mudam. */}
-      <AbsoluteFill
-        style={{
-          clipPath: "polygon(43.8% 55.5%, 70.3% 57.0%, 69.6% 96.0%, 40.9% 90.4%)",
-        }}
       >
-        <TelaRevivaz medico="medico.png" />
-      </AbsoluteFill>
+        {/* Corner-pin por clip-path, medido uma vez sobre ots.png (2752x1536),
+            em % da IMAGEM INTEIRA — não do frame renderizado.
+            A spec previa gerar a imagem com a tela em verde e fazer chroma key;
+            clip-path chega ao mesmo resultado sem regerar a imagem nem
+            implementar recorte por cor — a tela desenhada em ots.png fica
+            simplesmente coberta.
+            Crítico: este overlay é FILHO do wrapper que o KenBurns escala/move
+            junto com a <img> (não mais irmão dela) — por isso o polígono
+            estático continua alinhado com a moldura do notebook o plano
+            inteiro, mesmo com o zoom/pan em andamento. */}
+        <AbsoluteFill
+          style={{
+            clipPath: "polygon(45.5% 53.6%, 68.1% 54.9%, 67.2% 83.5%, 44.0% 79.4%)",
+          }}
+        >
+          <TelaRevivaz medico="medico.png" />
+        </AbsoluteFill>
+      </KenBurns>
     </Sequence>
   </AbsoluteFill>
 );
