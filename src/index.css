@@ -11,14 +11,18 @@ body {
   font-size: 15px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  /* clip, não hidden: overflow-x:hidden transforma o elemento em container de
+     rolagem e isso quebra position:sticky dentro dele — era o que fazia o hero
+     com scrub sair da tela em vez de ficar preso no topo. clip corta igual sem
+     criar scrollport. */
+  overflow-x: clip;
   min-height: 100vh;
   min-height: -webkit-fill-available;
 }
 #root {
   min-height: 100vh;
   min-height: -webkit-fill-available;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 button {
   font-family: inherit;

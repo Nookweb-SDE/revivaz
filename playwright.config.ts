@@ -37,7 +37,17 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        /**
+         * Usa o Chromium já instalado na máquina em vez de baixar os ~400 MB
+         * de navegadores do Playwright. CHROME_PATH é o padrão de QA daqui;
+         * sem ele, cai no download normal do Playwright.
+         */
+        ...(process.env.CHROME_PATH
+          ? { launchOptions: { executablePath: process.env.CHROME_PATH } }
+          : {}),
+      },
     },
   ],
 });

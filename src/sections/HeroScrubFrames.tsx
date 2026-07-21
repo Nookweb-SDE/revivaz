@@ -138,7 +138,7 @@ export default function HeroScrubFrames({
   };
 
   return (
-    <section ref={trackRef} style={{ position: "relative", height: alturaTrilho, background: FUNDO }}>
+    <section ref={trackRef} data-hero-track="" style={{ position: "relative", height: alturaTrilho, background: FUNDO }}>
       <div style={{
         position: estatico ? "relative" : "sticky",
         top: 0,
@@ -156,7 +156,7 @@ export default function HeroScrubFrames({
 
         {!estatico && (
           <canvas
-            ref={canvasRef} aria-hidden="true"
+            ref={canvasRef} aria-hidden="true" data-hero-canvas=""
             style={{
               ...capa,
               opacity: pronto ? 1 : 0,
@@ -169,13 +169,22 @@ export default function HeroScrubFrames({
             qualquer quadro, em vez de depender do acaso do frame. */}
         <div aria-hidden="true" style={{
           ...capa,
-          background: "linear-gradient(90deg,rgba(4,8,15,.94) 0%,rgba(4,8,15,.84) 26%,rgba(4,8,15,.38) 50%,transparent 68%)",
+          background: "linear-gradient(90deg,rgba(4,8,15,.96) 0%,rgba(4,8,15,.93) 30%,rgba(4,8,15,.80) 48%,rgba(4,8,15,.34) 68%,transparent 82%)",
         }} />
         {/* Véu vertical: escurece sob o header e emenda com a seção seguinte. */}
         <div aria-hidden="true" style={{
           ...capa,
           background: "linear-gradient(180deg,rgba(4,8,15,.7) 0%,transparent 22%,transparent 68%,rgba(4,8,15,.92) 100%)",
         }} />
+        {/* Véu da direita: a coluna de etapas cai fora do véu horizontal, e
+            medido contra o quadro mais claro (f052) o texto de 13 px ficava
+            em 3,7:1 — abaixo dos 4,5:1 que a WCAG exige para texto normal. */}
+        {!isMobile && (
+          <div aria-hidden="true" style={{
+            ...capa,
+            background: "linear-gradient(270deg,rgba(4,8,15,.93) 0%,rgba(4,8,15,.85) 15%,rgba(4,8,15,.48) 28%,transparent 44%)",
+          }} />
+        )}
 
         <div style={{
           position: "relative", zIndex: 2, display: "flex", alignItems: "center",
@@ -187,7 +196,7 @@ export default function HeroScrubFrames({
               fontFamily: "'Nunito',sans-serif", fontWeight: 900,
               fontSize: isMobile ? 30 : 52, lineHeight: 1.1,
               margin: "0 0 8px", letterSpacing: "-0.02em",
-              background: `linear-gradient(90deg, ${T.teal100} 0%, ${T.teal300} 50%, ${T.teal500} 100%)`,
+              background: `linear-gradient(90deg, ${T.teal300} 0%, ${T.teal100} 62%, ${T.teal300} 100%)`,
               WebkitBackgroundClip: "text", backgroundClip: "text",
               WebkitTextFillColor: "transparent",
             } as React.CSSProperties}>
