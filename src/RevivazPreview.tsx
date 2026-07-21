@@ -132,21 +132,54 @@ export default function RevivazPreview() {
 
   const openAgendar = () => { setModalAgendar(true); setAgendarOk(false); };
 
+  /* Header integrado ao hero: enquanto o trilho do hero ainda cobre o topo da
+     tela, o header flutua transparente sobre a cena; depois vira a barra branca
+     de sempre. Sem isto o hero começa com uma caixa branca em cima da imagem. */
+  const [sobreHero, setSobreHero] = useState(true);
+  useEffect(() => {
+    const alturaHeader = bp === "mobile" ? 56 : 64;
+    const ver = () => {
+      const tr = document.querySelector("[data-hero-track]");
+      setSobreHero(!!tr && tr.getBoundingClientRect().bottom > alturaHeader);
+    };
+    ver();
+    window.addEventListener("scroll", ver, { passive: true });
+    window.addEventListener("resize", ver);
+    return () => {
+      window.removeEventListener("scroll", ver);
+      window.removeEventListener("resize", ver);
+    };
+  }, [bp]);
+
+  /* Uma paleta só para o header, trocada em bloco. Espalhar ternários por doze
+     estilos era o caminho curto para esquecer um e deixar texto ilegível. */
+  const H = sobreHero
+    ? { logo: T.teal300, nav: "rgba(214,244,248,.92)", forte: T.white, borda: "rgba(0,191,216,.45)",
+        campo: "rgba(255,255,255,.10)", campoTexto: "rgba(214,244,248,.75)", menu: "rgba(4,8,15,.96)" }
+    : { logo: T.teal700, nav: T.gray700, forte: T.gray800, borda: T.teal700,
+        campo: T.gray050, campoTexto: T.gray500, menu: T.white };
+
 
   /* ──────────────────── RENDER ──────────────────── */
   return (
     <div id="top" style={{ width: "100%", fontFamily: "'Nunito',system-ui,sans-serif", fontSize: F.sm, background: T.gray050, color: T.gray950, lineHeight: 1.5 }}>
 
       {/* ═══ BLOCO 2 — Header (layout profissional: esquerda nav, direita ações) ═══ */}
-      <header style={{ position: "sticky", top: 0, zIndex: 50, width: "100%", background: T.white, borderBottom: `1px solid ${T.gray200}`, boxShadow: "0 1px 3px rgba(0,0,0,.04)" }}>
+      <header style={{
+        position: "fixed", top: 0, zIndex: 50, width: "100%",
+        background: sobreHero ? "transparent" : T.white,
+        borderBottom: sobreHero ? "1px solid rgba(0,191,216,.28)" : `1px solid ${T.gray200}`,
+        boxShadow: sobreHero ? "none" : "0 1px 3px rgba(0,0,0,.04)",
+        transition: "background .25s ease, border-color .25s ease, box-shadow .25s ease",
+      }}>
         <div style={{ padding: bp === "mobile" ? `${Sp.m}px ${Sp.m}px` : `${Sp.m}px ${Sp.xl}px`, minHeight: bp === "mobile" ? 56 : 64, display: "flex", alignItems: "center", justifyContent: "space-between", gap: Sp.m, flexWrap: "wrap", ...container }}>
           {/* Esquerda: logo + navegação */}
           <div style={{ display: "flex", alignItems: "center", gap: bp === "mobile" ? Sp.s : Sp.xl, flex: bp === "mobile" ? "1 1 auto" : "0 0 auto", minWidth: 0 }}>
-            <a href="#top" style={{ fontWeight: 900, fontSize: Fp.xl, color: T.teal700, fontFamily: "'Nunito',sans-serif", letterSpacing: "-0.02em", textDecoration: "none", flexShrink: 0 }}>Revivaz</a>
+            <a href="#top" style={{ fontWeight: 900, fontSize: Fp.xl, color: H.logo, fontFamily: "'Nunito',sans-serif", letterSpacing: "-0.02em", textDecoration: "none", flexShrink: 0 }}>Revivaz</a>
             {bp !== "mobile" && (
               <nav style={{ display: "flex", alignItems: "center", gap: Sp.l }}>
                 {["Especialidades", "Para pacientes", "Para profissionais", "Sobre"].map(l => (
-                  <button key={l} style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.gray700, fontFamily: "inherit", padding: "6px 0", whiteSpace: "nowrap" }}>{l}</button>
+                  <button key={l} style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: H.nav, fontFamily: "inherit", padding: "6px 0", whiteSpace: "nowrap" }}>{l}</button>
                 ))}
               </nav>
             )}
@@ -156,16 +189,16 @@ export default function RevivazPreview() {
             {bp !== "mobile" && (
               <>
                 <div style={{ position: "relative", width: 200 }}>
-                  <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: T.gray500 }} />
-                  <input aria-label="Buscar no site" placeholder="Buscar…" style={{ ...inputBase, padding: "8px 10px 8px 36px", fontSize: Fp.xs, borderRadius: 9999, minHeight: 40, background: T.gray050 }} />
+                  <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: H.campoTexto }} />
+                  <input aria-label="Buscar no site" placeholder="Buscar…" style={{ ...inputBase, padding: "8px 10px 8px 36px", fontSize: Fp.xs, borderRadius: 9999, minHeight: 40, background: H.campo, color: H.forte, borderColor: sobreHero ? "rgba(255,255,255,.18)" : undefined }} />
                 </div>
-                <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.gray800, fontFamily: "inherit", padding: "8px 0", whiteSpace: "nowrap" }}>Entrar</button>
-                <button style={{ background: "none", border: `2px solid ${T.teal700}`, cursor: "pointer", fontSize: Fp.sm, fontWeight: 700, color: T.teal700, fontFamily: "inherit", padding: "8px 16px", borderRadius: 9999, whiteSpace: "nowrap" }}>Cadastre-se</button>
+                <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: H.forte, fontFamily: "inherit", padding: "8px 0", whiteSpace: "nowrap" }}>Entrar</button>
+                <button style={{ background: "none", border: `2px solid ${H.borda}`, cursor: "pointer", fontSize: Fp.sm, fontWeight: 700, color: sobreHero ? T.teal300 : T.teal700, fontFamily: "inherit", padding: "8px 16px", borderRadius: 9999, whiteSpace: "nowrap" }}>Cadastre-se</button>
               </>
             )}
             {bp === "mobile" && (
               <button onClick={() => setMenuOpen(o => !o)} style={{ background: "none", border: "none", cursor: "pointer", padding: 8 }} aria-label="Menu">
-                <Menu size={24} color={T.gray600} />
+                <Menu size={24} color={H.forte} />
               </button>
             )}
             <button onClick={openAgendar} style={{ padding: bp === "mobile" ? "10px 14px" : "10px 20px", fontWeight: 700, fontSize: Fp.sm, color: T.white, background: T.teal700, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 10px rgba(0,77,92,.3)", minHeight: bp === "mobile" ? 40 : 44, flexShrink: 0, whiteSpace: "nowrap" }}>
@@ -174,13 +207,13 @@ export default function RevivazPreview() {
           </div>
           {/* Menu mobile expandido */}
           {bp === "mobile" && menuOpen && (
-            <nav style={{ width: "100%", display: "flex", flexDirection: "column", gap: 0, paddingTop: Sp.m, borderTop: `1px solid ${T.gray200}`, order: 99 }}>
+            <nav style={{ width: "100%", display: "flex", flexDirection: "column", gap: 0, paddingTop: Sp.m, borderTop: `1px solid ${sobreHero ? "rgba(0,191,216,.28)" : T.gray200}`, order: 99, background: H.menu, marginTop: Sp.m, paddingLeft: Sp.m, paddingRight: Sp.m, paddingBottom: Sp.m }}>
               <div style={{ position: "relative", marginBottom: Sp.s }}>
                 <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: T.gray500 }} />
                 <input aria-label="Buscar especialidade" placeholder="Buscar especialidade…" style={{ ...inputBase, padding: "10px 12px 10px 36px", fontSize: Fp.sm, borderRadius: 8, minHeight: 44, width: "100%" }} />
               </div>
               {["Especialidades", "Para pacientes", "Para profissionais", "Sobre", "Planos", "Contato"].map(l => (
-                <button key={l} onClick={() => setMenuOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.gray700, fontFamily: "inherit", padding: "12px 0", textAlign: "left", borderBottom: `1px solid ${T.gray100}` }}>{l}</button>
+                <button key={l} onClick={() => setMenuOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: H.nav, fontFamily: "inherit", padding: "12px 0", textAlign: "left", borderBottom: `1px solid ${sobreHero ? "rgba(255,255,255,.10)" : T.gray100}` }}>{l}</button>
               ))}
               <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.teal700, fontFamily: "inherit", padding: "12px 0", textAlign: "left", marginTop: Sp.s }}>Entrar</button>
               <button style={{ background: T.teal050, border: `2px solid ${T.teal700}`, cursor: "pointer", fontSize: Fp.sm, fontWeight: 700, color: T.teal700, fontFamily: "inherit", padding: "12px", borderRadius: 8, marginTop: Sp.s, textAlign: "center" }}>Cadastre-se</button>
