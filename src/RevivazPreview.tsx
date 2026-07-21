@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import EcgValor from "./sections/EcgValor";
-import HeroTelemedicina from "./sections/HeroTelemedicina";
+import HeroScrubFrames from "./sections/HeroScrubFrames";
 import {
   Star, Download, Search, Heart, ArrowRight, ChevronLeft, ChevronRight,
   Clock, MessageCircle, Smartphone, Video, Monitor, Sparkles, Brain,
@@ -132,10 +132,6 @@ export default function RevivazPreview() {
 
   const openAgendar = () => { setModalAgendar(true); setAgendarOk(false); };
 
-  /* lab de decisão do hero: ?variant=2 mostra a rede; default = jornada.
-     Remover assim que a variante for escolhida (spec 2026-07-20). */
-  const heroVariant: 1 | 2 =
-    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("variant") === "2" ? 2 : 1;
 
   /* ──────────────────── RENDER ──────────────────── */
   return (
@@ -195,7 +191,7 @@ export default function RevivazPreview() {
 
       <main>
       {/* ═══ BLOCO 3 — Hero (Canvas WebGL-like particle mesh) ═══ */}
-      <HeroTelemedicina heroLines={heroLines} heroIdx={heroIdx} openAgendar={openAgendar} bp={bp} variant={heroVariant} />
+      <HeroScrubFrames heroLines={heroLines} heroIdx={heroIdx} openAgendar={openAgendar} bp={bp} />
 
       {/* ═══ BLOCO 3.5 — ECG "O que é" (réplica EXATA v6 NookTrack, via nookpick) ═══ */}
       <EcgValor />
