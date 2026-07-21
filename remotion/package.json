@@ -5,7 +5,8 @@
   "description": "Composição do hero da Revivaz. Ferramenta de BUILD — não é dependência do site.",
   "scripts": {
     "studio": "remotion studio",
-    "render": "remotion render HeroSequence out/frames --sequence --image-format=webp"
+    "render": "remotion render HeroSequence out/frames --sequence --image-format=png && npm run convert-webp",
+    "convert-webp": "cd out/frames && for f in element-*.png; do cwebp -q 80 \"$f\" -o \"${f%.png}.webp\" && rm \"$f\"; done && cd ../.."
   },
   "dependencies": {
     "@remotion/cli": "4.0.240",

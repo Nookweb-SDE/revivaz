@@ -16,18 +16,7 @@ export const KenBurns: React.FC<{
   from: Box;
   to: Box;
   durationInFrames: number;
-  /**
-   * Overlays que precisam se mover E escalar exatamente como a imagem
-   * (ex.: um clip-path recortando uma área desenhada nela). Vivem DENTRO do
-   * mesmo wrapper transformado que a <img> — não como irmãos dela — para que
-   * um clip-path estático continue alinhado o plano inteiro, mesmo com o
-   * pan/zoom do Ken Burns em andamento. As frações usadas dentro dos filhos
-   * (ex. clip-path em %) devem ser medidas contra a imagem-fonte INTEIRA,
-   * porque é isso que este wrapper representa (100% = a imagem toda, não o
-   * recorte visível no frame).
-   */
-  children?: React.ReactNode;
-}> = ({ src, from, to, durationInFrames, children }) => {
+}> = ({ src, from, to, durationInFrames }) => {
   const frame = useCurrentFrame();
   const t = [0, durationInFrames - 1];
 
@@ -55,7 +44,6 @@ export const KenBurns: React.FC<{
             display: "block",
           }}
         />
-        {children}
       </div>
     </div>
   );
