@@ -14,12 +14,14 @@ import {
   adminListTodasConsultas,
   adminListAvaliacoes,
   adminListTriagens,
+  adminReceitasPorPaciente,
 } from "../../lib/data";
 import type {
   Profile,
   Consulta,
   Avaliacao,
   Triagem,
+  Receita,
   StatusConsulta,
 } from "../../lib/types";
 import { T, card, sectionTitle, btnGhost } from "../../conta/ui";
@@ -185,6 +187,7 @@ function PacienteDetalhe({
   const [consultas, setConsultas] = useState<Consulta[]>([]);
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
   const [triagens, setTriagens] = useState<Triagem[]>([]);
+  const [receitas, setReceitas] = useState<Receita[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -194,19 +197,21 @@ function PacienteDetalhe({
       setLoading(true);
       setErro(null);
       try {
-        // Não há função admin de "receitas por paciente" no CONTRATO;
-        // listamos tudo via RLS admin (consultas/avaliações/triagens) e
-        // filtramos client-side por paciente_id. adminListTriagens já vem
-        // ordenado por created_at desc.
-        const [todasConsultas, todasAvaliacoes, todasTriagens] = await Promise.all([
-          adminListTodasConsultas(),
-          adminListAvaliacoes(),
-          adminListTriagens(),
-        ]);
+        // Consultas/avaliações/triagens vêm inteiras pela RLS de admin e são
+        // filtradas por paciente aqui. Receitas já vêm filtradas no servidor.
+        // adminListTriagens já vem ordenado por created_at desc.
+        const [todasConsultas, todasAvaliacoes, todasTriagens, receitasDele] =
+          await Promise.all([
+            adminListTodasConsultas(),
+            adminListAvaliacoes(),
+            adminListTriagens(),
+            adminReceitasPorPaciente(paciente.id),
+          ]);
         if (cancelado) return;
         setConsultas(todasConsultas.filter((c) => c.paciente_id === paciente.id));
         setAvaliacoes(todasAvaliacoes.filter((a) => a.paciente_id === paciente.id));
         setTriagens(todasTriagens.filter((t) => t.paciente_id === paciente.id));
+        setReceitas(receitasDele);
       } catch (err) {
         if (!cancelado)
           setErro(err instanceof Error ? err.message : "Erro ao carregar histórico.");
@@ -625,9 +630,56 @@ function PacienteDetalhe({
                 </div>
               )}
 
-              {/* TODO: não há função admin de receitas por paciente no CONTRATO
-                  (apenas getReceitas() = receitas do usuário logado). Receitas
-                  do paciente ficam pendentes até existir adminReceitasPorPaciente. */}
+              {/* Receitas — a política receitas_own_select já libera is_admin(). */}
+              <h3 style={{ ...sectionTitle, fontSize: 15 }}>
+                Receitas ({receitas.length})
+              </h3>
+              {receitas.length === 0 ? (
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: T.gray600,
+                    fontFamily: "'Nunito',sans-serif",
+                    margin: "0 0 8px",
+                  }}
+                >
+                  Nenhuma receita lançada.
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {receitas.map((r) => (
+                    <div
+                      key={r.id}
+                      style={{
+                        padding: 12,
+                        borderRadius: 12,
+                        border: `1px solid ${T.gray200}`,
+                      }}
+                    >
+                      <div style={{ ...metaLine, color: T.gray950, fontWeight: 700 }}>
+                        <ClipboardList size={14} aria-hidden /> {fmtCriadoEm(r.created_at)}
+                        {r.validade && (
+                          <span style={{ fontWeight: 600, color: T.gray600 }}>
+                            · válida até {fmtData(r.validade)}
+                          </span>
+                        )}
+                      </div>
+                      <p
+                        style={{
+                          margin: "6px 0 0",
+                          fontSize: 13,
+                          color: T.gray700,
+                          fontFamily: "'Nunito',sans-serif",
+                          lineHeight: 1.5,
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        {r.resumo}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>

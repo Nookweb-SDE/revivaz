@@ -1,0 +1,30 @@
+name: Test
+
+# Gate de qualidade: typecheck + build das 5 entradas + suíte do Vitest.
+# `workflow_call` deixa um workflow de deploy exigir este como `needs: test`.
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: "npm" }
+      - run: npm ci --ignore-scripts
+
+      # `npm run build` já roda `tsc -b`; separado para o log dizer QUAL etapa quebrou.
+      - name: Typecheck
+        run: npx tsc -b
+
+      - name: Testes
+        run: npm test
+
+      # As VITE_* são públicas (anon key + RLS). Sem elas o build ainda passa —
+      # o app cai no modo demonstração —, então o gate não depende de secret.
+      - name: Build (5 entradas)
+        run: npm run build

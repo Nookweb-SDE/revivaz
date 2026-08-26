@@ -49,6 +49,13 @@ services:
       - JITSI_APP_ID=revivaz
       - JITSI_JWT_SECRET_FILE=/run/secrets/revivaz_jitsi_jwt_secret
     secrets: [revivaz_claude_bridge_url, revivaz_claude_bridge_secret, revivaz_service_role, revivaz_evolution_key, revivaz_jitsi_jwt_secret]
+    # Sonda barata: se o processo travar de pé, o Swarm derruba e sobe de novo.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     networks: [traefik-public]
     deploy:
       replicas: 1
@@ -56,7 +63,10 @@ services:
       resources:
         limits:       { cpus: "0.30", memory: 256M }
         reservations: { memory: 48M }
-      restart_policy: { condition: on-failure, delay: 10s, max_attempts: 5 }
+      # `any`, NUNCA `on-failure`: com on-failure, um container que sai com
+      # código 0 (reinício do Docker, por ex.) fica em estado Complete e o
+      # serviço NÃO volta — foi assim que o Jitsi ficou 7 semanas fora do ar.
+      restart_policy: { condition: any, delay: 10s }
       update_config: { parallelism: 1, delay: 12s, order: start-first }
       labels:
         - traefik.enable=true

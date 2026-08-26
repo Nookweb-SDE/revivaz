@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import EcgValor from "./sections/EcgValor";
 import HeroScrubFrames from "./sections/HeroScrubFrames";
 import {
-  Star, Download, Search, Heart, ArrowRight, ChevronLeft, ChevronRight,
+  Star, Search, Heart, ArrowRight, ChevronLeft, ChevronRight,
   Clock, MessageCircle, Smartphone, Video, Monitor, Sparkles, Brain,
   Stethoscope, FileText, Users, MapPin, Calendar, User, Phone, Mail,
   Send, X, CheckCircle, Instagram, Linkedin, Newspaper, Menu,
@@ -514,7 +514,8 @@ export default function RevivazPreview() {
         </div>
       </section>
 
-      {/* ═══ BLOCO 13 — App (mockup celular + store buttons) ═══ */}
+      {/* ═══ BLOCO 13 — App (mockup celular). NÃO existe app publicado: os botões
+          de App Store / Google Play daqui não levavam a lugar nenhum e saíram. ═══ */}
       <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: T.gray050, display: "flex", gap: Sp.xl, alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ ...container, display: "flex", gap: Sp.xl, alignItems: "center", flexWrap: "wrap" }}>
           <div style={{ width: bp === "mobile" ? "100%" : 100, flexShrink: 0, display: "flex", justifyContent: "center" }}>
@@ -529,14 +530,11 @@ export default function RevivazPreview() {
           </div>
           <div style={{ flex: "1 1 280px", minWidth: 0 }}>
             <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.lg, color: T.gray950, marginBottom: Sp.s }}>Sua saúde ainda mais conectada</h2>
-            <p style={{ fontSize: F.sm, color: T.gray600, lineHeight: 1.55, marginBottom: S.m }}>Baixe o app e tenha acesso ao agendamento, receitas e teleatendimento na palma da mão.</p>
+            <p style={{ fontSize: F.sm, color: T.gray600, lineHeight: 1.55, marginBottom: S.m }}>Abra sua conta no celular e tenha agendamento, receitas e teleatendimento na palma da mão. Sem precisar instalar nada.</p>
             <div style={{ display: "flex", gap: S.m, flexWrap: "wrap", marginBottom: S.s }}>
-              <button style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.gray950, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 44 }}>
-                <Download size={16} /> App Store
-              </button>
-              <button style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.gray950, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 44 }}>
-                <Download size={16} /> Google Play
-              </button>
+              <a href="/conta" style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.gray950, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 44, textDecoration: "none", justifyContent: "center" }}>
+                <Smartphone size={16} /> Abrir minha conta
+              </a>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: F.xs, color: T.gray600 }}>
               <Star size={14} fill="#FFD600" stroke="#FFD600" /> 4,6 · +37 mil avaliações

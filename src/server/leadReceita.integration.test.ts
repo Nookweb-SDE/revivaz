@@ -306,3 +306,22 @@ describe("POST /api/receita/whatsapp", () => {
     expect(JSON.parse(r.body)).toMatchObject({ ok: false, skipped: "sem telefone no cadastro" });
   });
 });
+
+describe("GET /api/health", () => {
+  let srv: http.Server;
+  beforeAll(async () => {
+    srv = await startSrv(app as unknown as http.RequestListener);
+  });
+  afterAll(() => new Promise<void>((r) => srv.close(() => r())));
+
+  it("responde 200 sem auth — é a sonda do healthcheck e do monitor", async () => {
+    const r = await req(srv, "GET", "/api/health");
+    expect(r.status).toBe(200);
+    expect(JSON.parse(r.body)).toEqual({ ok: true });
+  });
+
+  it("não vaza configuração: o corpo é só {ok:true}", async () => {
+    const r = await req(srv, "GET", "/api/health");
+    expect(Object.keys(JSON.parse(r.body))).toEqual(["ok"]);
+  });
+});

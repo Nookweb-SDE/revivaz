@@ -1067,3 +1067,19 @@ export async function adminAtualizarLead(
   const { error } = await supabase.from("leads").update(patch).eq("id", id);
   if (error) throw error;
 }
+
+/**
+ * Receitas de UM paciente, para o painel do admin.
+ * A política `receitas_own_select` já libera admin (`is_admin()`), então não
+ * precisa de service_role — a RLS decide.
+ */
+export async function adminReceitasPorPaciente(pacienteId: string): Promise<Receita[]> {
+  const { data, error } = await supabase
+    .from("receitas")
+    .select("*")
+    .eq("paciente_id", pacienteId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as Receita[];
+}
