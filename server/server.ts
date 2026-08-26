@@ -34,6 +34,11 @@ app.use(acolhimentoRoutes);
 // Não expõe nada de configuração: um monitor não precisa saber o que está ligado.
 app.get("/api/health", (_req, res) => res.status(200).json({ ok: true }));
 
+// Caminho de API que não existe responde 404 em JSON. Sem isto ele caía no
+// fallback de SPA e devolvia a LANDING com status 200 — o que faz uma rota
+// removida parecer viva para quem testa de fora.
+app.use("/api", (_req, res) => res.status(404).json({ error: "Rota não encontrada" }));
+
 // ─── Estático ────────────────────────────────────────────────────────────────
 // /acolhimento é entrada própria do Vite: precisa da rota explícita, senão o
 // fallback de SPA devolveria a landing.

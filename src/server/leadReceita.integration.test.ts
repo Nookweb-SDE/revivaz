@@ -350,3 +350,19 @@ describe("POST /api/acolhimento — porta de entrada pública, com teto de custo
     expect(mockFetch.mock.calls.some((c) => String(c[0]).includes("/ask"))).toBe(false);
   });
 });
+
+describe("caminho de API que não existe", () => {
+  let srv: http.Server;
+  beforeAll(async () => {
+    srv = await startSrv(app as unknown as http.RequestListener);
+  });
+  afterAll(() => new Promise<void>((r) => srv.close(() => r())));
+
+  it("responde 404 em JSON, não a landing com 200", async () => {
+    for (const rota of ["/api/wa/start", "/api/consulta/notificar", "/api/receita/whatsapp", "/api/nao-existe"]) {
+      const r = await req(srv, "POST", rota, {});
+      expect(r.status, rota).toBe(404);
+      expect(JSON.parse(r.body)).toMatchObject({ error: expect.any(String) });
+    }
+  });
+});
