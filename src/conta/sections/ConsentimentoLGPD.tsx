@@ -5,7 +5,7 @@ import { T, btnPrimary } from "../ui";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ConsentimentoLGPDProps {
-  onAceitar: (whatsapp: boolean) => void;
+  onAceitar: () => void;
 }
 
 // ─── Consent storage shape ────────────────────────────────────────────────────
@@ -13,7 +13,6 @@ interface ConsentimentoLGPDProps {
 export interface ConsentRecord {
   v: 1;
   ts: number;
-  whatsapp: boolean;
 }
 
 export const CONSENT_KEY = "revivaz_lgpd_consent";
@@ -352,14 +351,13 @@ function CheckRow({ id, checked, onChange, required, children }: CheckRowProps) 
 
 export default function ConsentimentoLGPD({ onAceitar }: ConsentimentoLGPDProps) {
   const [termos, setTermos] = useState(false);
-  const [whatsapp, setWhatsapp] = useState(false);
   const [politicaAberta, setPoliticaAberta] = useState(false);
 
   function handleAceitar() {
     if (!termos) return;
-    const record: ConsentRecord = { v: 1, ts: Date.now(), whatsapp };
+    const record: ConsentRecord = { v: 1, ts: Date.now() };
     localStorage.setItem(CONSENT_KEY, JSON.stringify(record));
-    onAceitar(whatsapp);
+    onAceitar();
   }
 
   return (
@@ -558,21 +556,7 @@ export default function ConsentimentoLGPD({ onAceitar }: ConsentimentoLGPDProps)
                 </button>
               </CheckRow>
 
-              <CheckRow
-                id="lgpd-whatsapp"
-                checked={whatsapp}
-                onChange={setWhatsapp}
-              >
-                Aceito receber lembretes de consulta por WhatsApp{" "}
-                <span
-                  style={{
-                    fontWeight: 500,
-                    color: T.gray600,
-                  }}
-                >
-                  (opcional)
-                </span>
-              </CheckRow>
+              {/* O opt-in de lembrete por WhatsApp saiu: o canal não existe mais. */}
             </div>
 
             {/* Policy link */}

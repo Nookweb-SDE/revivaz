@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { FileText, Download, Send, Pill } from "lucide-react";
+import { FileText, Download, Pill } from "lucide-react";
 import { T, card, sectionTitle, btnGhost } from "../ui";
-import { baixarReceitaPdf, enviarReceitaWhatsapp } from "../../lib/data";
+import { baixarReceitaPdf } from "../../lib/data";
 import type { ReceitaUI as Receita } from "../types";
 
 /* ── helpers ──────────────────────────────────────────────── */
@@ -40,7 +40,6 @@ function ReceitaIcon() {
 
 function ReceitaCard({ receita, demo = false }: { receita: Receita; demo?: boolean }) {
   const [downloading, setDownloading] = useState(false);
-  const [sending, setSending] = useState(false);
   // Uma mensagem só, ao lado dos botões: o usuário precisa ver o que aconteceu
   // de verdade — inclusive quando NÃO aconteceu (sem telefone, sessão expirada).
   const [aviso, setAviso] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
@@ -62,36 +61,6 @@ function ReceitaCard({ receita, demo = false }: { receita: Receita; demo?: boole
       });
     } finally {
       setDownloading(false);
-    }
-  }
-
-  async function handleWhatsapp() {
-    if (demo) {
-      setAviso({ tipo: "erro", texto: "Receita de exemplo — nada é enviado." });
-      return;
-    }
-    setAviso(null);
-    setSending(true);
-    try {
-      const r = await enviarReceitaWhatsapp(receita.id);
-      setAviso(
-        r.ok
-          ? { tipo: "ok", texto: "Enviado no seu WhatsApp." }
-          : {
-              tipo: "erro",
-              texto:
-                r.skipped === "sem telefone no cadastro"
-                  ? "Você ainda não tem telefone no cadastro. Adicione no Perfil."
-                  : "Não foi enviado: WhatsApp indisponível agora.",
-            }
-      );
-    } catch (err) {
-      setAviso({
-        tipo: "erro",
-        texto: err instanceof Error ? err.message : "Não consegui enviar agora.",
-      });
-    } finally {
-      setSending(false);
     }
   }
 
@@ -248,42 +217,7 @@ function ReceitaCard({ receita, demo = false }: { receita: Receita; demo?: boole
             {downloading ? "Baixando…" : "Baixar PDF"}
           </button>
 
-          {/* Reenviar no WhatsApp */}
-          <button
-            onClick={handleWhatsapp}
-            disabled={sending}
-            aria-label={`Reenviar receita de ${receita.profissional} no WhatsApp`}
-            style={{
-              ...btnGhost,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              background: sending ? "#1DA85188" : "#1DA851",
-              color: "#fff",
-              borderRadius: 10,
-              padding: "8px 14px",
-              fontSize: 12,
-              fontWeight: 700,
-              minHeight: 36,
-              border: "none",
-              opacity: sending ? 0.75 : 1,
-              transition: "opacity 0.15s, background 0.15s",
-              cursor: sending ? "default" : "pointer",
-            }}
-            onMouseEnter={(e) => {
-              if (!sending) {
-                (e.currentTarget as HTMLButtonElement).style.background = "#168a41";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!sending) {
-                (e.currentTarget as HTMLButtonElement).style.background = "#1DA851";
-              }
-            }}
-          >
-            <Send size={13} aria-hidden="true" />
-            {sending ? "Enviando…" : "Reenviar no WhatsApp"}
-          </button>
+          {/* O reenvio por WhatsApp saiu junto com o canal. O PDF fica aqui. */}
         </div>
 
         {aviso && (

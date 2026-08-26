@@ -356,7 +356,7 @@ export default function EcgValor() {
             <article className="b">
               <div className="b-head"><span className="b-dot"><i className="b-ping" /></span><span className="b-ix">01</span></div>
               <h3>Ninguém espera sozinho</h3>
-              <p>Você pede pelo site e a gente te chama no WhatsApp. Sem fila, sem burocracia.</p>
+              <p>Você conta o que está sentindo e a equipe te responde. Sem fila, sem burocracia.</p>
             </article>
             <article className="b">
               <div className="b-head"><span className="b-dot"><i className="b-ping" /></span><span className="b-ix">02</span></div>

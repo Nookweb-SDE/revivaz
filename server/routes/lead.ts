@@ -6,7 +6,6 @@
 // best-effort — se a Evolution falhar, o lead JÁ está salvo.
 import { Router, type Request, type Response } from "express";
 import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from "../config";
-import { enviarWhatsApp } from "../lib/whatsapp";
 import { telefoneValido, emailValido } from "../validacao";
 import { isLeadRateLimited } from "../lib/limitadores";
 
@@ -94,31 +93,8 @@ router.post("/api/lead", async (req: Request, res: Response): Promise<void> => {
     const leadId = criado[0]?.id ?? "";
     console.log(`[lead] registrado id=${leadId.slice(0, 8)}… origem=${origem}`);
 
-    // Avisos são best-effort: o pedido já está salvo, não podem derrubar a resposta.
-    const quando =
-      data_desejada && hora_desejada
-        ? ` para ${data_desejada.split("-").reverse().join("/")} às ${hora_desejada}`
-        : "";
-    const primeiroNome = nome.split(" ")[0];
-    void enviarWhatsApp(
-      telefone,
-      origem === "profissional"
-        ? `Olá, ${primeiroNome}! Recebemos seu interesse em atender conosco. ` +
-            `Nossa equipe vai te chamar por aqui para conversar sobre como funciona.`
-        : `Olá, ${primeiroNome}! Recebemos seu pedido de atendimento${quando}. ` +
-            `Nossa equipe vai te responder por aqui para confirmar.\n\n` +
-            `Se você estiver passando por uma crise agora, ligue 188 (CVV, 24h e gratuito) ou 192 (SAMU).`
-    );
-    const admin = (process.env.ADMIN_WHATSAPP || "").trim();
-    if (admin) {
-      void enviarWhatsApp(
-        admin,
-        `${origem === "profissional" ? "Profissional interessado" : "Novo pedido"} pelo site: ${nome} — ${telefone}` +
-          (especialidade ? ` — ${especialidade}` : "") +
-          `${quando}`
-      );
-    }
-
+    // O aviso automático saiu junto com o WhatsApp. O pedido fica visível na
+    // aba "Pedidos do site" do admin, que é onde a equipe age.
     res.status(201).json({ ok: true });
   } catch (err) {
     console.error("[lead] Erro inesperado:", err);

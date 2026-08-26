@@ -7,7 +7,6 @@ import {
   adminLancarReceita,
   listProfissionais,
   getNomesPacientes,
-  notificarConsulta,
 } from "../../lib/data";
 import type { Consulta, Profissional, StatusConsulta } from "../../lib/types";
 import { T, card, sectionTitle, btnPrimary, btnGhost } from "../../conta/ui";
@@ -126,23 +125,8 @@ function ConfirmarForm({
         link_ou_local: link || undefined,
       });
 
-      // Confirmação por WhatsApp — best-effort: nunca trava o fluxo.
-      // A consulta JÁ foi agendada acima; uma falha aqui só vira aviso sutil.
-      try {
-        const r = await notificarConsulta(consulta.id);
-        if (!r.ok && r.skipped) {
-          // Ex.: paciente sem telefone (login por e-mail) — não é erro.
-          setAviso(
-            r.skipped === "sem telefone"
-              ? "Consulta agendada. Paciente sem telefone — confirmação por WhatsApp não enviada."
-              : "Consulta agendada. Confirmação por WhatsApp não enviada."
-          );
-          setLoading(false);
-          return; // mantém o form aberto p/ exibir o aviso
-        }
-      } catch {
-        // Falha real de Evolution/servidor: não bloqueia o agendamento.
-      }
+      // Não há mais aviso automático: o canal de WhatsApp saiu do produto. A
+      // consulta agendada aparece no /conta do paciente.
 
       onDone();
     } catch (err) {

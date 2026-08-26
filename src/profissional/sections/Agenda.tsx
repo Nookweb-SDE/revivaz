@@ -26,7 +26,6 @@ import {
   profMinhaFicha,
   getNomesPacientes,
   getRoomToken,
-  notificarConsulta,
 } from "../../lib/data";
 import type { Consulta, Profissional, Receita } from "../../lib/types";
 import { isOnline } from "../../video/room";
@@ -477,11 +476,7 @@ export default function Agenda(): JSX.Element {
       setErro(null);
       try {
         await profDefinirAgenda(id, dados);
-        // Confirmação por WhatsApp ao paciente — best-effort, não bloqueia o
-        // fluxo nem mostra erro se falhar (sem telefone / Evolution offline).
-        void notificarConsulta(id).catch(() => {
-          /* notificação é opcional: agenda já foi definida com sucesso */
-        });
+        // Sem aviso automático: o canal de WhatsApp saiu do produto.
         await carregar();
       } catch (e) {
         setErro(e instanceof Error ? e.message : "Não foi possível salvar a agenda.");

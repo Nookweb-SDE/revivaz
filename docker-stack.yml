@@ -14,15 +14,12 @@ version: "3.8"
 #         printf '%s' '<BRIDGE_SECRET>' | docker secret create revivaz_claude_bridge_secret -
 # (sem os secrets, a IA degrada gracioso: 500 + rodapé 188/192 sempre visível).
 
-# Login WhatsApp (Fase 2): OTP self-contained no server → sessão via service_role.
-# Secrets: printf '%s' "<v>" | docker secret create revivaz_{service_role,evolution_key} -
+# service_role: usado pelo dev-login e pelas checagens de associação das rotas.
+# Secret: printf '%s' "<v>" | docker secret create revivaz_service_role -
 secrets:
   revivaz_claude_bridge_url: { external: true }
   revivaz_claude_bridge_secret: { external: true }
   revivaz_service_role: { external: true }
-  # _v2: o token da instância `revivaz` na Evolution foi rotacionado; o secret
-  # antigo dava 401 em toda chamada (login por WhatsApp, confirmação, lembrete).
-  revivaz_evolution_key_v2: { external: true }
   # Atendimento virtual: MESMO secret que o stack do Jitsi (prosody) usa p/ validar
   # o JWT das salas. O server assina com ele; o Jitsi valida com ele.
   revivaz_jitsi_jwt_secret: { external: true }
@@ -42,15 +39,12 @@ services:
       - SUPABASE_URL=https://akobilxqkwkcfyqdlzzf.supabase.co
       - SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrb2JpbHhxa3drY2Z5cWRsenpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNDIwNDcsImV4cCI6MjA5NzgxODA0N30.tdEEaZj1BPYTKjgLUrAv-_SOfZWyGzg7jPdbN77nAPs
       - SUPABASE_SERVICE_ROLE_KEY_FILE=/run/secrets/revivaz_service_role
-      # WhatsApp (Evolution) — instância revivaz
-      - EVOLUTION_URL=https://evolution.izai.dev
-      - EVOLUTION_INSTANCE=revivaz
-      - EVOLUTION_API_KEY_FILE=/run/secrets/revivaz_evolution_key_v2
+      # O WhatsApp (Evolution) saiu do produto: nenhuma env nem secret aqui.
       # Atendimento virtual (Jitsi). DOMAIN/APP_ID públicos; o JWT_SECRET via secret.
       - JITSI_DOMAIN=meet.revivaz.com.br
       - JITSI_APP_ID=revivaz
       - JITSI_JWT_SECRET_FILE=/run/secrets/revivaz_jitsi_jwt_secret
-    secrets: [revivaz_claude_bridge_url, revivaz_claude_bridge_secret, revivaz_service_role, revivaz_evolution_key_v2, revivaz_jitsi_jwt_secret]
+    secrets: [revivaz_claude_bridge_url, revivaz_claude_bridge_secret, revivaz_service_role, revivaz_jitsi_jwt_secret]
     # Sonda barata: se o processo travar de pé, o Swarm derruba e sobe de novo.
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]

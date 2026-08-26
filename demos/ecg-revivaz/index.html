@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revivaz — Como cuidamos · ECG</title>
+<!--
+  ECG da Revivaz — adaptado da v6 "ECG da operação" (NookTrack).
+  Retheme: navy #0B1D3A + linha teal (#00BFD8 / #00A8BF), Nunito, tom humano.
+  Mecânica idêntica: canvas 2D + GSAP ticker/timelines; cada QRS pulsa um dos 4 benefícios.
+  Este é o DEMO pra aprovar o visual; o port pro site (React, zero-dep) vem depois.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ background:#0B1D3A; }
+  body{
+    font-family:'Nunito',system-ui,sans-serif;
+    color:rgba(255,255,255,.85);
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ============ seção ============ */
+  .valor{
+    position:relative;
+    min-height:100svh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:clamp(28px,5vh,64px) clamp(20px,5vw,72px);
+    background-color:#0B1D3A;
+    /* grade milimetrada de ECG — teal sutil */
+    background-image:
+      linear-gradient(rgba(0,191,216,.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,191,216,.045) 1px, transparent 1px),
+      linear-gradient(rgba(0,191,216,.022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,191,216,.022) 1px, transparent 1px);
+    background-size:40px 40px, 40px 40px, 8px 8px, 8px 8px;
+    overflow:hidden;
+  }
+  /* vinheta navy que apaga a grade nas bordas */
+  .valor::after{
+    content:"";
+    position:absolute; inset:0;
+    pointer-events:none;
+    background:radial-gradient(120% 95% at 50% 42%, rgba(11,29,58,0) 46%, rgba(11,29,58,.9) 100%);
+  }
+  .frame{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width:1240px;
+    margin:0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:clamp(18px,3.2vh,34px);
+  }
+
+  /* ============ topo: eyebrow + HUD ============ */
+  .toprow{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:16px;
+  }
+  .eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:12px;
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:#00BFD8;
+  }
+  .eyebrow::before{
+    content:"";
+    width:26px; height:1px;
+    background:#00A8BF;
+    box-shadow:0 0 8px rgba(0,191,216,.6);
+  }
+  .hud{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:rgba(255,255,255,.5);
+    white-space:nowrap;
+  }
+  .hud .heart{
+    color:#00BFD8;
+    font-size:14px;
+    display:inline-block;
+    filter:drop-shadow(0 0 6px rgba(0,191,216,.7));
+    animation:beat 1.66s ease-in-out infinite;
+  }
+  @keyframes beat{ 0%,100%{transform:scale(1)} 14%{transform:scale(1.28)} 28%{transform:scale(1)} 42%{transform:scale(1.16)} }
+
+  /* ============ manifesto ============ */
+  .manifesto{
+    font-weight:900;
+    font-size:clamp(2.05rem, 4.6vw + .4rem, 4.15rem);
+    line-height:1.05;
+    letter-spacing:-.028em;
+    color:rgba(255,255,255,.95);
+    max-width:22ch;
+  }
+  .m-line{ display:block; }
+  .m-teal{ color:#00BFD8; text-shadow:0 0 32px rgba(0,191,216,.35); }
+  .sub{
+    font-size:clamp(1rem, .5vw + .85rem, 1.15rem);
+    line-height:1.6;
+    color:rgba(255,255,255,.78);
+    max-width:60ch;
+    font-weight:400;
+  }
+
+  /* ============ faixa ECG ============ */
+  .ecg{
+    position:relative;
+    width:100%;
+    height:clamp(140px, 22vh, 220px);
+    -webkit-mask-image:linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+            mask-image:linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+  }
+  .ecg canvas{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    display:block;
+  }
+  .pen{
+    position:absolute; left:0; top:0;
+    width:10px; height:10px;
+    margin:-5px 0 0 -5px;
+    border-radius:50%;
+    background:#00BFD8;
+    box-shadow:
+      0 0 6px 2px rgba(0,191,216,.95),
+      0 0 20px 7px rgba(0,191,216,.45),
+      0 0 48px 18px rgba(0,191,216,.16);
+    pointer-events:none;
+    will-change:transform;
+  }
+  .ring{
+    position:absolute; left:0; top:0;
+    width:64px; height:64px;
+    margin:-32px 0 0 -32px;
+    border-radius:50%;
+    border:1.5px solid rgba(0,191,216,.85);
+    box-shadow:0 0 18px rgba(0,191,216,.35), inset 0 0 14px rgba(0,191,216,.2);
+    opacity:0;
+    pointer-events:none;
+    will-change:transform,opacity;
+  }
+
+  /* ============ benefícios ============ */
+  .bens{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:clamp(16px, 2.2vw, 30px);
+  }
+  .b{
+    border-top:1px solid rgba(0,191,216,.18);
+    padding-top:clamp(12px,1.6vh,18px);
+  }
+  .b-head{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .b-dot{
+    position:relative;
+    width:8px; height:8px;
+    border-radius:50%;
+    background:#00BFD8;
+    box-shadow:0 0 8px 2px rgba(0,191,216,.7);
+    flex:none;
+    will-change:transform;
+  }
+  .b-ping{
+    position:absolute; inset:0;
+    border-radius:50%;
+    border:1px solid rgba(0,191,216,.75);
+    opacity:0;
+    will-change:transform,opacity;
+  }
+  .b-ix{
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:rgba(255,255,255,.45);
+  }
+  .b h3{
+    font-size:clamp(.98rem, .3vw + .88rem, 1.1rem);
+    font-weight:800;
+    letter-spacing:-.01em;
+    color:rgba(255,255,255,.9);
+    margin-bottom:6px;
+  }
+  .b p{
+    font-size:.9rem;
+    line-height:1.5;
+    color:rgba(255,255,255,.55);
+    font-weight:400;
+  }
+
+  @media (max-width:880px){
+    .bens{ grid-template-columns:repeat(2, 1fr); }
+    .manifesto{ max-width:18ch; }
+  }
+  @media (max-width:520px){
+    .bens{ grid-template-columns:1fr; gap:14px; }
+    .valor{ justify-content:flex-start; }
+    .ecg{ height:clamp(110px, 16vh, 150px); }
+    .hud span.lbl{ display:none; }
+  }
+
+  /* ============ reduced motion: estático digno ============ */
+  @media (prefers-reduced-motion: reduce){
+    .hud .heart{ animation:none; }
+    .b{ opacity:1 !important; }
+    .ring{ display:none; }
+  }
+</style>
+</head>
+<body>
+
+<section class="valor" aria-label="Como cuidamos">
+  <div class="frame">
+
+    <div class="toprow">
+      <span class="eyebrow">COMO CUIDAMOS</span>
+      <span class="hud"><i class="heart">&#9829;</i><span class="lbl">vida ativa</span></span>
+    </div>
+
+    <h2 class="manifesto">
+      <span class="m-line">Cada batida é <span class="m-teal">uma pessoa acolhida.</span></span>
+      <span class="m-line">Cuidar de saúde mental é o nosso sinal vital.</span>
+    </h2>
+
+    <p class="sub">A Revivaz conecta você a psicólogos e psiquiatras solidários — do primeiro acolhimento à consulta, sem filas e sem burocracia.</p>
+
+    <div class="ecg" id="ecg" aria-hidden="true">
+      <canvas id="trail"></canvas>
+      <div class="ring" id="ring"></div>
+      <div class="pen" id="pen"></div>
+    </div>
+
+    <div class="bens">
+      <article class="b">
+        <div class="b-head"><span class="b-dot"><i class="b-ping"></i></span><span class="b-ix">01</span></div>
+        <h3>Sem filas</h3>
+        <p>Atendimento rápido, longe da espera do SUS.</p>
+      </article>
+      <article class="b">
+        <div class="b-head"><span class="b-dot"><i class="b-ping"></i></span><span class="b-ix">02</span></div>
+        <h3>Receita direto pra você</h3>
+        <p>Chega por e-mail, SMS ou WhatsApp, sem burocracia.</p>
+      </article>
+      <article class="b">
+        <div class="b-head"><span class="b-dot"><i class="b-ping"></i></span><span class="b-ix">03</span></div>
+        <h3>Rede solidária</h3>
+        <p>Profissionais que atendem com valores acessíveis.</p>
+      </article>
+      <article class="b">
+        <div class="b-head"><span class="b-dot"><i class="b-ping"></i></span><span class="b-ix">04</span></div>
+        <h3>Acolhimento na hora</h3>
+        <p>IA que acalma na crise e te leva a um humano.</p>
+      </article>
+    </div>
+
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var wrap  = document.getElementById("ecg");
+  var cv    = document.getElementById("trail");
+  var ctx   = cv.getContext("2d");
+  var pen   = document.getElementById("pen");
+  var ring  = document.getElementById("ring");
+  var items = Array.prototype.slice.call(document.querySelectorAll(".b"));
+  var dots  = Array.prototype.slice.call(document.querySelectorAll(".b-dot"));
+  var pings = Array.prototype.slice.call(document.querySelectorAll(".b-ping"));
+
+  var W = 0, H = 0, DPR = 1, baseY = 0, ampS = 1, speed = 0.17;
+  var BASE_IV = 833; /* ~72 bpm */
+
+  /* ---- forma de onda: P — QRS — T (t em ms desde o início do batimento) ---- */
+  function g(t, mu, sig, amp){ var d = (t - mu) / sig; return amp * Math.exp(-d * d); }
+  function wave(t){
+    if (t < 0 || t > 560) return 0;
+    return g(t, 80, 24, 6.5)      /* P  */
+         - g(t, 196, 7, 9)        /* Q  */
+         + g(t, 210, 6.5, 52)     /* R  */
+         - g(t, 224, 8, 15)       /* S  */
+         + g(t, 382, 46, 10.5);   /* T  */
+  }
+  function drift(t){ return Math.sin(t * 0.0019) * 1.6 + Math.sin(t * 0.0007 + 2.1) * 1.2; }
+
+  function seg(x0, y0, x1, y1){
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.strokeStyle = "rgba(0,191,216,.12)"; ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    ctx.strokeStyle = "rgba(0,168,191,.5)"; ctx.lineWidth = 3.4;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    ctx.strokeStyle = "rgba(0,191,216,1)"; ctx.lineWidth = 1.7;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+  }
+
+  var prev = null;
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = wrap.clientWidth; H = wrap.clientHeight;
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    baseY = H * 0.62;
+    ampS  = (H * 0.34) / 52;
+    speed = W / Math.max(4200, Math.min(8200, W * 5)); /* px por ms */
+    prev = null;
+    if (reduced) drawStatic();
+  }
+
+  /* ---- fallback estático (reduced motion): traçado completo, sem loop ---- */
+  function drawStatic(){
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    var path = new Path2D();
+    var x, t, y;
+    for (x = 0; x <= W; x += 1){
+      t = x / speed;
+      y = baseY - wave(t % BASE_IV) * ampS - drift(t);
+      if (x === 0) path.moveTo(x, y); else path.lineTo(x, y);
+    }
+    ctx.strokeStyle = "rgba(0,191,216,.12)"; ctx.lineWidth = 8;  ctx.stroke(path);
+    ctx.strokeStyle = "rgba(0,168,191,.5)";  ctx.lineWidth = 3.4; ctx.stroke(path);
+    ctx.strokeStyle = "rgba(0,191,216,.95)"; ctx.lineWidth = 1.7; ctx.stroke(path);
+    /* caneta parada no pico R mais próximo de 70% da largura */
+    var k = Math.max(0, Math.round((0.7 * W / speed - 210) / BASE_IV));
+    var tR = k * BASE_IV + 210;
+    var xR = Math.min(tR * speed, W - 8);
+    var yR = baseY - wave(210) * ampS - drift(tR);
+    pen.style.transform = "translate(" + xR + "px," + yR + "px)";
+  }
+
+  resize();
+  window.addEventListener("resize", resize);
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(wrap);
+
+  if (reduced || typeof gsap === "undefined"){
+    if (typeof gsap === "undefined" && !reduced) drawStatic(); /* CDN falhou: degrada pro estático */
+    return;
+  }
+
+  /* ================= modo animado (GSAP) ================= */
+  var setPenX = gsap.quickSetter(pen, "x", "px");
+  var setPenY = gsap.quickSetter(pen, "y", "px");
+
+  /* entrada */
+  gsap.set([".eyebrow", ".hud"], { opacity: 0, y: 10 });
+  gsap.set(".m-line", { opacity: 0, y: 26 });
+  gsap.set(".sub",    { opacity: 0, y: 16 });
+  gsap.set("#ecg",    { opacity: 0 });
+  gsap.set(".b",      { opacity: 0, y: 14 });
+  gsap.timeline({ defaults: { ease: "power4.out" } })
+    .to(".eyebrow", { opacity: 1, y: 0, duration: .7 }, .10)
+    .to(".hud",     { opacity: 1, y: 0, duration: .7 }, .18)
+    .to(".m-line",  { opacity: 1, y: 0, duration: 1.05, stagger: .13 }, .25)
+    .to(".sub",     { opacity: 1, y: 0, duration: .9 }, .58)
+    .to("#ecg",     { opacity: 1, duration: .9, ease: "power2.out" }, .72)
+    .to(".b",       { opacity: .35, y: 0, duration: .8, stagger: .08 }, .88);
+
+  /* pulso de benefício a cada batimento, em ciclo */
+  var bIx = -1;
+  function fireBeat(px, py){
+    bIx = (bIx + 1) % 4;
+    var it = items[bIx];
+    gsap.timeline({ defaults: { overwrite: "auto" } })
+      .to(it, { opacity: 1, duration: .16, ease: "power2.out" }, 0)
+      .to(it, { opacity: .35, duration: 2.7, ease: "power2.inOut" }, .72);
+    gsap.fromTo(pings[bIx],
+      { scale: .35, opacity: .9 },
+      { scale: 4.2, opacity: 0, duration: .85, ease: "power2.out", overwrite: true });
+    gsap.fromTo(dots[bIx],
+      { scale: 1.9 },
+      { scale: 1, duration: .6, ease: "power3.out", overwrite: true });
+    gsap.set(ring, { x: px, y: py });
+    gsap.fromTo(ring,
+      { scale: .22, opacity: .85 },
+      { scale: 1, opacity: 0, duration: .8, ease: "power2.out", overwrite: true });
+  }
+
+  /* loop: caneta + cauda de fósforo (destination-out) + batimentos com jitter */
+  var clock = 0, x = 0;
+  var lastBeat = -10000, nextBeat = 1900, rFired = true;
+
+  gsap.ticker.add(function(time, dtms){
+    var dt = Math.min(dtms || 16.7, 64);
+    clock += dt;
+
+    /* esvaecimento do traço (fósforo) */
+    var a = 1 - Math.pow(0.966, dt / 16.67);
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.globalAlpha = a;
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = "source-over";
+
+    /* agenda de batimentos (~72bpm, intervalo orgânico) */
+    if (clock >= nextBeat){
+      lastBeat = nextBeat;
+      var iv = BASE_IV * (0.92 + Math.random() * 0.16);
+      nextBeat = lastBeat + iv;
+      rFired = false;
+    }
+
+    /* caneta avança; wrap sem ligar segmento */
+    x += speed * dt;
+    if (x > W){ x -= W; prev = null; }
+    var y = baseY - wave(clock - lastBeat) * ampS - drift(clock);
+
+    if (!rFired && clock >= lastBeat + 210){
+      rFired = true;
+      fireBeat(x, y);
+    }
+
+    if (prev) seg(prev.x, prev.y, x, y);
+    prev = { x: x, y: y };
+    setPenX(x); setPenY(y);
+  });
+})();
+</script>
+</body>
+</html>

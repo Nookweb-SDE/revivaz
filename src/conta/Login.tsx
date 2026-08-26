@@ -5,14 +5,13 @@ import { enviarLinkEmail } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import ConsentimentoLGPD, { CONSENT_KEY } from "./sections/ConsentimentoLGPD";
 
-type LoginMethod = "email" | "whatsapp";
 
 // ─── Email flow phases ───────────────────────────────────────────────────────
 type EmailPhase = "idle" | "loading" | "sent" | "error";
 
-// ─── WhatsApp flow phases ────────────────────────────────────────────────────
-type WaPhase = "phone" | "loading-send" | "code" | "loading-verify" | "error";
-
+// O login por WhatsApp (OTP) saiu junto com o canal: sobra o magic-link por
+// e-mail, que não depende de nenhum serviço de terceiro além do Supabase.
+// Com um método só, o seletor de abas também deixou de fazer sentido.
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 const inputBase: React.CSSProperties = {
   width: "100%",
@@ -41,64 +40,6 @@ const errorBox: React.CSSProperties = {
   fontSize: 13,
   color: "#991B1B",
 };
-
-// ─── Tab toggle ──────────────────────────────────────────────────────────────
-interface TabToggleProps {
-  method: LoginMethod;
-  onChange: (m: LoginMethod) => void;
-}
-function TabToggle({ method, onChange }: TabToggleProps) {
-  const tab = (label: string, value: LoginMethod, Icon: React.ElementType) => {
-    const active = method === value;
-    return (
-      <button
-        type="button"
-        id={`tab-${value}`}
-        role="tab"
-        aria-selected={active}
-        aria-controls={`panel-${value}`}
-        onClick={() => onChange(value)}
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 6,
-          padding: "9px 0",
-          borderRadius: 10,
-          border: "none",
-          cursor: "pointer",
-          fontFamily: "'Nunito', sans-serif",
-          fontWeight: 700,
-          fontSize: 13,
-          transition: "background 0.15s, color 0.15s",
-          background: active ? T.teal700 : "transparent",
-          color: active ? T.white : T.gray600,
-        }}
-      >
-        <Icon size={15} aria-hidden="true" />
-        {label}
-      </button>
-    );
-  };
-
-  return (
-    <div
-      role="tablist"
-      aria-label="Método de login"
-      style={{
-        display: "flex",
-        background: T.gray100,
-        borderRadius: 12,
-        padding: 3,
-        marginBottom: 24,
-      }}
-    >
-      {tab("E-mail", "email", Mail)}
-      {tab("WhatsApp", "whatsapp", MessageCircle)}
-    </div>
-  );
-}
 
 // ─── Email section (unchanged logic) ─────────────────────────────────────────
 function EmailLogin() {
@@ -262,277 +203,6 @@ function EmailLogin() {
   );
 }
 
-// ─── WhatsApp OTP section ─────────────────────────────────────────────────────
-function WhatsAppLogin() {
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [phase, setPhase] = useState<WaPhase>("phone");
-  const [step, setStep] = useState<"phone" | "code">("phone"); // tracks UI step independently
-  const [erro, setErro] = useState<string | null>(null);
-
-  // Format phone for display (Brazilian: (XX) XXXXX-XXXX)
-  function formatPhone(raw: string) {
-    const d = raw.replace(/\D/g, "").slice(0, 11);
-    if (d.length <= 2) return d;
-    if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-  }
-
-  async function handleSendCode(e: React.FormEvent) {
-    e.preventDefault();
-    const digits = phone.replace(/\D/g, "");
-    if (digits.length < 10 || phase === "loading-send") return;
-    setPhase("loading-send");
-    setErro(null);
-
-    try {
-      const res = await fetch("/api/wa/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: digits }),
-      });
-      const data = await res.json() as { ok?: boolean; error?: string };
-      if (!res.ok || !data.ok) {
-        setErro(data.error ?? "Erro ao enviar código. Tente novamente.");
-        setPhase("error");
-      } else {
-        setPhase("code");
-        setStep("code");
-      }
-    } catch {
-      setErro("Erro de conexão. Tente novamente.");
-      setPhase("error");
-    }
-  }
-
-  async function handleVerifyCode(e: React.FormEvent) {
-    e.preventDefault();
-    const token = code.trim();
-    if (token.length !== 6 || phase === "loading-verify") return;
-    setPhase("loading-verify");
-    setErro(null);
-
-    try {
-      const res = await fetch("/api/wa/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phone.replace(/\D/g, ""), code: token }),
-      });
-      const data = await res.json() as { access_token?: string; refresh_token?: string; error?: string };
-      if (!res.ok || !data.access_token || !data.refresh_token) {
-        setErro(data.error ?? "Código inválido. Tente novamente.");
-        setPhase("error");
-        return;
-      }
-      // Inject the session obtained from the server into the Supabase client
-      const { error: sessionErr } = await supabase.auth.setSession({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-      });
-      if (sessionErr) {
-        setErro("Erro ao iniciar sessão. Tente novamente.");
-        setPhase("error");
-      }
-      // On success the session is set; useSession picks it up automatically.
-    } catch {
-      setErro("Erro de conexão. Tente novamente.");
-      setPhase("error");
-    }
-  }
-
-  const isLoading = phase === "loading-send" || phase === "loading-verify";
-
-  const submitBtn = (
-    label: string,
-    disabled: boolean,
-    loadingLabel: string,
-    loading: boolean
-  ) => (
-    <button
-      type="submit"
-      disabled={disabled || loading}
-      style={{
-        ...btnPrimary,
-        width: "100%",
-        marginTop: 16,
-        fontSize: 15,
-        fontFamily: "'Nunito',sans-serif",
-        fontWeight: 800,
-        borderRadius: 14,
-        minHeight: 52,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        background:
-          disabled || loading
-            ? T.teal300
-            : `linear-gradient(90deg, ${T.teal900} 0%, ${T.teal700} 100%)`,
-        cursor: disabled || loading ? "not-allowed" : "pointer",
-        opacity: 1,
-        boxShadow: disabled || loading ? "none" : "0 4px 14px rgba(0,122,140,0.28)",
-        transition: "background 0.2s, box-shadow 0.2s",
-      }}
-    >
-      {loading ? (
-        <>
-          <span
-            aria-hidden="true"
-            style={{
-              width: 16,
-              height: 16,
-              borderRadius: "50%",
-              border: "2.5px solid rgba(255,255,255,0.35)",
-              borderTopColor: "#fff",
-              display: "inline-block",
-              animation: "spin 0.7s linear infinite",
-            }}
-          />
-          {loadingLabel}
-        </>
-      ) : (
-        <>
-          {label}
-          <ArrowRight size={17} strokeWidth={2.5} aria-hidden="true" />
-        </>
-      )}
-    </button>
-  );
-
-  if (step === "code") {
-    return (
-      <form onSubmit={handleVerifyCode} noValidate>
-        <p style={{ margin: "0 0 6px", fontWeight: 700, fontSize: 13, color: T.gray700 }}>
-          Código enviado para
-        </p>
-        <p style={{ margin: "0 0 20px", fontWeight: 800, fontSize: 15, color: T.gray950 }}>
-          {formatPhone(phone)}
-          <button
-            type="button"
-            onClick={() => { setPhase("phone"); setStep("phone"); setCode(""); setErro(null); }}
-            style={{
-              marginLeft: 10,
-              fontFamily: "'Nunito',sans-serif",
-              fontWeight: 600,
-              fontSize: 12,
-              color: T.teal700,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              textDecoration: "underline",
-            }}
-          >
-            Trocar número
-          </button>
-        </p>
-
-        <label
-          htmlFor="wa-code"
-          style={{ display: "block", fontWeight: 700, fontSize: 13, color: T.gray700, marginBottom: 8 }}
-        >
-          Código de 6 dígitos (WhatsApp)
-        </label>
-        <div style={{ position: "relative", marginBottom: 8 }}>
-          <MessageCircle
-            size={17}
-            color={T.gray600}
-            aria-hidden="true"
-            style={{ position: "absolute", top: "50%", left: 14, transform: "translateY(-50%)", pointerEvents: "none" }}
-          />
-          <input
-            id="wa-code"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            autoFocus
-            value={code}
-            maxLength={6}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            placeholder="000000"
-            required
-            disabled={isLoading}
-            style={{
-              ...inputBase,
-              letterSpacing: "0.25em",
-              background: isLoading ? T.gray100 : T.white,
-            }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = T.teal700; }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = T.gray200; }}
-          />
-        </div>
-
-        {erro && (
-          <div role="alert" style={errorBox}>
-            <AlertCircle size={15} aria-hidden="true" />
-            {erro}
-          </div>
-        )}
-
-        {submitBtn(
-          "Verificar código",
-          code.trim().length !== 6,
-          "Verificando…",
-          phase === "loading-verify"
-        )}
-      </form>
-    );
-  }
-
-  // Phone entry step
-  return (
-    <form onSubmit={handleSendCode} noValidate>
-      <label
-        htmlFor="wa-phone"
-        style={{ display: "block", fontWeight: 700, fontSize: 13, color: T.gray700, marginBottom: 8 }}
-      >
-        Seu WhatsApp (com DDD)
-      </label>
-      <div style={{ position: "relative", marginBottom: 8 }}>
-        <Phone
-          size={17}
-          color={T.gray600}
-          aria-hidden="true"
-          style={{ position: "absolute", top: "50%", left: 14, transform: "translateY(-50%)", pointerEvents: "none" }}
-        />
-        <input
-          id="wa-phone"
-          type="tel"
-          autoComplete="tel"
-          autoFocus
-          value={formatPhone(phone)}
-          onChange={(e) => {
-            const raw = e.target.value.replace(/\D/g, "").slice(0, 11);
-            setPhone(raw);
-          }}
-          placeholder="(11) 99999-9999"
-          required
-          disabled={isLoading}
-          style={{
-            ...inputBase,
-            background: isLoading ? T.gray100 : T.white,
-          }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = T.teal700; }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = T.gray200; }}
-        />
-      </div>
-
-      {erro && (
-        <div role="alert" style={errorBox}>
-          <AlertCircle size={15} aria-hidden="true" />
-          {erro}
-        </div>
-      )}
-
-      {submitBtn(
-        "Enviar código pelo WhatsApp",
-        phone.replace(/\D/g, "").length < 10,
-        "Enviando…",
-        phase === "loading-send"
-      )}
-    </form>
-  );
-}
-
 // ─── Faixa de acesso rápido (DEV ONLY) ──────────────────────────────────────
 // O Vite REMOVE este caminho do bundle de produção (import.meta.env.DEV=false).
 // O endpoint /api/auth/dev-login também recusa quando NODE_ENV=production.
@@ -667,16 +337,12 @@ function DevLoginBand() {
 
 // ─── Root component ───────────────────────────────────────────────────────────
 export default function Login(): JSX.Element {
-  const [method, setMethod] = useState<LoginMethod>("email");
   // Consent gate: check once on mount. Re-render when user accepts.
   const [consentido, setConsentido] = useState<boolean>(
     () => !!localStorage.getItem(CONSENT_KEY)
   );
 
-  const subtitle =
-    method === "email"
-      ? "Informe seu e-mail e enviaremos um link de acesso."
-      : "Você receberá um código de 6 dígitos via WhatsApp.";
+  const subtitle = "Você receberá um link de acesso no seu e-mail.";
 
   // Show LGPD consent modal before anything else
   if (!consentido) {
@@ -790,17 +456,8 @@ export default function Login(): JSX.Element {
           {subtitle}
         </p>
 
-        {/* Tab toggle */}
-        <TabToggle method={method} onChange={setMethod} />
-
-        {/* Active login form */}
-        <div
-          role="tabpanel"
-          id={`panel-${method}`}
-          aria-labelledby={`tab-${method}`}
-        >
-          {method === "email" ? <EmailLogin /> : <WhatsAppLogin />}
-        </div>
+        {/* Método único: magic-link por e-mail. */}
+        <EmailLogin />
       </div>
 
       {/* Tagline */}

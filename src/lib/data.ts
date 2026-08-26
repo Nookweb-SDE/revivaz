@@ -192,50 +192,6 @@ export async function getRoomToken(
   return (await res.json()) as RoomTokenResponse;
 }
 
-/**
- * Notifica o paciente por WhatsApp que a consulta foi AGENDADA (confirmação).
- * Best-effort: chamado pelo admin/profissional logo após confirmar/definir a
- * agenda. O server valida (admin OU profissional DAQUELA consulta) e carrega o
- * telefone via service_role. Sem telefone NÃO é erro → { ok:false, skipped }.
- * Só lança em falha real de rede/servidor (5xx) p/ não travar o fluxo.
- */
-export async function notificarConsulta(
-  consultaId: string
-): Promise<{ ok: boolean; skipped?: string }> {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const token = sessionData.session?.access_token;
-  if (!token) throw new Error("Usuário não autenticado");
-
-  const res = await fetch("/api/consulta/notificar", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ consulta_id: consultaId }),
-  });
-
-  // 5xx = falha real (Evolution/servidor) → lança p/ o caller decidir.
-  if (res.status >= 500) {
-    let msg = `Falha ao notificar (${res.status})`;
-    try {
-      const body = (await res.json()) as { error?: string };
-      if (body?.error) msg = body.error;
-    } catch {
-      // resposta sem JSON — mantém msg padrão
-    }
-    throw new Error(msg);
-  }
-
-  // Demais respostas (200 ok / 200 skipped / 4xx) NÃO travam o fluxo:
-  // devolvemos {ok:false} quando não foi possível notificar.
-  try {
-    const body = (await res.json()) as { ok?: boolean; skipped?: string };
-    return { ok: Boolean(body?.ok), skipped: body?.skipped };
-  } catch {
-    return { ok: false, skipped: "sem resposta" };
-  }
-}
 
 /**
  * Nota clínica assistida por IA: o PROFISSIONAL da consulta envia o que observou
@@ -979,8 +935,9 @@ export async function adminGetMetricasReais(): Promise<MetricasReais> {
   };
 }
 
-// ─── Receita digital: PDF real + reenvio no WhatsApp ─────────────────────────
-// Estas duas substituem os alert() falsos que existiam no cartão de receita.
+// ─── Receita digital: PDF real ───────────────────────────────────────────────
+// Substitui o alert() falso que existia no cartão de receita. O reenvio por
+// WhatsApp saiu junto com o canal.
 
 /**
  * Baixa o PDF da receita. Dispara o download no navegador e resolve quando o
@@ -1015,36 +972,6 @@ export async function baixarReceitaPdf(receitaId: string): Promise<void> {
   a.remove();
   // revoga depois do tick para o navegador não cancelar o download em curso
   setTimeout(() => URL.revokeObjectURL(url), 4000);
-}
-
-/**
- * Reenvia a receita para o WhatsApp do paciente.
- * `ok:false` + `skipped` = não deu erro, mas TAMBÉM não enviou (ex.: sem
- * telefone no cadastro) — quem chama precisa dizer isso ao usuário.
- */
-export async function enviarReceitaWhatsapp(
-  receitaId: string
-): Promise<{ ok: boolean; skipped?: string }> {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const token = sessionData.session?.access_token;
-  if (!token) throw new Error("Sessão expirada. Entre de novo para enviar.");
-
-  const res = await fetch("/api/receita/whatsapp", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ receita_id: receitaId }),
-  });
-  if (!res.ok) {
-    let msg = `Não consegui enviar (${res.status})`;
-    try {
-      const body = (await res.json()) as { error?: string };
-      if (body?.error) msg = body.error;
-    } catch {
-      // resposta sem JSON — mantém a mensagem padrão
-    }
-    throw new Error(msg);
-  }
-  return (await res.json()) as { ok: boolean; skipped?: string };
 }
 
 // ─── Pedidos do site (leads da landing) — só admin ───────────────────────────

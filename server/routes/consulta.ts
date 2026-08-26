@@ -6,9 +6,6 @@ import {
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   SUPABASE_SERVICE_ROLE_KEY,
-  EVOLUTION_API_KEY,
-  EVOLUTION_URL,
-  EVOLUTION_INSTANCE,
   JITSI_DOMAIN,
   JITSI_APP_ID,
   JITSI_JWT_SECRET,
@@ -16,8 +13,6 @@ import {
 } from "../config";
 import { mintJitsiJwt } from "../jitsiJwt";
 import { roomName, isOnline } from "../../src/video/room";
-import { composeConfirmacao } from "../../src/notificacoes/mensagens";
-import { enviarWhatsApp } from "../lib/whatsapp";
 import { askClaudeBridge, isClaudeBridgeConfigured } from "../lib/claudeBridge";
 
 const router = Router();
@@ -167,171 +162,8 @@ router.post(
   }
 );
 
-// ─── POST /api/consulta/notificar ────────────────────────────────────────────
-// Notifica o PACIENTE por WhatsApp que a consulta foi AGENDADA (confirmação).
-// Segurança: exige Bearer válido; o caller precisa ser admin OU o profissional
-// vinculado da consulta (mesmo padrão do /room-token, via service_role só p/
-// checar associação). Carrega o telefone do paciente em profiles.telefone.
-// Sem telefone → {ok:false, skipped:"sem telefone"} (HTTP 200, não é erro: o
-// front trata best-effort). Erro real de Evolution/servidor → >= 500.
-// NUNCA loga telefone inteiro nem o texto.
-router.post(
-  "/api/consulta/notificar",
-  requireAuth,
-  async (req: Request, res: Response): Promise<void> => {
-    if (!SUPABASE_SERVICE_ROLE_KEY) {
-      res.status(500).json({ error: "Auth not configured" });
-      return;
-    }
-    // Evolution não configurado → não é erro de negócio: pula silenciosamente.
-    if (!EVOLUTION_URL || !EVOLUTION_INSTANCE || !EVOLUTION_API_KEY) {
-      res.status(200).json({ ok: false, skipped: "whatsapp não configurado" });
-      return;
-    }
-
-    // uid validado pelo middleware requireAuth
-    const callerUid = res.locals.uid as string;
-
-    const consulta_id = String(req.body?.consulta_id ?? "").trim();
-    if (!consulta_id) {
-      res.status(400).json({ error: "consulta_id é obrigatório" });
-      return;
-    }
-
-    const adminHeaders: Record<string, string> = {
-      "Content-Type": "application/json",
-      apikey: SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-    };
-
-    // (2) carrega a consulta via service_role (ignora RLS p/ checar associação)
-    let consulta: {
-      id: string;
-      paciente_id: string | null;
-      profissional_id: string | null;
-      data: string | null;
-      hora: string | null;
-      tipo: string | null;
-      status: string | null;
-      link_ou_local: string | null;
-    };
-    try {
-      const cRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/consultas?id=eq.${encodeURIComponent(
-          consulta_id
-        )}&select=id,paciente_id,profissional_id,data,hora,tipo,status,link_ou_local`,
-        { headers: adminHeaders }
-      );
-      if (!cRes.ok) {
-        const body = await cRes.text();
-        console.error("[notificar] Erro ao ler consulta:", cRes.status, body);
-        res.status(500).json({ error: "Erro interno" });
-        return;
-      }
-      const rows = (await cRes.json()) as Array<typeof consulta>;
-      if (!rows[0]) {
-        res.status(404).json({ error: "Consulta não encontrada" });
-        return;
-      }
-      consulta = rows[0];
-    } catch (err) {
-      console.error("[notificar] Erro inesperado (consulta):", err);
-      res.status(500).json({ error: "Erro interno" });
-      return;
-    }
-
-    // (3) autorização: caller é admin OU o profissional vinculado da consulta
-    let autorizado = false;
-    try {
-      const roleRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${callerUid}&select=role`,
-        { headers: adminHeaders }
-      );
-      if (roleRes.ok) {
-        const rows = (await roleRes.json()) as Array<{ role?: string }>;
-        if (rows[0]?.role === "admin") autorizado = true;
-      }
-    } catch (err) {
-      console.error("[notificar] Erro ao checar admin:", err);
-      res.status(500).json({ error: "Erro interno" });
-      return;
-    }
-    if (!autorizado && consulta.profissional_id) {
-      try {
-        const pRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/profissionais?id=eq.${encodeURIComponent(
-            consulta.profissional_id
-          )}&profile_id=eq.${callerUid}&select=id`,
-          { headers: adminHeaders }
-        );
-        if (pRes.ok) {
-          autorizado = ((await pRes.json()) as unknown[]).length > 0;
-        }
-      } catch (err) {
-        console.error("[notificar] Erro ao checar profissional:", err);
-        res.status(500).json({ error: "Erro interno" });
-        return;
-      }
-    }
-    if (!autorizado) {
-      res.status(403).json({ error: "Você não pode notificar esta consulta" });
-      return;
-    }
-
-    // (4) carrega nome + telefone do paciente (profiles.id = paciente_id)
-    let nome: string | null = null;
-    let telefone: string | null = null;
-    if (consulta.paciente_id) {
-      try {
-        const pacRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(
-            consulta.paciente_id
-          )}&select=nome,telefone`,
-          { headers: adminHeaders }
-        );
-        if (pacRes.ok) {
-          const rows = (await pacRes.json()) as Array<{
-            nome?: string | null;
-            telefone?: string | null;
-          }>;
-          nome = rows[0]?.nome ?? null;
-          telefone = rows[0]?.telefone ?? null;
-        }
-      } catch (err) {
-        console.error("[notificar] Erro ao ler paciente:", err);
-        res.status(500).json({ error: "Erro interno" });
-        return;
-      }
-    }
-
-    // Sem telefone → não é erro: pula (login por e-mail pode não ter telefone).
-    if (!telefone || !String(telefone).replace(/\D/g, "")) {
-      res.status(200).json({ ok: false, skipped: "sem telefone" });
-      return;
-    }
-
-    // (5) compõe a confirmação (link só p/ online; mapeia link_ou_local → link)
-    const texto = composeConfirmacao({
-      nome,
-      data: consulta.data,
-      hora: consulta.hora,
-      tipo: consulta.tipo,
-      link: consulta.link_ou_local,
-    });
-
-    // (6) envia. Falha de Evolution → 5xx (é o caso que o front trata como erro).
-    const ok = await enviarWhatsApp(String(telefone), texto);
-    if (!ok) {
-      res.status(502).json({ error: "Falha ao enviar WhatsApp" });
-      return;
-    }
-
-    console.log(
-      `[notificar] confirmação enviada consulta=${consulta.id.slice(0, 8)}…`
-    );
-    res.status(200).json({ ok: true });
-  }
-);
+// A confirmação por WhatsApp saiu: o canal foi removido do produto. A consulta
+// agendada aparece no /conta do paciente.
 
 // ─── POST /api/consulta/nota-ia ──────────────────────────────────────────────
 // Nota clínica assistida por IA: o PROFISSIONAL da consulta envia o que observou

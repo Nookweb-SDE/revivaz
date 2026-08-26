@@ -1,5 +1,6 @@
-// Receita digital: PDF de verdade e reenvio no WhatsApp.
-// Antes destas rotas os botões do /conta eram alert() falsos.
+// Receita digital: PDF de verdade.
+// Antes desta rota o botão do /conta era um alert() falso. O reenvio por
+// WhatsApp saiu junto com o canal; o paciente baixa o PDF na própria conta.
 //
 // Autorização por associação (service_role só para CHECAR): pode ver a receita
 // o PACIENTE dela, o PROFISSIONAL que a emitiu, ou um admin.
@@ -7,13 +8,9 @@ import { Router, type Request, type Response } from "express";
 import {
   SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY,
-  EVOLUTION_API_KEY,
-  EVOLUTION_URL,
-  EVOLUTION_INSTANCE,
   requireAuth,
 } from "../config";
 import { buildReceitaPdf } from "../receitaPdf";
-import { enviarWhatsApp } from "../lib/whatsapp";
 
 const router = Router();
 
@@ -192,60 +189,6 @@ router.get(
     } catch (err) {
       console.error("[receita/pdf] Erro inesperado:", err);
       res.status(500).json({ error: "Erro ao gerar o PDF" });
-    }
-  }
-);
-
-// POST /api/receita/whatsapp {receita_id} → manda o texto da receita ao paciente.
-// Sem telefone no cadastro → 200 {ok:false, skipped} (não é erro de servidor,
-// mas o front PRECISA mostrar isso em vez de dizer "enviado").
-router.post(
-  "/api/receita/whatsapp",
-  requireAuth,
-  async (req: Request, res: Response): Promise<void> => {
-    if (!SUPABASE_SERVICE_ROLE_KEY) {
-      res.status(500).json({ error: "Auth not configured" });
-      return;
-    }
-    if (!EVOLUTION_URL || !EVOLUTION_INSTANCE || !EVOLUTION_API_KEY) {
-      res.status(200).json({ ok: false, skipped: "whatsapp não configurado" });
-      return;
-    }
-    const callerUid = res.locals.uid as string;
-    const receitaId = String(req.body?.receita_id ?? "").trim();
-    if (!/^[0-9a-fA-F-]{36}$/.test(receitaId)) {
-      res.status(400).json({ error: "receita_id inválido" });
-      return;
-    }
-
-    try {
-      const r = await carregarReceitaAutorizada(receitaId, callerUid);
-      if (r.status !== 0 || !r.receita) {
-        res.status(r.status).json({ error: r.error });
-        return;
-      }
-      if (!r.receita.pacienteTelefone) {
-        res.status(200).json({ ok: false, skipped: "sem telefone no cadastro" });
-        return;
-      }
-      const validade = r.receita.validade
-        ? `\nVálida até ${r.receita.validade.split("-").reverse().join("/")}.`
-        : "";
-      const texto =
-        `Olá! Segue sua receita.\n\n` +
-        `Profissional: ${r.receita.profNome}\n\n` +
-        `${r.receita.resumo}${validade}\n\n` +
-        `Você também pode baixar o PDF entrando na sua conta.`;
-      const ok = await enviarWhatsApp(r.receita.pacienteTelefone, texto);
-      if (!ok) {
-        res.status(502).json({ error: "Não consegui enviar pelo WhatsApp agora" });
-        return;
-      }
-      console.log(`[receita/whatsapp] enviada receita=${receitaId.slice(0, 8)}…`);
-      res.status(200).json({ ok: true });
-    } catch (err) {
-      console.error("[receita/whatsapp] Erro inesperado:", err);
-      res.status(500).json({ error: "Erro interno" });
     }
   }
 );

@@ -87,8 +87,6 @@ export default function RevivazPreview() {
   const [depoIdx, setDepoIdx] = useState(0);
   const [modalAgendar, setModalAgendar] = useState(false);
   const [agendarOk, setAgendarOk] = useState(false);
-  const [modalReceita, setModalReceita] = useState(false);
-  const [receitaOk, setReceitaOk] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [form, setForm] = useState({
     tipo: "online" as "presencial" | "online",
@@ -166,7 +164,7 @@ export default function RevivazPreview() {
 
   /* data */
   const DEPOS = [
-    { nome: "Maria S.", cargo: "Paciente", avatar: "MS", quote: "Consegui agendar sem criar conta. A receita chegou no WhatsApp na hora. Atendimento humanizado de verdade." },
+    { nome: "Maria S.", cargo: "Paciente", avatar: "MS", quote: "Pedi pelo site e me responderam no mesmo dia. A receita ficou na minha conta, pronta pra baixar." },
     { nome: "Dr. Carlos M.", cargo: "Psiquiatra voluntário", avatar: "CM", quote: "A Revivaz trouxe uma plataforma acessível. Agora posso ajudar quem mais precisa com dignidade." },
     { nome: "Ana R.", cargo: "Paciente", avatar: "AR", quote: "Posso me cuidar de onde estiver, com tranquilidade. Mudou minha relação com a saúde mental." },
     { nome: "Dra. Paula L.", cargo: "CRM-SP 12345", avatar: "PL", quote: "Tecnologia de ponta e um time de excelência. Satisfação em fazer parte da Revivaz." },
@@ -175,14 +173,14 @@ export default function RevivazPreview() {
   const FEATURES = [
     { icon: Brain, title: "Psiquiatria", sub: "Acompanhamento especializado com profissionais voluntários qualificados.", img: "/revivaz/hero-alt.webp", imgPos: "center" },
     { icon: Calendar, title: "Agendamento fácil", sub: "Presencial ou online, sem burocracia. Agende em poucos cliques.", img: "/revivaz/hero-alt.webp", imgPos: "center" },
-    { icon: FileText, title: "Receita digital", sub: "Receba sua receita por SMS ou WhatsApp logo após a consulta.", img: "/revivaz/hero.webp", imgPos: "center" },
+    { icon: FileText, title: "Receita digital", sub: "Baixe sua receita em PDF na sua conta, logo após a consulta.", img: "/revivaz/hero.webp", imgPos: "center" },
     { icon: Users, title: "Voluntários", sub: "Psicólogos e psiquiatras dedicados ao atendimento solidário.", img: "/revivaz/hero.webp", imgPos: "center" },
   ];
 
   const SOLUCOES = [
     { icon: Stethoscope, title: "Consulta presencial", desc: "No consultório, com horário agendado." },
     { icon: Video, title: "Teleatendimento", desc: "Vídeo chamada com seu profissional." },
-    { icon: MessageCircle, title: "Receita digital", desc: "Enviada por SMS ou WhatsApp na hora." },
+    { icon: MessageCircle, title: "Receita digital", desc: "Em PDF na sua conta, logo após a consulta." },
     { icon: Heart, title: "Saúde mental", desc: "A maior rede solidária em saúde mental." },
   ];
 
@@ -327,7 +325,7 @@ export default function RevivazPreview() {
             </div>
             {tab === 0 && <>
               <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: bp === "mobile" ? F.xl : F["2xl"], color: T.white, lineHeight: 1.15, marginBottom: S.m }}>O futuro do cuidado em saúde mental</h2>
-              <p style={{ fontSize: F.sm, color: "rgba(255,255,255,.72)", lineHeight: 1.7, marginBottom: Sp.l, maxWidth: 440 }}>Agende presencial ou online, receba receita por WhatsApp e faça parte de uma rede que reduz a fila de espera do SUS.</p>
+              <p style={{ fontSize: F.sm, color: "rgba(255,255,255,.72)", lineHeight: 1.7, marginBottom: Sp.l, maxWidth: 440 }}>Agende presencial ou online, receba sua receita em PDF e faça parte de uma rede que reduz a fila de espera do SUS.</p>
               <div style={{ display: "flex", gap: S.m, flexWrap: "wrap" }}>
                 <button onClick={openAgendar} style={btnPrimary}>Agendar consulta</button>
                 <a style={{ ...btnGlass, textDecoration: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }} href="#sobre">Saiba mais</a>
@@ -406,7 +404,7 @@ export default function RevivazPreview() {
         <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1fr 1fr", gap: Sp.l, ...container }}>
           {[
             { value: "Até 24h", label: "para agendar sua consulta", note: "*Conforme disponibilidade", Icon: Clock },
-            { value: "Na hora", label: "receita por SMS ou WhatsApp", note: "*Enviada pelo profissional", Icon: MessageCircle },
+            { value: "Na hora", label: "receita em PDF na sua conta", note: "*Emitida pelo profissional", Icon: MessageCircle },
           ].map(({ value, label, note, Icon }) => (
             <div key={value} style={{ textAlign: "center", padding: Sp.xl, background: T.navy, borderRadius: 16, position: "relative", overflow: "hidden", boxShadow: "0 8px 24px rgba(11,29,58,.25)" }}>
               <div style={{ position: "absolute", top: -16, right: -16, width: 64, height: 64, borderRadius: "50%", background: "rgba(0,168,191,.15)" }} />
@@ -667,7 +665,7 @@ export default function RevivazPreview() {
           piada) e depois para o chat público, que saiu do ar por queimar cota
           da assinatura sem cadastro nenhum. Agora abre o pedido de agendamento,
           que grava de verdade. */}
-      {!modalAgendar && !modalReceita && (
+      {!modalAgendar && (
         <button
           onClick={openAgendar}
           aria-label="Pedir agendamento"
@@ -765,7 +763,7 @@ export default function RevivazPreview() {
                   <input id="form-nome" placeholder="Seu nome" value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })} style={inputBase} />
                 </div>
 
-                <label htmlFor="form-tel" style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Telefone (WhatsApp)</label>
+                <label htmlFor="form-tel" style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Telefone</label>
                 <div style={{ position: "relative", marginBottom: S.m }}>
                   <Phone size={14} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: T.gray600 }} />
                   <input id="form-tel" type="tel" placeholder="(11) 99999-9999" value={form.tel} onChange={e => setForm({ ...form, tel: e.target.value })} style={inputBase} />
@@ -791,7 +789,7 @@ export default function RevivazPreview() {
                     <CheckCircle size={30} color={T.white} />
                   </div>
                   <h4 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.lg, color: T.green700, marginBottom: S.s }}>{modoLead === "profissional" ? "Recebemos seu interesse!" : "Pedido recebido!"}</h4>
-                  <p style={{ fontSize: F.sm, color: T.gray600, marginBottom: 4 }}>{modoLead === "profissional" ? "Nossa equipe vai te chamar no WhatsApp para conversar sobre como funciona a rede." : "Ainda não é uma consulta marcada: nossa equipe vai te chamar no WhatsApp para confirmar dia e horário."}</p>
+                  <p style={{ fontSize: F.sm, color: T.gray600, marginBottom: 4 }}>{modoLead === "profissional" ? "Nossa equipe vai entrar em contato para conversar sobre como funciona a rede." : "Ainda não é uma consulta marcada: nossa equipe vai entrar em contato para confirmar dia e horário."}</p>
                   <p style={{ fontSize: F.xs, color: T.gray600, marginBottom: S.l }}>Se você estiver em crise agora, ligue <strong>188</strong> (CVV, 24h e gratuito) ou <strong>192</strong> (SAMU).</p>
                   <div style={{ display: "flex", gap: S.m, justifyContent: "center", flexWrap: "wrap" }}>
                     <button onClick={() => setModalAgendar(false)} style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.teal700, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", minHeight: 44 }}>Fechar</button>
@@ -806,34 +804,8 @@ export default function RevivazPreview() {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════
-          MODAL — Receita WhatsApp
-         ═══════════════════════════════════════════════════════════ */}
-      {modalReceita && (
-        <div onClick={e => e.target === e.currentTarget && !receitaOk && setModalReceita(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", backdropFilter: "blur(4px)", zIndex: 110, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: T.white, borderRadius: 20, maxWidth: 360, width: "100%", padding: S.xl, boxShadow: "0 16px 56px rgba(0,0,0,.2)" }}>
-            {!receitaOk ? (<>
-              <div style={{ display: "flex", alignItems: "center", gap: S.m, marginBottom: S.m }}>
-                <div style={{ width: 44, height: 44, borderRadius: "50%", background: T.green500, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <MessageCircle size={22} color={T.white} />
-                </div>
-                <h3 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.lg, color: T.gray950, margin: 0 }}>Enviar receita</h3>
-              </div>
-              <p style={{ fontSize: F.sm, color: T.gray600, lineHeight: 1.55, marginBottom: S.l }}>
-                O profissional envia a receita médica digital diretamente para o WhatsApp informado no agendamento.
-              </p>
-              <button onClick={() => { setReceitaOk(true); setTimeout(() => { setModalReceita(false); setReceitaOk(false); }, 2200); }} style={{ width: "100%", padding: "14px", fontSize: F.sm, fontWeight: 700, color: T.white, background: T.green500, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 48 }}>
-                <Send size={16} /> Simular envio por WhatsApp
-              </button>
-            </>) : (
-              <div style={{ textAlign: "center", padding: "24px 0" }}>
-                <CheckCircle size={40} color={T.green500} style={{ marginBottom: S.m }} />
-                <p style={{ fontSize: F.base, fontWeight: 700, color: T.green700 }}>Receita enviada por WhatsApp!</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* O modal 'Receita WhatsApp' era uma simulação ("Simular envio") e saiu
+          junto com o canal. A receita real é o PDF dentro do /conta. */}
     </div>
   );
 }

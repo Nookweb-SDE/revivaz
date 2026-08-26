@@ -1,6 +1,6 @@
 /**
  * Integração das rotas novas: /api/lead (formulário público da landing) e
- * /api/receita/* (PDF e reenvio no WhatsApp).
+ * /api/receita/:id/pdf.
  *
  * Mesma estratégia do server.integration.test.ts: env via vi.hoisted antes do
  * import, fetch global mockado, app em porta aleatória e requests por node:http.
@@ -271,62 +271,6 @@ describe("GET /api/receita/:id/pdf", () => {
       Authorization: "Bearer tok",
     });
     expect(r.status).toBe(400);
-  });
-});
-
-describe("POST /api/receita/whatsapp", () => {
-  let srv: http.Server;
-  beforeAll(async () => {
-    srv = await startSrv(app as unknown as http.RequestListener);
-  });
-  afterAll(() => new Promise<void>((r) => srv.close(() => r())));
-  beforeEach(() => mockFetch.mockReset());
-
-  it("envia para o paciente e responde ok", async () => {
-    rotearSupabase(PACIENTE);
-    const r = await req(srv, "POST", "/api/receita/whatsapp", { receita_id: RECEITA }, {
-      Authorization: "Bearer tok",
-    });
-    expect(r.status).toBe(200);
-    expect(JSON.parse(r.body)).toEqual({ ok: true });
-    expect(mockFetch.mock.calls.some((c) => String(c[0]).includes("/message/sendText/"))).toBe(true);
-  });
-
-  it("terceiro logado leva 403", async () => {
-    rotearSupabase(OUTRO);
-    const r = await req(srv, "POST", "/api/receita/whatsapp", { receita_id: RECEITA }, {
-      Authorization: "Bearer tok",
-    });
-    expect(r.status).toBe(403);
-  });
-
-  it("paciente sem telefone: responde ok:false com o motivo, não 'enviado'", async () => {
-    mockFetch.mockImplementation((url: string) => {
-      const u = String(url);
-      if (u.includes("/auth/v1/user")) return Promise.resolve(mkRes({ id: PACIENTE }));
-      if (u.includes("/rest/v1/receitas"))
-        return Promise.resolve(
-          mkRes([
-            {
-              id: RECEITA,
-              resumo: "x",
-              validade: null,
-              created_at: "2026-08-26T12:00:00Z",
-              paciente_id: PACIENTE,
-              profissional_id: null,
-            },
-          ])
-        );
-      if (u.includes(`/rest/v1/profiles?id=eq.${PACIENTE}`))
-        return Promise.resolve(mkRes([{ nome: "Maria", telefone: null }]));
-      if (u.includes("/rest/v1/profiles")) return Promise.resolve(mkRes([{ role: "paciente" }]));
-      return Promise.resolve(mkRes({}));
-    });
-    const r = await req(srv, "POST", "/api/receita/whatsapp", { receita_id: RECEITA }, {
-      Authorization: "Bearer tok",
-    });
-    expect(r.status).toBe(200);
-    expect(JSON.parse(r.body)).toMatchObject({ ok: false, skipped: "sem telefone no cadastro" });
   });
 });
 

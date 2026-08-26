@@ -28,10 +28,9 @@ function fmtRecebido(iso: string): string {
   return isNaN(d.getTime()) ? iso : d.toLocaleString("pt-BR");
 }
 
-/** Só dígitos, com 55 na frente — formato que o wa.me espera. */
-function linkWhatsapp(telefone: string): string {
-  const d = telefone.replace(/\D/g, "");
-  return `https://wa.me/${d.startsWith("55") ? d : `55${d}`}`;
+/** tel: para o admin ligar de onde estiver. O WhatsApp saiu do produto. */
+function linkTelefone(telefone: string): string {
+  return `tel:+${telefone.replace(/\D/g, "").replace(/^(?!55)/, "55")}`;
 }
 
 function LeadCard({
@@ -103,7 +102,7 @@ function LeadCard({
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <a
-          href={linkWhatsapp(lead.telefone)}
+          href={linkTelefone(lead.telefone)}
           target="_blank"
           rel="noopener noreferrer"
           style={{
@@ -111,7 +110,7 @@ function LeadCard({
             display: "inline-flex",
             alignItems: "center",
             gap: 6,
-            background: "#1DA851",
+            background: T.teal700,
             color: "#fff",
             border: "none",
             borderRadius: 10,
@@ -122,7 +121,7 @@ function LeadCard({
             textDecoration: "none",
           }}
         >
-          <Phone size={13} aria-hidden="true" /> Chamar no WhatsApp
+          <Phone size={13} aria-hidden="true" /> Ligar
         </a>
 
         <label htmlFor={`status-${lead.id}`} style={{ fontSize: 12, color: T.gray600, fontWeight: 700 }}>

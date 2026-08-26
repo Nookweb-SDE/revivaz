@@ -32,9 +32,6 @@ process.env.CLAUDE_BRIDGE_URL =
 process.env.CLAUDE_BRIDGE_SECRET =
   resolveSecret("CLAUDE_BRIDGE_SECRET", "CLAUDE_BRIDGE_SECRET_FILE") || process.env.CLAUDE_BRIDGE_SECRET || "";
 
-export const EVOLUTION_API_KEY = resolveSecret("EVOLUTION_API_KEY", "EVOLUTION_API_KEY_FILE");
-export const EVOLUTION_URL = (process.env.EVOLUTION_URL || "").replace(/\/$/, "");
-export const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE || "";
 export const SUPABASE_URL = (
   process.env.SUPABASE_URL ||
   process.env.VITE_SUPABASE_URL ||
