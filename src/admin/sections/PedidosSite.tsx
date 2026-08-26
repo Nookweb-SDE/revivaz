@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Inbox, Phone, Mail, Calendar, RefreshCw, AlertTriangle } from "lucide-react";
 import { adminListLeads, adminAtualizarLead } from "../../lib/data";
 import type { Lead } from "../../lib/types";
+import { labelEspecialidade } from "../../lib/especialidades";
 import { T, card, sectionTitle, btnGhost } from "../../conta/ui";
 
 // Pedidos que chegam pelo formulário da landing (POST /api/lead).
@@ -97,7 +98,7 @@ function LeadCard({
             <Calendar size={13} aria-hidden="true" /> {fmtQuando(lead)}
           </span>
         )}
-        {lead.especialidade && <span>{lead.especialidade}</span>}
+        {lead.especialidade && <span>{labelEspecialidade(lead.especialidade)}</span>}
       </div>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>

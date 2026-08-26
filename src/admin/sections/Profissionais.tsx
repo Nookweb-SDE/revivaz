@@ -18,6 +18,23 @@ import {
   X,
 } from "lucide-react";
 
+import { ESPECIALIDADES } from "../../lib/especialidades";
+
+/* Sugestões do catálogo. Fica como <datalist> e não <select> porque a coluna é
+   texto livre: profissional cadastrado antes, ou com especialidade fora da
+   lista, não pode ser bloqueado na edição. */
+const LISTA_ESP_ID = "catalogo-especialidades";
+
+function DatalistEspecialidades(): JSX.Element {
+  return (
+    <datalist id={LISTA_ESP_ID}>
+      {ESPECIALIDADES.map((e) => (
+        <option key={e.valor} value={e.label} />
+      ))}
+    </datalist>
+  );
+}
+
 const label: React.CSSProperties = {
   display: "block",
   fontSize: 12,
@@ -142,9 +159,11 @@ function CriarProfissionalForm({ onDone }: { onDone: () => void }) {
           type="text"
           value={especialidade}
           onChange={(e) => setEspecialidade(e.target.value)}
-          placeholder="Psicologia Clínica"
+          placeholder="Psicologia clínica"
+          list={LISTA_ESP_ID}
           style={inputStyle}
         />
+        <DatalistEspecialidades />
       </div>
       <div>
         <label style={label} htmlFor={`${uid}-reg`}>Registro (CRP / CRM)</label>
@@ -262,8 +281,10 @@ function EditarProfissionalForm({
           type="text"
           value={especialidade}
           onChange={(e) => setEspecialidade(e.target.value)}
+          list={LISTA_ESP_ID}
           style={inputStyle}
         />
+        <DatalistEspecialidades />
       </div>
       <div>
         <label style={label} htmlFor={`${uid}-reg`}>Registro (CRP / CRM)</label>

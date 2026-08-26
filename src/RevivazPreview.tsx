@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import EcgValor from "./sections/EcgValor";
 import HeroScrubFrames from "./sections/HeroScrubFrames";
+import { ESPECIALIDADES, GRUPOS, type GrupoEspecialidade } from "./lib/especialidades";
 import {
   Star, Heart, ArrowRight, ChevronLeft, ChevronRight,
   Clock, MessageCircle, Smartphone, Video, Monitor, Sparkles, Brain,
@@ -91,7 +92,7 @@ export default function RevivazPreview() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [form, setForm] = useState({
     tipo: "online" as "presencial" | "online",
-    esp: "psicologia" as "psiquiatria" | "psicologia",
+    esp: "psicologia",
     data: "", hora: "", nome: "", tel: "", email: "",
   });
   const [enviandoAgendar, setEnviandoAgendar] = useState(false);
@@ -454,8 +455,47 @@ export default function RevivazPreview() {
         </div>
       </section>
 
+      {/* ═══ BLOCO 9.5 — Especialidades atendidas ═══
+          A âncora "Especialidades" apontava para "Nossas soluções", que lista
+          modalidades de atendimento. A lista de verdade não existia em lugar
+          nenhum do site, mesmo com neurodivergência sendo especialidade forte
+          do modelo de negócio. */}
+      <section id="especialidades" style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: T.white }}>
+        <div style={container}>
+          <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp["2xl"], color: T.gray950, marginBottom: S.s, textAlign: "center" }}>Quem atende você</h2>
+          <p style={{ fontSize: F.sm, color: T.gray600, textAlign: "center", maxWidth: 620, margin: `0 auto ${Sp.l}px` }}>
+            Saúde mental de adulto, criança e adolescente. Neurodivergência (autismo, TDAH e altas habilidades) é atendida pelo time inteiro, não por um profissional só.
+          </p>
+
+          {(Object.keys(GRUPOS) as GrupoEspecialidade[]).map(g => (
+            <div key={g} style={{ marginBottom: Sp.l }}>
+              <div style={{ fontSize: F.xs, fontWeight: 800, color: T.teal700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: S.m }}>{GRUPOS[g]}</div>
+              <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "repeat(auto-fit, minmax(240px, 1fr))", gap: S.m }}>
+                {ESPECIALIDADES.filter(e => e.grupo === g).map(e => (
+                  <div key={e.valor} style={{ padding: S.m, borderRadius: 14, border: `1px solid ${T.gray200}`, background: T.gray050 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                      <span style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.sm, color: T.gray950 }}>{e.label}</span>
+                      {e.atendeMenores && (
+                        <span style={{ fontSize: 10, fontWeight: 800, color: T.teal700, background: T.teal050, border: `1px solid ${T.teal100}`, borderRadius: 9999, padding: "2px 8px", whiteSpace: "nowrap" }}>atende criança</span>
+                      )}
+                    </div>
+                    <p style={{ fontSize: F.xs, color: T.gray600, lineHeight: 1.55, margin: 0 }}>{e.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <div style={{ textAlign: "center" }}>
+            <button onClick={openAgendar} style={{ padding: "14px 24px", fontSize: F.sm, fontWeight: 700, color: T.white, background: `linear-gradient(135deg,${T.teal700},${T.teal500})`, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", minHeight: 48 }}>
+              Pedir agendamento
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* ═══ BLOCO 10 — "Nossas soluções" (navy bg + image + icon grid) ═══ */}
-      <section id="especialidades" style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: T.navy }}>
+      <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: T.navy }}>
         <div style={{ display: "flex", gap: Sp.xl, alignItems: "center", ...container, flexWrap: "wrap" }}>
           <div style={{ width: bp === "mobile" ? "100%" : "40%", minWidth: bp === "mobile" ? 0 : 260, borderRadius: 16, overflow: "hidden", flexShrink: 0, boxShadow: "0 12px 32px rgba(0,0,0,.3)", marginTop: bp === "mobile" ? 0 : 48 }}>
             <img loading="lazy" decoding="async" src="/revivaz/solucoes.webp" alt="Consulta online por vídeo" width="600" height="200" style={{ width: "100%", height: bp === "mobile" ? 180 : 200, objectFit: "cover", objectPosition: "center", display: "block" }} />
@@ -688,9 +728,14 @@ export default function RevivazPreview() {
                 <label htmlFor="form-esp" style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>{modoLead === "profissional" ? "Sua especialidade" : "Especialidade"}</label>
                 <div style={{ position: "relative", marginBottom: S.m }}>
                   <Brain size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: T.gray600 }} />
-                  <select id="form-esp" value={form.esp} onChange={e => setForm({ ...form, esp: e.target.value as any })} style={{ ...inputBase, appearance: "none" }}>
-                    <option value="psiquiatria">Psiquiatria</option>
-                    <option value="psicologia">Psicologia</option>
+                  <select id="form-esp" value={form.esp} onChange={e => setForm({ ...form, esp: e.target.value })} style={{ ...inputBase, appearance: "none" }}>
+                    {(Object.keys(GRUPOS) as GrupoEspecialidade[]).map(g => (
+                      <optgroup key={g} label={GRUPOS[g]}>
+                        {ESPECIALIDADES.filter(e => e.grupo === g).map(e => (
+                          <option key={e.valor} value={e.valor}>{e.label}</option>
+                        ))}
+                      </optgroup>
+                    ))}
                   </select>
                 </div>
 
