@@ -590,6 +590,24 @@ export default function ConsentimentoLGPD({ onAceitar }: ConsentimentoLGPDProps)
                 <ChevronDown size={14} aria-hidden="true" />
                 Ver Política completa
               </button>
+              {/* A página é a versão canônica: abre fora do modal e pode ser
+                  compartilhada por link. */}
+              <a
+                href="/privacidade"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontFamily: "'Nunito',sans-serif",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  color: T.gray600,
+                  textDecoration: "underline",
+                  textUnderlineOffset: 2,
+                  marginLeft: 12,
+                }}
+              >
+                abrir em página
+              </a>
             </div>
           </div>
 

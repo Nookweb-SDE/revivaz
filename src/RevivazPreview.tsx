@@ -637,10 +637,7 @@ export default function RevivazPreview() {
             </div>
             <div>
               <div style={{ fontWeight: 700, color: T.white, marginBottom: S.m, fontSize: F.sm }}>Institucional</div>
-              {/* "Privacidade" saiu daqui: a Política de Privacidade ainda não foi
-                  redigida e o link não levava a nada. É pendência de compliance
-                  (LGPD), não de front — volta como link assim que a página existir. */}
-              {NAV.map(([l, href]) => (
+              {[...NAV, ["Privacidade", "/privacidade"] as const].map(([l, href]) => (
                 <div key={l} style={{ marginBottom: 6 }}>
                   <a href={href} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "8px 0", fontFamily: "inherit", fontSize: F.xs, minHeight: 32, textAlign: "left", textDecoration: "none", display: "block" }}>{l}</a>
                 </div>
@@ -661,21 +658,19 @@ export default function RevivazPreview() {
       </footer>
       </main>
 
-      {/* CTA flutuante. Já apontou para o WhatsApp (11) 4002-8922 (número de
-          piada) e depois para o chat público, que saiu do ar por queimar cota
-          da assinatura sem cadastro nenhum. Agora abre o pedido de agendamento,
-          que grava de verdade. */}
+      {/* CTA flutuante: é a porta de entrada, no lugar que era do WhatsApp.
+          Leva ao acolhimento, onde a pessoa conversa, é triada e sai com um dos
+          dois caminhos reais (pedir consulta ou entrar na conta). */}
       {!modalAgendar && (
-        <button
-          onClick={openAgendar}
-          aria-label="Pedir agendamento"
+        <a
+          href="/acolhimento"
+          aria-label="Conversar agora com o acolhimento"
           style={{
             position: "fixed",
             right: bp === "mobile" ? 16 : 24,
             bottom: bp === "mobile" ? 16 : 24,
             zIndex: 90,
             background: `linear-gradient(135deg, ${T.teal700}, ${T.teal500})`,
-            border: "none",
             borderRadius: 9999,
             minHeight: 56,
             padding: bp === "mobile" ? "0 18px" : "0 22px",
@@ -683,7 +678,7 @@ export default function RevivazPreview() {
             fontFamily: "'Nunito',sans-serif",
             fontWeight: 800,
             fontSize: Fp.sm,
-            cursor: "pointer",
+            textDecoration: "none",
             boxShadow: "0 6px 20px rgba(0,77,92,.38)",
             display: "flex",
             alignItems: "center",
@@ -691,8 +686,8 @@ export default function RevivazPreview() {
           }}
         >
           <MessageCircle size={22} aria-hidden="true" />
-          Pedir agendamento
-        </button>
+          Conversar agora
+        </a>
       )}
 
       {/* ═══════════════════════════════════════════════════════════

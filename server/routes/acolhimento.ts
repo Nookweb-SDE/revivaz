@@ -2,24 +2,32 @@
 // parse → detecção de crise (grátis, ANTES do rate-limit) → rate-limit → IA.
 // Quem está em crise nunca é barrado por limite de uso.
 //
-// EXIGE LOGIN desde 26/ago/2026. Antes a página /acolhimento era aberta a
-// qualquer visitante e cada conversa queimava cota da assinatura sem nenhum
-// cadastro do outro lado. A IA continua, mas só para quem tem conta.
+// É PÚBLICA de novo (26/ago, 2ª decisão do dono): a IA virou a porta de entrada
+// no lugar do WhatsApp. Como não há login, o custo é contido por teto duro:
+// 6 mensagens por IP a cada 5 min e 300 por dia no total. Estourou o dia, a
+// pessoa ainda recebe os recursos de crise e o caminho para pedir consulta —
+// o que some é só a resposta gerada.
 import { Router, type Request, type Response } from "express";
 import { detectCrisis, CRISIS_RESOURCES } from "../../src/acolhimento/crisis";
 import { ACOLHIMENTO_SYSTEM_PROMPT } from "../../src/acolhimento/systemPrompt";
 import { askClaudeBridge, isClaudeBridgeConfigured } from "../lib/claudeBridge";
-import { requireAuth } from "../config";
 
 const router = Router();
 
 // ─── Rate-limit em memória (per-IP + teto diário) — protege custo do /acolhimento ──
-const HITS = new Map<string, { count: number; resetAt: number }>();
-const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 8;
+// Exportado só para o teste conseguir zerar o estado entre casos.
+export const HITS = new Map<string, { count: number; resetAt: number }>();
+const WINDOW_MS = 5 * 60_000;
+const MAX_PER_WINDOW = 6;
+export function zerarLimiteAcolhimento(): void {
+  HITS.clear();
+  dailyCount = 0;
+  dailyResetAt = 0;
+}
+
 let dailyCount = 0;
 let dailyResetAt = 0;
-const MAX_PER_DAY = 500;
+const MAX_PER_DAY = 300;
 
 function rateLimited(ip: string, now: number): boolean {
   if (now > dailyResetAt) {
@@ -39,7 +47,7 @@ function rateLimited(ip: string, now: number): boolean {
   return false;
 }
 
-router.post("/api/acolhimento", requireAuth, async (req, res) => {
+router.post("/api/acolhimento", async (req, res) => {
   const fwd = req.headers["x-forwarded-for"];
   const ip =
     (Array.isArray(fwd) ? fwd[0] : (fwd || "").toString().split(",")[0].trim()) ||
@@ -59,8 +67,11 @@ router.post("/api/acolhimento", requireAuth, async (req, res) => {
     return;
   }
 
-  if (rateLimited(String(res.locals.uid || ip), Date.now())) {
-    res.status(429).json({ error: "Muitas mensagens. Tente em instantes." });
+  if (rateLimited(ip, Date.now())) {
+    res.status(429).json({
+      error:
+        "Recebi muitas mensagens agora e preciso de uma pausa. Se você quiser falar com uma pessoa, peça uma consulta aqui do lado. Se for urgente, ligue 188 (CVV, 24h e gratuito).",
+    });
     return;
   }
   if (!lastUser || messages.length === 0) {

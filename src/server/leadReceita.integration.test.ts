@@ -23,6 +23,7 @@ const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
 import { app, leadHits } from "../../server/server";
+import { zerarLimiteAcolhimento } from "../../server/routes/acolhimento";
 
 function startSrv(a: http.RequestListener): Promise<http.Server> {
   return new Promise((resolve, reject) => {
@@ -293,41 +294,59 @@ describe("GET /api/health", () => {
   });
 });
 
-describe("POST /api/acolhimento — a IA agora é só para quem tem conta", () => {
+describe("POST /api/acolhimento — porta de entrada pública, com teto de custo", () => {
   let srv: http.Server;
   beforeAll(async () => {
     srv = await startSrv(app as unknown as http.RequestListener);
   });
   afterAll(() => new Promise<void>((r) => srv.close(() => r())));
-  beforeEach(() => mockFetch.mockReset());
-
-  it("sem Bearer → 401 e NÃO chama a ponte de IA", async () => {
-    rotearSupabase(PACIENTE);
-    const r = await req(srv, "POST", "/api/acolhimento", {
-      messages: [{ role: "user", content: "oi" }],
-    });
-    expect(r.status).toBe(401);
-    // o que custa token é a ponte; ela não pode nem ser tocada por anônimo
-    expect(mockFetch.mock.calls.some((c) => String(c[0]).includes("/ask"))).toBe(false);
+  beforeEach(() => {
+    mockFetch.mockReset();
+    zerarLimiteAcolhimento(); // o limite é por IP e todos os testes vêm de 127.0.0.1
   });
 
-  it("mesmo em crise, anônimo não passa pelo portão (mas o /conta tem a barra 188/192 fixa)", async () => {
+  it("crise responde os recursos SEM chamar a IA — de graça e sem login", async () => {
     rotearSupabase(PACIENTE);
     const r = await req(srv, "POST", "/api/acolhimento", {
       messages: [{ role: "user", content: "quero me matar" }],
     });
-    expect(r.status).toBe(401);
-  });
-
-  it("logado e em crise: responde os recursos sem gastar um token de IA", async () => {
-    rotearSupabase(PACIENTE);
-    const r = await req(srv, "POST", "/api/acolhimento", {
-      messages: [{ role: "user", content: "quero me matar" }],
-    }, { Authorization: "Bearer tok" });
     expect(r.status).toBe(200);
     const corpo = JSON.parse(r.body);
     expect(corpo.crisis).toBe(true);
     expect(Array.isArray(corpo.resources)).toBe(true);
+    expect(corpo.resources.some((x: { contato: string }) => x.contato === "188")).toBe(true);
+    // a ponte de IA é o que custa: em crise ela não pode nem ser tocada
+    expect(mockFetch.mock.calls.some((c) => String(c[0]).includes("/ask"))).toBe(false);
+  });
+
+  it("crise vem ANTES do limite: mesmo estourando a cota, quem está em risco é atendido", async () => {
+    rotearSupabase(PACIENTE);
+    // queima o limite da janela com mensagens comuns
+    for (let i = 0; i < 8; i++) {
+      await req(srv, "POST", "/api/acolhimento", {
+        messages: [{ role: "user", content: `oi ${i}` }],
+      });
+    }
+    const r = await req(srv, "POST", "/api/acolhimento", {
+      messages: [{ role: "user", content: "não quero mais viver" }],
+    });
+    expect(r.status).toBe(200);
+    expect(JSON.parse(r.body).crisis).toBe(true);
+  });
+
+  it("conversa longa demais é recusada antes de chegar na IA", async () => {
+    rotearSupabase(PACIENTE);
+    const r = await req(srv, "POST", "/api/acolhimento", {
+      messages: Array.from({ length: 41 }, (_, i) => ({ role: "user", content: `m${i}` })),
+    });
+    expect(r.status).toBe(413);
+    expect(mockFetch.mock.calls.some((c) => String(c[0]).includes("/ask"))).toBe(false);
+  });
+
+  it("mensagem vazia não vira chamada de IA", async () => {
+    rotearSupabase(PACIENTE);
+    const r = await req(srv, "POST", "/api/acolhimento", { messages: [] });
+    expect(r.status).toBe(400);
     expect(mockFetch.mock.calls.some((c) => String(c[0]).includes("/ask"))).toBe(false);
   });
 });
