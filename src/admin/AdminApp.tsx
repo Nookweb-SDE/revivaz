@@ -6,6 +6,7 @@ import type { Profile } from "../lib/types";
 import { T, btnPrimary, btnGhost } from "../conta/ui";
 import { Solicitacoes } from "./sections/Solicitacoes";
 import { Profissionais } from "./sections/Profissionais";
+import PedidosSite from "./sections/PedidosSite";
 import Pacientes from "./sections/Pacientes";
 import { Metricas } from "./sections/Metricas";
 
@@ -15,7 +16,7 @@ import { Metricas } from "./sections/Metricas";
 
 // A seção <Solicitacoes/> agora lista TODAS as consultas — só a label visível
 // muda para "Consultas"; o componente continua sendo o mesmo.
-const TABS = ["Consultas", "Profissionais", "Pacientes", "Métricas"] as const;
+const TABS = ["Consultas", "Pedidos do site", "Profissionais", "Pacientes", "Métricas"] as const;
 type Tab = (typeof TABS)[number];
 
 const baseStyle: React.CSSProperties = {
@@ -279,6 +280,7 @@ export function AdminApp() {
       {/* Content */}
       <main style={contentStyle}>
         {activeTab === "Consultas" && <Solicitacoes />}
+        {activeTab === "Pedidos do site" && <PedidosSite />}
         {activeTab === "Profissionais" && <Profissionais />}
         {activeTab === "Pacientes" && <Pacientes />}
         {activeTab === "Métricas" && <Metricas />}

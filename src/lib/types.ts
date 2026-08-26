@@ -145,3 +145,18 @@ export type RoomTokenResponse = {
   room: string;
   domain: string;
 };
+
+/** Pedido de contato vindo do site público (formulário da landing). */
+export type Lead = {
+  id: string;
+  nome: string;
+  telefone: string;
+  email: string | null;
+  especialidade: string | null;
+  data_desejada: string | null;
+  hora_desejada: string | null;
+  origem: string;
+  status: "novo" | "contatado" | "convertido" | "descartado";
+  obs_interna: string | null;
+  created_at: string;
+};

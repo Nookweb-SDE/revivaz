@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FileText, Download, Send, Pill } from "lucide-react";
 import { T, card, sectionTitle, btnGhost } from "../ui";
+import { baixarReceitaPdf, enviarReceitaWhatsapp } from "../../lib/data";
 import type { ReceitaUI as Receita } from "../types";
 
 /* ── helpers ──────────────────────────────────────────────── */
@@ -37,24 +38,61 @@ function ReceitaIcon() {
   );
 }
 
-function ReceitaCard({ receita }: { receita: Receita }) {
+function ReceitaCard({ receita, demo = false }: { receita: Receita; demo?: boolean }) {
   const [downloading, setDownloading] = useState(false);
   const [sending, setSending] = useState(false);
+  // Uma mensagem só, ao lado dos botões: o usuário precisa ver o que aconteceu
+  // de verdade — inclusive quando NÃO aconteceu (sem telefone, sessão expirada).
+  const [aviso, setAviso] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
 
-  function handleDownload() {
+  async function handleDownload() {
+    if (demo) {
+      setAviso({ tipo: "erro", texto: "Receita de exemplo — não há PDF para baixar." });
+      return;
+    }
+    setAviso(null);
     setDownloading(true);
-    setTimeout(() => {
-      alert("Baixando receita…");
+    try {
+      await baixarReceitaPdf(receita.id);
+      setAviso({ tipo: "ok", texto: "PDF baixado." });
+    } catch (err) {
+      setAviso({
+        tipo: "erro",
+        texto: err instanceof Error ? err.message : "Não consegui gerar o PDF.",
+      });
+    } finally {
       setDownloading(false);
-    }, 600);
+    }
   }
 
-  function handleWhatsapp() {
+  async function handleWhatsapp() {
+    if (demo) {
+      setAviso({ tipo: "erro", texto: "Receita de exemplo — nada é enviado." });
+      return;
+    }
+    setAviso(null);
     setSending(true);
-    setTimeout(() => {
-      alert("Enviado no WhatsApp");
+    try {
+      const r = await enviarReceitaWhatsapp(receita.id);
+      setAviso(
+        r.ok
+          ? { tipo: "ok", texto: "Enviado no seu WhatsApp." }
+          : {
+              tipo: "erro",
+              texto:
+                r.skipped === "sem telefone no cadastro"
+                  ? "Você ainda não tem telefone no cadastro. Adicione no Perfil."
+                  : "Não foi enviado: WhatsApp indisponível agora.",
+            }
+      );
+    } catch (err) {
+      setAviso({
+        tipo: "erro",
+        texto: err instanceof Error ? err.message : "Não consegui enviar agora.",
+      });
+    } finally {
       setSending(false);
-    }, 600);
+    }
   }
 
   return (
@@ -247,6 +285,25 @@ function ReceitaCard({ receita }: { receita: Receita }) {
             {sending ? "Enviando…" : "Reenviar no WhatsApp"}
           </button>
         </div>
+
+        {aviso && (
+          <div
+            role="status"
+            aria-live="polite"
+            style={{
+              marginTop: 10,
+              padding: "8px 12px",
+              borderRadius: 10,
+              fontSize: 12,
+              fontWeight: 600,
+              fontFamily: "'Nunito',sans-serif",
+              background: aviso.tipo === "ok" ? "#D1FAE5" : "#FEE2E2",
+              color: aviso.tipo === "ok" ? "#065F46" : "#991B1B",
+            }}
+          >
+            {aviso.texto}
+          </div>
+        )}
       </div>
     </article>
   );
@@ -312,8 +369,11 @@ function EmptyState() {
 
 export default function Receitas({
   receitas,
+  demo = false,
 }: {
   receitas: Receita[];
+  /** Modo demonstração: os cartões são exemplos, então baixar/enviar não age. */
+  demo?: boolean;
 }): JSX.Element {
   return (
     <section aria-label="Receitas digitais">
@@ -326,7 +386,7 @@ export default function Receitas({
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {receitas.map((r) => (
-            <ReceitaCard key={r.id} receita={r} />
+            <ReceitaCard key={r.id} receita={r} demo={demo} />
           ))}
         </div>
       )}

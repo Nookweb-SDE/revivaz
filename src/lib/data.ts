@@ -2,6 +2,7 @@ import { supabase } from "./supabase";
 import { getSessionUserId } from "./auth";
 import { npsFromNotas } from "./metrics";
 import type {
+  Lead,
   Profile,
   Profissional,
   Consulta,
@@ -976,4 +977,93 @@ export async function adminGetMetricasReais(): Promise<MetricasReais> {
     nps_medio: notas.length > 0 ? npsFromNotas(notas) : null,
     total_avaliacoes: notas.length,
   };
+}
+
+// ─── Receita digital: PDF real + reenvio no WhatsApp ─────────────────────────
+// Estas duas substituem os alert() falsos que existiam no cartão de receita.
+
+/**
+ * Baixa o PDF da receita. Dispara o download no navegador e resolve quando o
+ * arquivo já está com o usuário. Lança com mensagem legível se o servidor negar.
+ */
+export async function baixarReceitaPdf(receitaId: string): Promise<void> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) throw new Error("Sessão expirada. Entre de novo para baixar.");
+
+  const res = await fetch(`/api/receita/${receitaId}/pdf`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    let msg = `Não consegui gerar o PDF (${res.status})`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body?.error) msg = body.error;
+    } catch {
+      // resposta sem JSON — mantém a mensagem padrão
+    }
+    throw new Error(msg);
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `receita-${receitaId.slice(0, 8)}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // revoga depois do tick para o navegador não cancelar o download em curso
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+/**
+ * Reenvia a receita para o WhatsApp do paciente.
+ * `ok:false` + `skipped` = não deu erro, mas TAMBÉM não enviou (ex.: sem
+ * telefone no cadastro) — quem chama precisa dizer isso ao usuário.
+ */
+export async function enviarReceitaWhatsapp(
+  receitaId: string
+): Promise<{ ok: boolean; skipped?: string }> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) throw new Error("Sessão expirada. Entre de novo para enviar.");
+
+  const res = await fetch("/api/receita/whatsapp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ receita_id: receitaId }),
+  });
+  if (!res.ok) {
+    let msg = `Não consegui enviar (${res.status})`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body?.error) msg = body.error;
+    } catch {
+      // resposta sem JSON — mantém a mensagem padrão
+    }
+    throw new Error(msg);
+  }
+  return (await res.json()) as { ok: boolean; skipped?: string };
+}
+
+// ─── Pedidos do site (leads da landing) — só admin ───────────────────────────
+// A tabela `leads` tem RLS de admin; quem grava é o servidor (service_role).
+
+export async function adminListLeads(): Promise<Lead[]> {
+  const { data, error } = await supabase
+    .from("leads")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as Lead[];
+}
+
+export async function adminAtualizarLead(
+  id: string,
+  patch: { status?: Lead["status"]; obs_interna?: string }
+): Promise<void> {
+  const { error } = await supabase.from("leads").update(patch).eq("id", id);
+  if (error) throw error;
 }

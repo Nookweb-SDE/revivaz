@@ -553,7 +553,7 @@ function AppShell({
               salaInApp={isSalaInApp}
               salaLoadingId={salaLoading}
             />
-            <Receitas receitas={receitas} />
+            <Receitas receitas={receitas} demo={demo} />
             <ContinuarConversa
               conversas={conversas}
               onAbrir={() => setChatAberto(true)}

@@ -94,6 +94,46 @@ export default function RevivazPreview() {
     esp: "psicologia" as "psiquiatria" | "psicologia",
     data: "", hora: "", nome: "", tel: "", email: "",
   });
+  const [enviandoAgendar, setEnviandoAgendar] = useState(false);
+  const [erroAgendar, setErroAgendar] = useState("");
+
+  /* Envia o pedido de verdade para /api/lead. Este formulário já foi decorativo
+     (o botão só marcava sucesso na tela); agora só mostra sucesso se o servidor
+     confirmar que gravou. */
+  async function enviarPedidoAgendamento() {
+    setErroAgendar("");
+    setEnviandoAgendar(true);
+    try {
+      const res = await fetch("/api/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: form.nome,
+          telefone: form.tel,
+          email: form.email,
+          especialidade: form.esp,
+          data: form.data,
+          hora: form.hora,
+        }),
+      });
+      if (!res.ok) {
+        let msg = "Não consegui registrar agora. Tente de novo.";
+        try {
+          const body = await res.json();
+          if (body?.error) msg = body.error;
+        } catch {
+          /* resposta sem JSON — mantém a mensagem padrão */
+        }
+        setErroAgendar(msg);
+        return;
+      }
+      setAgendarOk(true);
+    } catch {
+      setErroAgendar("Sem conexão. Confira a internet e tente de novo.");
+    } finally {
+      setEnviandoAgendar(false);
+    }
+  }
 
   /* hero carousel */
   const heroLines = ["suas consultas", "seus cuidados", "sua vida"];
@@ -668,22 +708,27 @@ export default function RevivazPreview() {
                   <input id="form-email" type="email" placeholder="seu@email.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} style={inputBase} />
                 </div>
 
-                <button onClick={() => setAgendarOk(true)} style={{ width: "100%", padding: "14px", fontSize: F.sm, fontWeight: 700, color: T.white, background: `linear-gradient(135deg,${T.teal700},${T.teal500})`, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 14px rgba(0,77,92,.3)", minHeight: 48 }}>
-                  Confirmar agendamento
+                <button onClick={enviarPedidoAgendamento} disabled={enviandoAgendar} style={{ width: "100%", padding: "14px", fontSize: F.sm, fontWeight: 700, color: T.white, background: `linear-gradient(135deg,${T.teal700},${T.teal500})`, border: "none", borderRadius: 12, cursor: enviandoAgendar ? "default" : "pointer", fontFamily: "inherit", boxShadow: "0 4px 14px rgba(0,77,92,.3)", minHeight: 48, opacity: enviandoAgendar ? 0.7 : 1 }}>
+                  {enviandoAgendar ? "Enviando…" : "Pedir agendamento"}
                 </button>
+                {erroAgendar && (
+                  <div role="alert" style={{ marginTop: S.m, padding: "10px 12px", borderRadius: 10, background: "#FEE2E2", color: "#991B1B", fontSize: F.xs, fontWeight: 700 }}>
+                    {erroAgendar}
+                  </div>
+                )}
               </>) : (
                 <div style={{ textAlign: "center", padding: "32px 0" }}>
                   <div style={{ width: 56, height: 56, borderRadius: "50%", background: T.green500, margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <CheckCircle size={30} color={T.white} />
                   </div>
-                  <h4 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.lg, color: T.green700, marginBottom: S.s }}>Agendamento realizado!</h4>
-                  <p style={{ fontSize: F.sm, color: T.gray600, marginBottom: 4 }}>Você receberá a confirmação por WhatsApp.</p>
-                  <p style={{ fontSize: F.xs, color: T.gray600, marginBottom: S.l }}>Consulte seu e-mail para mais detalhes.</p>
+                  <h4 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.lg, color: T.green700, marginBottom: S.s }}>Pedido recebido!</h4>
+                  <p style={{ fontSize: F.sm, color: T.gray600, marginBottom: 4 }}>Ainda não é uma consulta marcada: nossa equipe vai te chamar no WhatsApp para confirmar dia e horário.</p>
+                  <p style={{ fontSize: F.xs, color: T.gray600, marginBottom: S.l }}>Se você estiver em crise agora, ligue <strong>188</strong> (CVV, 24h e gratuito) ou <strong>192</strong> (SAMU).</p>
                   <div style={{ display: "flex", gap: S.m, justifyContent: "center", flexWrap: "wrap" }}>
                     <button onClick={() => setModalAgendar(false)} style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.teal700, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", minHeight: 44 }}>Fechar</button>
-                    <button onClick={() => { setModalReceita(true); setReceitaOk(false); }} style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.green500, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 44 }}>
-                      <Send size={14} /> Enviar receita
-                    </button>
+                    <a href="/acolhimento" style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.green500, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 44, textDecoration: "none", justifyContent: "center" }}>
+                      <Send size={14} /> Conversar agora
+                    </a>
                   </div>
                 </div>
               )}
