@@ -8,7 +8,7 @@ import EcgValor from "./sections/EcgValor";
 import HeroScrubFrames from "./sections/HeroScrubFrames";
 import { ESPECIALIDADES, GRUPOS, type GrupoEspecialidade } from "./lib/especialidades";
 import {
-  Star, Heart, ArrowRight, ChevronLeft, ChevronRight,
+  Heart, ArrowRight, ClipboardList,
   Clock, MessageCircle, Smartphone, Video, Monitor, Sparkles, Brain,
   Stethoscope, FileText, Users, MapPin, Calendar, User, Phone, Mail,
   Send, X, CheckCircle, Menu,
@@ -84,7 +84,6 @@ export default function RevivazPreview() {
   /* state */
   const [tab, setTab] = useState(0);
   const [heroIdx, setHeroIdx] = useState(0);
-  const [depoIdx, setDepoIdx] = useState(0);
   const [modalAgendar, setModalAgendar] = useState(false);
   const [agendarOk, setAgendarOk] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -163,11 +162,13 @@ export default function RevivazPreview() {
   }, []);
 
   /* data */
-  const DEPOS = [
-    { nome: "Maria S.", cargo: "Paciente", avatar: "MS", quote: "Pedi pelo site e me responderam no mesmo dia. A receita ficou na minha conta, pronta pra baixar." },
-    { nome: "Dr. Carlos M.", cargo: "Psiquiatra voluntário", avatar: "CM", quote: "A Revivaz trouxe uma plataforma acessível. Agora posso ajudar quem mais precisa com dignidade." },
-    { nome: "Ana R.", cargo: "Paciente", avatar: "AR", quote: "Posso me cuidar de onde estiver, com tranquilidade. Mudou minha relação com a saúde mental." },
-    { nome: "Dra. Paula L.", cargo: "CRM-SP 12345", avatar: "PL", quote: "Tecnologia de ponta e um time de excelência. Satisfação em fazer parte da Revivaz." },
+  /* Substitui os depoimentos falsos: cada item aqui é verificável dentro do
+     próprio produto, não é alegação de marketing. */
+  const CUIDADO = [
+    { icon: ClipboardList, title: "Triagem com instrumento validado", desc: "PHQ-9 e GAD-7, os mesmos questionários usados em serviço de saúde. Você responde em minutos e o profissional já recebe o resultado." },
+    { icon: Stethoscope, title: "Profissional com registro", desc: "Psiquiatras, psicólogos e a equipe multidisciplinar atendem com CRM, CRP ou o conselho da área, conferido no cadastro." },
+    { icon: FileText, title: "Sigilo por lei, não por promessa", desc: "Dado de saúde mental é sensível. Só você, seu profissional e a administração enxergam sua ficha, e a consulta por vídeo não é gravada." },
+    { icon: Heart, title: "Crise não espera consulta", desc: "CVV 188 e SAMU 192 ficam na tela o tempo todo, e o acolhimento responde 24 horas enquanto sua consulta não chega." },
   ];
 
   const FEATURES = [
@@ -184,10 +185,33 @@ export default function RevivazPreview() {
     { icon: Heart, title: "Saúde mental", desc: "A maior rede solidária em saúde mental." },
   ];
 
-  const NEWS = [
-    { title: "Revivaz e SUS: parceria para reduzir filas", cat: "Solidário", date: "1 out.", img: "/revivaz/partners.webp", imgPos: "top center" },
-    { title: "Saúde mental nas periferias: entrevista", cat: "Imprensa", date: "25 set.", img: "/revivaz/hero-alt.webp", imgPos: "top center" },
-    { title: "Novos profissionais voluntários em 2025", cat: "Imprensa", date: "23 set.", img: "/revivaz/team.webp", imgPos: "center 40%" },
+  /* Substitui as notícias inventadas. Toda resposta aqui é conferível no
+     produto: se alguma deixar de ser verdade, muda aqui junto. */
+  const FAQ = [
+    {
+      p: "Quanto custa?",
+      r: "Hoje o atendimento é gratuito. Ainda não existe cobrança na plataforma, e quando existir você vai saber o valor antes de marcar. A proposta do projeto é que quem pode pagar sustente quem não pode.",
+    },
+    {
+      p: "Quem vai me atender?",
+      r: "Profissionais com registro no conselho da área: psiquiatras e outros médicos pelo CRM, psicólogos pelo CRP, e a equipe multidisciplinar (terapia ocupacional, fonoaudiologia, psicopedagogia) pelos conselhos próprios. O registro é conferido no cadastro.",
+    },
+    {
+      p: "É sigiloso mesmo?",
+      r: "Dado de saúde mental é sensível e a separação de acesso está no banco, não só na tela: só você, o seu profissional e a administração enxergam sua ficha. A consulta por vídeo não é gravada. Está tudo escrito na Política de Privacidade.",
+    },
+    {
+      p: "Atende criança e adolescente?",
+      r: "Sim, em sete das especialidades, entre elas neuropediatria, psiquiatria infantil e terapia ocupacional. Enquanto o cadastro específico não fica pronto, a conta deve ser criada e usada pelo responsável legal.",
+    },
+    {
+      p: "E se eu estiver em crise agora?",
+      r: "Não espere consulta. Ligue 188 (CVV), que é gratuito e funciona 24 horas, ou 192 (SAMU) se houver risco imediato. Esta plataforma não é serviço de emergência, e esses números ficam visíveis em todas as telas de atendimento.",
+    },
+    {
+      p: "Quanto tempo até eu ser atendido?",
+      r: "Você pede pelo site e a equipe entra em contato para combinar dia e horário. Enquanto isso, o acolhimento por IA responde 24 horas, sem cadastro, para você não ficar sozinho na espera.",
+    },
   ];
 
   const openAgendar = () => { setModoLead("paciente"); setModalAgendar(true); setAgendarOk(false); setErroAgendar(""); };
@@ -358,7 +382,7 @@ export default function RevivazPreview() {
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(150deg, rgba(0,168,191,.22) 0%, transparent 42%, rgba(11,29,58,.6) 100%)", pointerEvents: "none" }} />
             <div style={{ position: "absolute", bottom: 14, left: 14, display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 13px", background: "rgba(255,255,255,.14)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,.3)", borderRadius: 9999 }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.green500, boxShadow: "0 0 0 3px rgba(76,175,80,.25)" }} />
-              <span style={{ fontSize: F.xs, color: T.white, fontWeight: 700 }}>+500 profissionais</span>
+              <span style={{ fontSize: F.xs, color: T.white, fontWeight: 700 }}>12 especialidades</span>
             </div>
           </div>
         </div>
@@ -513,60 +537,41 @@ export default function RevivazPreview() {
         </div>
       </section>
 
-      {/* ═══ BLOCO 11 — "+500 profissionais" banner gradiente ═══ */}
+      {/* ═══ BLOCO 11 — banner de especialidades ═══
+          Dizia "+500 profissionais & voluntários" com 1 profissional no banco.
+          O 12 é conferível na seção "Quem atende você", logo acima. ═══ */}
       <section id="para-profissionais" style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: `linear-gradient(135deg,${T.teal900} 0%,${T.teal500} 100%)`, color: T.white, textAlign: "center" }}>
         <div style={{ ...container }}>
-          <div style={{ fontSize: bp === "mobile" ? 32 : 40, fontWeight: 900, marginBottom: Sp.s, letterSpacing: "-0.02em" }}>+500</div>
-          <div style={{ fontSize: Fp.base, opacity: 0.95, marginBottom: Sp.l, maxWidth: 400, margin: "0 auto" }}>profissionais & voluntários oferecem Revivaz para quem precisa</div>
+          <div style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: bp === "mobile" ? 56 : 80, lineHeight: 1 }}>12</div>
+          <div style={{ fontSize: Fp.base, opacity: 0.95, marginBottom: Sp.l, maxWidth: 400, margin: "0 auto" }}>especialidades, de psiquiatria a fonoaudiologia, com o time que acompanha neurodivergência</div>
           <button onClick={openAgendar} style={{ padding: "14px 28px", fontSize: F.sm, fontWeight: 700, color: T.teal700, background: T.white, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 20px rgba(0,0,0,.2)", display: "inline-flex", alignItems: "center", gap: 6, minHeight: 48 }}>
             Faça parte <ArrowRight size={18} />
           </button>
         </div>
       </section>
 
-      {/* ═══ BLOCO 12 — Depoimentos (carousel + NPS + setas) ═══ */}
+      {/* ═══ BLOCO 12 — Como a gente cuida ═══
+          Aqui havia 4 depoimentos de pessoas que não existem (um assinado com
+          "CRM-SP 12345", inventado) e um selo "NPS > 90" com a tabela de
+          avaliações zerada. Prova social fabricada saiu. No lugar entra o que é
+          verdade e dá para conferir no próprio produto. Depoimento real volta
+          quando houver paciente atendido que autorize. ═══ */}
       <section style={{ ...sectionPad, background: T.white }}>
-        <div style={{ ...container }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: Sp.l, flexWrap: "wrap", gap: Sp.m }}>
-            <div>
-              <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.xl, color: T.gray950, marginBottom: Sp.s }}>Nossa comunidade recomenda</h2>
-              <div style={{ display: "flex", alignItems: "center", gap: S.s }}>
-                <span style={{ fontSize: F["2xl"], fontWeight: 900, color: T.teal700 }}>NPS &gt; 90</span>
-                <span style={{ fontSize: F.xs, color: T.gray600 }}>Net Promoter Score</span>
+        <div style={container}>
+          <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp["2xl"], color: T.gray950, marginBottom: S.s, textAlign: "center" }}>Como a gente cuida</h2>
+          <p style={{ fontSize: F.sm, color: T.gray600, textAlign: "center", maxWidth: 600, margin: `0 auto ${Sp.l}px` }}>
+            Sem promessa vaga. Isto é o que está funcionando hoje, e você confere usando.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "repeat(auto-fit, minmax(250px, 1fr))", gap: S.m }}>
+            {CUIDADO.map(({ icon: Ic, title, desc }) => (
+              <div key={title} style={{ padding: S.l, borderRadius: 16, border: `1px solid ${T.gray200}`, background: T.gray050 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: T.teal050, border: `1px solid ${T.teal100}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: S.m }}>
+                  <Ic size={20} color={T.teal700} />
+                </div>
+                <div style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.base, color: T.gray950, marginBottom: 6 }}>{title}</div>
+                <p style={{ fontSize: F.xs, color: T.gray600, lineHeight: 1.6, margin: 0 }}>{desc}</p>
               </div>
-            </div>
-            <div style={{ display: "flex", gap: S.s }}>
-              <button aria-label="Depoimento anterior" onClick={() => setDepoIdx(p => (p - 1 + DEPOS.length) % DEPOS.length)} style={{ width: 44, height: 44, borderRadius: "50%", border: `2px solid ${T.gray200}`, background: T.white, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <ChevronLeft size={18} color={T.gray600} />
-              </button>
-              <button aria-label="Próximo depoimento" onClick={() => setDepoIdx(p => (p + 1) % DEPOS.length)} style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: T.teal700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <ChevronRight size={18} color={T.white} />
-              </button>
-            </div>
-          </div>
-          <div style={{ background: T.gray050, borderRadius: 16, padding: S.xl, border: `1px solid ${T.gray200}`, boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
-            <div style={{ display: "flex", gap: 4, marginBottom: S.m }}>
-              {[1,2,3,4,5].map(n => <Star key={n} size={16} fill="#FFD600" stroke="#FFD600" />)}
-            </div>
-            <p style={{ fontSize: F.base, color: T.gray800, fontStyle: "italic", lineHeight: 1.65, marginBottom: S.m }}>
-              "{DEPOS[depoIdx].quote}"
-            </p>
-            <div style={{ display: "flex", alignItems: "center", gap: S.m }}>
-              <div style={{ width: 44, height: 44, borderRadius: "50%", background: T.teal700, display: "flex", alignItems: "center", justifyContent: "center", fontSize: F.sm, fontWeight: 700, color: T.white }}>
-                {DEPOS[depoIdx].avatar}
-              </div>
-              <div>
-                <div style={{ fontSize: F.sm, fontWeight: 700, color: T.gray950 }}>{DEPOS[depoIdx].nome}</div>
-                <div style={{ fontSize: F.xs, color: T.gray600 }}>{DEPOS[depoIdx].cargo}</div>
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 8, marginTop: S.m, justifyContent: "center" }}>
-              {DEPOS.map((_, i) => (
-                <button aria-label={`Ir para depoimento ${i + 1}`} key={i} onClick={() => setDepoIdx(i)} style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "transparent", cursor: "pointer", transition: "all .2s", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: depoIdx === i ? T.teal700 : T.gray200, display: "block" }} />
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -593,33 +598,31 @@ export default function RevivazPreview() {
                 <Smartphone size={16} /> Abrir minha conta
               </a>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: F.xs, color: T.gray600 }}>
-              <Star size={14} fill="#FFD600" stroke="#FFD600" /> 4,6 · +37 mil avaliações
-            </div>
+              {/* Saiu "4,6 · +37 mil avaliações": não existe app publicado nem
+                  avaliação nenhuma. */}
           </div>
         </div>
       </section>
 
-      {/* ═══ BLOCO 14 — News (3 cards com thumbnail) ═══ */}
-      <section style={{ ...sectionPad, background: T.white }}>
-        <div style={{ ...container }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: Sp.l, flexWrap: "wrap", gap: Sp.m }}>
-            <div>
-              <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.xl, color: T.gray950, margin: 0 }}>Revivaz em foco</h2>
-              <p style={{ fontSize: F.xs, color: T.gray600, margin: "4px 0 0" }}>Principais acontecimentos e conteúdos.</p>
-            </div>
-            {/* Sem página de notícias, o "Veja tudo" não levava a lugar nenhum. */}
-          </div>
-          <div style={{ display: "flex", gap: Sp.m, flexWrap: "wrap" }}>
-            {NEWS.map(n => (
-              <div key={n.title} style={{ flex: bp === "mobile" ? "1 1 100%" : "1 1 200px", minWidth: bp === "mobile" ? 0 : 180, borderRadius: 16, overflow: "hidden", border: `1px solid ${T.gray200}`, background: T.gray050, boxShadow: "0 2px 8px rgba(0,0,0,.04)" }}>
-                <img loading="lazy" decoding="async" src={n.img} alt={n.title} style={{ width: "100%", height: 120, objectFit: "cover", objectPosition: (n as { imgPos?: string }).imgPos || "top center", display: "block" }} />
-                <div style={{ padding: S.m }}>
-                  <div style={{ fontSize: F.xs, color: T.teal700, fontWeight: 700, marginBottom: 4 }}>{n.cat}</div>
-                  <div style={{ fontSize: F.sm, fontWeight: 600, color: T.gray950, lineHeight: 1.4, marginBottom: 4 }}>{n.title}</div>
-                  <div style={{ fontSize: F.xs, color: T.gray600 }}>{n.date}</div>
-                </div>
-              </div>
+      {/* ═══ BLOCO 14 — Perguntas frequentes ═══
+          Aqui havia 3 notícias inventadas, uma delas anunciando uma "parceria
+          com o SUS" que não existe. Saíram. FAQ responde o que a pessoa
+          realmente pergunta antes de pedir ajuda, e cada resposta é verdade
+          conferível no produto. ═══ */}
+      <section style={{ ...sectionPad, background: T.gray050 }}>
+        <div style={{ ...container, maxWidth: 760 }}>
+          <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp["2xl"], color: T.gray950, marginBottom: S.s, textAlign: "center" }}>Perguntas frequentes</h2>
+          <p style={{ fontSize: F.sm, color: T.gray600, textAlign: "center", marginBottom: Sp.l }}>
+            O que costumam querer saber antes de pedir a primeira consulta.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: S.m }}>
+            {FAQ.map(({ p: pergunta, r }) => (
+              <details key={pergunta} style={{ background: T.white, border: `1px solid ${T.gray200}`, borderRadius: 14, padding: `${S.m}px ${S.l}px` }}>
+                <summary style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.base, color: T.gray950, cursor: "pointer", listStyle: "none", minHeight: 32, display: "flex", alignItems: "center" }}>
+                  {pergunta}
+                </summary>
+                <p style={{ fontSize: F.sm, color: T.gray600, lineHeight: 1.65, margin: `${S.s}px 0 0` }}>{r}</p>
+              </details>
             ))}
           </div>
         </div>

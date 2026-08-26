@@ -262,7 +262,7 @@ export default function HeroScrubFrames({
                 flexShrink: 0, boxShadow: "0 0 6px #25D366",
               }} />
               <span style={{ fontSize: 12, color: "rgba(214,244,248,0.86)", fontWeight: 600 }}>
-                +500 profissionais disponíveis agora
+                12 especialidades, de psiquiatria a fonoaudiologia
               </span>
             </div>
           </div>
