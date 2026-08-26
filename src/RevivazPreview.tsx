@@ -623,20 +623,21 @@ export default function RevivazPreview() {
       </footer>
       </main>
 
-      {/* CTA flutuante — antes apontava para o WhatsApp (11) 4002-8922, que é
-          número de piada, não da empresa. Enquanto o WhatsApp da Revivaz não
-          está conectado, o único canal de conversa que responde de verdade é a
-          IA de acolhimento — 24h e sem cadastro. É para lá que este botão vai. */}
+      {/* CTA flutuante. Já apontou para o WhatsApp (11) 4002-8922 (número de
+          piada) e depois para o chat público, que saiu do ar por queimar cota
+          da assinatura sem cadastro nenhum. Agora abre o pedido de agendamento,
+          que grava de verdade. */}
       {!modalAgendar && !modalReceita && (
-        <a
-          href="/acolhimento"
-          aria-label="Conversar agora com o acolhimento"
+        <button
+          onClick={openAgendar}
+          aria-label="Pedir agendamento"
           style={{
             position: "fixed",
             right: bp === "mobile" ? 16 : 24,
             bottom: bp === "mobile" ? 16 : 24,
             zIndex: 90,
             background: `linear-gradient(135deg, ${T.teal700}, ${T.teal500})`,
+            border: "none",
             borderRadius: 9999,
             minHeight: 56,
             padding: bp === "mobile" ? "0 18px" : "0 22px",
@@ -644,7 +645,7 @@ export default function RevivazPreview() {
             fontFamily: "'Nunito',sans-serif",
             fontWeight: 800,
             fontSize: Fp.sm,
-            textDecoration: "none",
+            cursor: "pointer",
             boxShadow: "0 6px 20px rgba(0,77,92,.38)",
             display: "flex",
             alignItems: "center",
@@ -652,8 +653,8 @@ export default function RevivazPreview() {
           }}
         >
           <MessageCircle size={22} aria-hidden="true" />
-          Conversar agora
-        </a>
+          Pedir agendamento
+        </button>
       )}
 
       {/* ═══════════════════════════════════════════════════════════
@@ -749,8 +750,8 @@ export default function RevivazPreview() {
                   <p style={{ fontSize: F.xs, color: T.gray600, marginBottom: S.l }}>Se você estiver em crise agora, ligue <strong>188</strong> (CVV, 24h e gratuito) ou <strong>192</strong> (SAMU).</p>
                   <div style={{ display: "flex", gap: S.m, justifyContent: "center", flexWrap: "wrap" }}>
                     <button onClick={() => setModalAgendar(false)} style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.teal700, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", minHeight: 44 }}>Fechar</button>
-                    <a href="/acolhimento" style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.green500, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 44, textDecoration: "none", justifyContent: "center" }}>
-                      <Send size={14} /> Conversar agora
+                    <a href="/conta" style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.green500, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 44, textDecoration: "none", justifyContent: "center" }}>
+                      <Send size={14} /> Criar minha conta
                     </a>
                   </div>
                 </div>

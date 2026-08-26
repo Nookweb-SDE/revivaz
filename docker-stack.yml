@@ -20,7 +20,9 @@ secrets:
   revivaz_claude_bridge_url: { external: true }
   revivaz_claude_bridge_secret: { external: true }
   revivaz_service_role: { external: true }
-  revivaz_evolution_key: { external: true }
+  # _v2: o token da instância `revivaz` na Evolution foi rotacionado; o secret
+  # antigo dava 401 em toda chamada (login por WhatsApp, confirmação, lembrete).
+  revivaz_evolution_key_v2: { external: true }
   # Atendimento virtual: MESMO secret que o stack do Jitsi (prosody) usa p/ validar
   # o JWT das salas. O server assina com ele; o Jitsi valida com ele.
   revivaz_jitsi_jwt_secret: { external: true }
@@ -43,12 +45,12 @@ services:
       # WhatsApp (Evolution) — instância revivaz
       - EVOLUTION_URL=https://evolution.izai.dev
       - EVOLUTION_INSTANCE=revivaz
-      - EVOLUTION_API_KEY_FILE=/run/secrets/revivaz_evolution_key
+      - EVOLUTION_API_KEY_FILE=/run/secrets/revivaz_evolution_key_v2
       # Atendimento virtual (Jitsi). DOMAIN/APP_ID públicos; o JWT_SECRET via secret.
       - JITSI_DOMAIN=meet.revivaz.com.br
       - JITSI_APP_ID=revivaz
       - JITSI_JWT_SECRET_FILE=/run/secrets/revivaz_jitsi_jwt_secret
-    secrets: [revivaz_claude_bridge_url, revivaz_claude_bridge_secret, revivaz_service_role, revivaz_evolution_key, revivaz_jitsi_jwt_secret]
+    secrets: [revivaz_claude_bridge_url, revivaz_claude_bridge_secret, revivaz_service_role, revivaz_evolution_key_v2, revivaz_jitsi_jwt_secret]
     # Sonda barata: se o processo travar de pé, o Swarm derruba e sobe de novo.
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]

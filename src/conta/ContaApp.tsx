@@ -541,10 +541,14 @@ function AppShell({
               onVerDetalhe={(c) => setDetalheAberto(c)}
               salaInApp={isSalaInApp}
               salaLoadingId={salaLoading}
+              onAbrirChat={() => setChatAberto(true)}
             />
             <TriagemEntryCard onAbrir={() => setTriagemAberta(true)} />
             <AutocuidadoEntryCard onAbrir={() => setAutocuidadoAberto(true)} />
-            <Atalhos />
+            <Atalhos
+              onAbrirChat={() => setChatAberto(true)}
+              onAbrirAutocuidado={() => setAutocuidadoAberto(true)}
+            />
             <ListaConsultas
               consultas={consultas}
               onEntrar={handleEntrarSala}
@@ -553,12 +557,16 @@ function AppShell({
               salaInApp={isSalaInApp}
               salaLoadingId={salaLoading}
             />
-            <Receitas receitas={receitas} demo={demo} />
+            <div id="receitas-section">
+              <Receitas receitas={receitas} demo={demo} />
+            </div>
             <ContinuarConversa
               conversas={conversas}
               onAbrir={() => setChatAberto(true)}
             />
-            <RegistroHumor semana={humores} onRegistrar={onRegistrarHumor} />
+            <div id="humor-section">
+              <RegistroHumor semana={humores} onRegistrar={onRegistrarHumor} />
+            </div>
             <div id="nps-section">
               <AvaliarNPS consulta={consultaNPS} />
             </div>

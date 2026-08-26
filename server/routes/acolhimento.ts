@@ -1,10 +1,15 @@
 // Chat de acolhimento. A ORDEM importa e é a rede de segurança do produto:
 // parse → detecção de crise (grátis, ANTES do rate-limit) → rate-limit → IA.
 // Quem está em crise nunca é barrado por limite de uso.
+//
+// EXIGE LOGIN desde 26/ago/2026. Antes a página /acolhimento era aberta a
+// qualquer visitante e cada conversa queimava cota da assinatura sem nenhum
+// cadastro do outro lado. A IA continua, mas só para quem tem conta.
 import { Router, type Request, type Response } from "express";
 import { detectCrisis, CRISIS_RESOURCES } from "../../src/acolhimento/crisis";
 import { ACOLHIMENTO_SYSTEM_PROMPT } from "../../src/acolhimento/systemPrompt";
 import { askClaudeBridge, isClaudeBridgeConfigured } from "../lib/claudeBridge";
+import { requireAuth } from "../config";
 
 const router = Router();
 
@@ -34,7 +39,7 @@ function rateLimited(ip: string, now: number): boolean {
   return false;
 }
 
-router.post("/api/acolhimento", async (req, res) => {
+router.post("/api/acolhimento", requireAuth, async (req, res) => {
   const fwd = req.headers["x-forwarded-for"];
   const ip =
     (Array.isArray(fwd) ? fwd[0] : (fwd || "").toString().split(",")[0].trim()) ||
@@ -54,7 +59,7 @@ router.post("/api/acolhimento", async (req, res) => {
     return;
   }
 
-  if (rateLimited(ip, Date.now())) {
+  if (rateLimited(String(res.locals.uid || ip), Date.now())) {
     res.status(429).json({ error: "Muitas mensagens. Tente em instantes." });
     return;
   }

@@ -301,7 +301,7 @@ function FilledCard({
 }
 
 /* ─── Empty state ─── */
-function EmptyCard({ onAgendar }: { onAgendar: () => void }) {
+function EmptyCard({ onAgendar, onAbrirChat }: { onAgendar: () => void; onAbrirChat: () => void }) {
   return (
     <div
       style={{
@@ -384,8 +384,8 @@ function EmptyCard({ onAgendar }: { onAgendar: () => void }) {
           Agendar consulta
         </button>
 
-        <a
-          href="/acolhimento"
+        <button
+          onClick={onAbrirChat}
           style={{
             display: "flex",
             alignItems: "center",
@@ -407,7 +407,7 @@ function EmptyCard({ onAgendar }: { onAgendar: () => void }) {
         >
           <MessageCircleHeart size={17} strokeWidth={2.5} aria-hidden="true" />
           Conversar com a IA
-        </a>
+        </button>
       </div>
     </div>
   );
@@ -417,6 +417,7 @@ function EmptyCard({ onAgendar }: { onAgendar: () => void }) {
 export default function ProximaConsulta({
   consulta,
   onAgendar,
+  onAbrirChat,
   onEntrar,
   onCancelar,
   onVerDetalhe,
@@ -425,6 +426,8 @@ export default function ProximaConsulta({
 }: {
   consulta?: Consulta;
   onAgendar: () => void;
+  /** Abre o chat DENTRO da conta. A página pública /acolhimento saiu do ar. */
+  onAbrirChat: () => void;
   onEntrar: (c: Consulta) => void;
   onCancelar: (c: Consulta) => void;
   onVerDetalhe: (c: Consulta) => void;
@@ -441,6 +444,6 @@ export default function ProximaConsulta({
       salaLoadingId={salaLoadingId}
     />
   ) : (
-    <EmptyCard onAgendar={onAgendar} />
+    <EmptyCard onAgendar={onAgendar} onAbrirChat={onAbrirChat} />
   );
 }

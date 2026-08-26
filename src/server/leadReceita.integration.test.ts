@@ -348,3 +348,42 @@ describe("GET /api/health", () => {
     expect(Object.keys(JSON.parse(r.body))).toEqual(["ok"]);
   });
 });
+
+describe("POST /api/acolhimento — a IA agora é só para quem tem conta", () => {
+  let srv: http.Server;
+  beforeAll(async () => {
+    srv = await startSrv(app as unknown as http.RequestListener);
+  });
+  afterAll(() => new Promise<void>((r) => srv.close(() => r())));
+  beforeEach(() => mockFetch.mockReset());
+
+  it("sem Bearer → 401 e NÃO chama a ponte de IA", async () => {
+    rotearSupabase(PACIENTE);
+    const r = await req(srv, "POST", "/api/acolhimento", {
+      messages: [{ role: "user", content: "oi" }],
+    });
+    expect(r.status).toBe(401);
+    // o que custa token é a ponte; ela não pode nem ser tocada por anônimo
+    expect(mockFetch.mock.calls.some((c) => String(c[0]).includes("/ask"))).toBe(false);
+  });
+
+  it("mesmo em crise, anônimo não passa pelo portão (mas o /conta tem a barra 188/192 fixa)", async () => {
+    rotearSupabase(PACIENTE);
+    const r = await req(srv, "POST", "/api/acolhimento", {
+      messages: [{ role: "user", content: "quero me matar" }],
+    });
+    expect(r.status).toBe(401);
+  });
+
+  it("logado e em crise: responde os recursos sem gastar um token de IA", async () => {
+    rotearSupabase(PACIENTE);
+    const r = await req(srv, "POST", "/api/acolhimento", {
+      messages: [{ role: "user", content: "quero me matar" }],
+    }, { Authorization: "Bearer tok" });
+    expect(r.status).toBe(200);
+    const corpo = JSON.parse(r.body);
+    expect(corpo.crisis).toBe(true);
+    expect(Array.isArray(corpo.resources)).toBe(true);
+    expect(mockFetch.mock.calls.some((c) => String(c[0]).includes("/ask"))).toBe(false);
+  });
+});

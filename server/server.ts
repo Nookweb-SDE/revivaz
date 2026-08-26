@@ -38,9 +38,9 @@ app.use(acolhimentoRoutes);
 app.get("/api/health", (_req, res) => res.status(200).json({ ok: true }));
 
 // ─── Estático ────────────────────────────────────────────────────────────────
-// /acolhimento é entrada própria do Vite: precisa da rota explícita, senão o
-// fallback de SPA devolveria a landing.
-app.get("/acolhimento", (_req, res) => res.sendFile(path.join(DIST, "acolhimento.html")));
+// /acolhimento era entrada própria do Vite (chat aberto ao público). Saiu de
+// circulação: quem tem o link antigo vai para a conta, onde a IA continua.
+app.get("/acolhimento", (_req, res) => res.redirect(302, "/conta"));
 app.use(express.static(DIST, { extensions: ["html"] }));
 // Fallback SPA (Express 5: usar middleware final, não app.get("*"))
 app.use((_req, res) => res.sendFile(path.join(DIST, "index.html")));

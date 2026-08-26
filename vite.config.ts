@@ -41,7 +41,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: "index.html",
-        acolhimento: "acolhimento.html",
+        // A entrada `acolhimento` saiu: o chat aberto ao público consumia cota da
+        // assinatura sem cadastro nenhum. A IA continua, mas só dentro do /conta.
         conta: "conta.html",
         admin: "admin.html",
         profissional: "profissional.html",

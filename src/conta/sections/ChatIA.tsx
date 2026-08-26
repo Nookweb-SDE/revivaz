@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { T, card, btnPrimary } from "../ui";
+import { supabase } from "../../lib/supabase";
 import {
   listConversas,
   criarConversa,
@@ -99,9 +100,16 @@ export default function ChatIA({
       // We DON'T persist anything yet: crisis / rate-limit / error paths must
       // not leave an orphan user message (nor create an empty conversa) in the
       // history. Only filter out empty assistant turns from the context.
+      // O endpoint passou a exigir login (o chat aberto ao público saiu do ar),
+      // então vai o Bearer da sessão junto.
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
       const resp = await fetch("/api/acolhimento", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           messages: afterUser
             .filter((m) => m.conteudo.trim())

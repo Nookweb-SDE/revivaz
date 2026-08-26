@@ -2,7 +2,9 @@
    EcgValor — réplica EXATA da v6 "ECG da operação" (NookTrack).
    Fonte da verdade: _dev/valor-claude/v6.html (capturado via nookpick,
    action:"exact"). Replicado 1:1 — verde #007A8C, Inter/JetBrains Mono,
-   HUD "72 BPM", copy NookTrack. NADA inventado/aproximado.
+   HUD "72 BPM". O VISUAL é 1:1 com o v6; a COPY é da Revivaz (trocada em
+   26/ago/2026: até então a home de saúde mental falava de rastreamento de
+   frota, herdado junto com o componente).
    Único ajuste técnico (não-visual): CSS e queries DOM escopados sob
    `.ecgv6` p/ não vazar o reset/`body{background:#050505}` pro resto da
    landing. Aparência dentro do bloco = idêntica ao v6.
@@ -338,11 +340,11 @@ export default function EcgValor() {
           </div>
 
           <h2 className="manifesto">
-            <span className="m-line">Nós entregamos <span className="m-green">gestão.</span></span>
-            <span className="m-line">Rastrear e monitorar, todos fazem.</span>
+            <span className="m-line">Nós entregamos <span className="m-green">acolhimento.</span></span>
+            <span className="m-line">Marcar consulta, qualquer site faz.</span>
           </h2>
 
-          <p className="sub">O NookTrack administra toda a cadeia operacional, comercial e financeira do cliente e do veículo — antes, durante e depois.</p>
+          <p className="sub">A Revivaz cuida da pessoa inteira: o profissional certo, um valor que cabe no seu bolso e o acompanhamento que vem depois da consulta.</p>
 
           <div className="ecg" id="ecg" aria-hidden="true">
             <canvas id="trail" />
@@ -353,23 +355,23 @@ export default function EcgValor() {
           <div className="bens">
             <article className="b">
               <div className="b-head"><span className="b-dot"><i className="b-ping" /></span><span className="b-ix">01</span></div>
-              <h3>Menos tempo operacional</h3>
-              <p>Elimina o retrabalho de sistemas apartados.</p>
+              <h3>Ninguém espera sozinho</h3>
+              <p>Você pede pelo site e a gente te chama no WhatsApp. Sem fila, sem burocracia.</p>
             </article>
             <article className="b">
               <div className="b-head"><span className="b-dot"><i className="b-ping" /></span><span className="b-ix">02</span></div>
-              <h3>Tudo num lugar só</h3>
-              <p>Centralização das informações de todas as áreas.</p>
+              <h3>Consulta de verdade, por vídeo</h3>
+              <p>Da sua casa, com psiquiatra ou psicólogo, na sala segura da própria plataforma.</p>
             </article>
             <article className="b">
               <div className="b-head"><span className="b-dot"><i className="b-ping" /></span><span className="b-ix">03</span></div>
-              <h3>Crítico no automático</h3>
-              <p>Cobrança, bloqueio por inadimplência, notificações e comissões.</p>
+              <h3>Crise nunca fica sem resposta</h3>
+              <p>CVV 188, SAMU 192 e CAPS sempre à mão, em qualquer tela.</p>
             </article>
             <article className="b">
               <div className="b-head"><span className="b-dot"><i className="b-ping" /></span><span className="b-ix">04</span></div>
-              <h3>Ponta a ponta</h3>
-              <p>Da prospecção ao pós-venda, uma cadeia só.</p>
+              <h3>Do pedido ao retorno</h3>
+              <p>Receita digital, registro de humor e acompanhamento no mesmo lugar.</p>
             </article>
           </div>
 
