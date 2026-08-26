@@ -52,19 +52,35 @@ function LeadCard({
             recebido em {fmtRecebido(lead.created_at)}
           </div>
         </div>
-        <span
-          style={{
-            padding: "4px 10px",
-            borderRadius: 20,
-            fontSize: 11,
-            fontWeight: 700,
-            fontFamily: "'Nunito',sans-serif",
-            background: badge.fundo,
-            color: badge.cor,
-          }}
-        >
-          {badge.label}
-        </span>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          {/* Dois funis chegam por aqui: quem quer consulta e quem quer ATENDER. */}
+          <span
+            style={{
+              padding: "4px 10px",
+              borderRadius: 20,
+              fontSize: 11,
+              fontWeight: 700,
+              fontFamily: "'Nunito',sans-serif",
+              background: lead.origem === "profissional" ? "#EDE9FE" : T.teal050,
+              color: lead.origem === "profissional" ? "#5B21B6" : T.teal700,
+            }}
+          >
+            {lead.origem === "profissional" ? "Quer atender" : "Quer consulta"}
+          </span>
+          <span
+            style={{
+              padding: "4px 10px",
+              borderRadius: 20,
+              fontSize: 11,
+              fontWeight: 700,
+              fontFamily: "'Nunito',sans-serif",
+              background: badge.fundo,
+              color: badge.cor,
+            }}
+          >
+            {badge.label}
+          </span>
+        </div>
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: 13, color: T.gray600 }}>
@@ -76,9 +92,11 @@ function LeadCard({
             <Mail size={13} aria-hidden="true" /> {lead.email}
           </span>
         )}
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <Calendar size={13} aria-hidden="true" /> {fmtQuando(lead)}
-        </span>
+        {lead.origem !== "profissional" && (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <Calendar size={13} aria-hidden="true" /> {fmtQuando(lead)}
+          </span>
+        )}
         {lead.especialidade && <span>{lead.especialidade}</span>}
       </div>
 

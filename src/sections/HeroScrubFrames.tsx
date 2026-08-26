@@ -243,13 +243,17 @@ export default function HeroScrubFrames({
               }}>
                 Agendar consulta
               </button>
-              <button style={{
+              {/* Era um botão sem ação nenhuma no hero — o segundo CTA da página
+                  inteira. Agora leva à seção que explica como o cuidado funciona. */}
+              <a href="#sobre" style={{
                 padding: "14px 24px", fontWeight: 700, fontSize: 14, color: T.teal300,
                 background: "transparent", border: "2px solid rgba(0,191,216,0.5)",
                 borderRadius: 12, cursor: "pointer", fontFamily: "inherit", minHeight: 48,
+                textDecoration: "none", display: "inline-flex", alignItems: "center",
+                justifyContent: "center",
               }}>
                 Saiba como ativar
-              </button>
+              </a>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 24 }}>

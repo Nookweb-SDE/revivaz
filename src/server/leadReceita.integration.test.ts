@@ -190,6 +190,29 @@ describe("POST /api/lead — formulário público da landing", () => {
     expect(bloqueado.status).toBe(429);
   });
 
+  it("origem 'profissional' é aceita — é o outro funil (quem quer atender)", async () => {
+    const r = await req(srv, "POST", "/api/lead", {
+      nome: "Dra. Ana",
+      telefone: "11965119797",
+      especialidade: "psiquiatria",
+      origem: "profissional",
+    });
+    expect(r.status).toBe(201);
+    const corpo = mockFetch.mock.calls.find((c) => String(c[0]).includes("/rest/v1/leads"))?.[1];
+    expect(JSON.parse(String((corpo as RequestInit).body))).toMatchObject({ origem: "profissional" });
+  });
+
+  it("origem inventada cai em 'landing' — não vira lixo no painel", async () => {
+    const r = await req(srv, "POST", "/api/lead", {
+      nome: "Maria",
+      telefone: "11965119797",
+      origem: "'; drop table leads; --",
+    });
+    expect(r.status).toBe(201);
+    const corpo = mockFetch.mock.calls.find((c) => String(c[0]).includes("/rest/v1/leads"))?.[1];
+    expect(JSON.parse(String((corpo as RequestInit).body))).toMatchObject({ origem: "landing" });
+  });
+
   it("se o banco recusar, responde erro — não finge sucesso", async () => {
     mockFetch.mockImplementation((url: string) => {
       if (String(url).includes("/rest/v1/leads")) return Promise.resolve(mkRes({}, 500));

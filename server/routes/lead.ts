@@ -39,6 +39,11 @@ router.post("/api/lead", async (req: Request, res: Response): Promise<void> => {
   const especialidade = String(req.body?.especialidade ?? "").trim().slice(0, 80);
   const data_desejada = String(req.body?.data ?? "").trim();
   const hora_desejada = String(req.body?.hora ?? "").trim();
+  // Whitelist: a origem separa os dois funis (quem quer consulta x quem quer
+  // atender). Valor livre viraria lixo no painel, então qualquer outra coisa
+  // cai em "landing".
+  const origemPedida = String(req.body?.origem ?? "").trim();
+  const origem = origemPedida === "profissional" ? "profissional" : "landing";
 
   if (nome.length < 2) {
     res.status(400).json({ error: "Diga seu nome, por favor." });
@@ -76,7 +81,7 @@ router.post("/api/lead", async (req: Request, res: Response): Promise<void> => {
         especialidade: especialidade || null,
         data_desejada: /^\d{4}-\d{2}-\d{2}$/.test(data_desejada) ? data_desejada : null,
         hora_desejada: /^\d{2}:\d{2}/.test(hora_desejada) ? hora_desejada : null,
-        origem: "landing",
+        origem,
       }),
     });
     if (!insertRes.ok) {
@@ -87,24 +92,28 @@ router.post("/api/lead", async (req: Request, res: Response): Promise<void> => {
     }
     const criado = (await insertRes.json()) as Array<{ id: string }>;
     const leadId = criado[0]?.id ?? "";
-    console.log(`[lead] registrado id=${leadId.slice(0, 8)}… origem=landing`);
+    console.log(`[lead] registrado id=${leadId.slice(0, 8)}… origem=${origem}`);
 
     // Avisos são best-effort: o pedido já está salvo, não podem derrubar a resposta.
     const quando =
       data_desejada && hora_desejada
         ? ` para ${data_desejada.split("-").reverse().join("/")} às ${hora_desejada}`
         : "";
+    const primeiroNome = nome.split(" ")[0];
     void enviarWhatsApp(
       telefone,
-      `Olá, ${nome.split(" ")[0]}! Recebemos seu pedido de atendimento${quando}. ` +
-        `Nossa equipe vai te responder por aqui para confirmar.\n\n` +
-        `Se você estiver passando por uma crise agora, ligue 188 (CVV, 24h e gratuito) ou 192 (SAMU).`
+      origem === "profissional"
+        ? `Olá, ${primeiroNome}! Recebemos seu interesse em atender conosco. ` +
+            `Nossa equipe vai te chamar por aqui para conversar sobre como funciona.`
+        : `Olá, ${primeiroNome}! Recebemos seu pedido de atendimento${quando}. ` +
+            `Nossa equipe vai te responder por aqui para confirmar.\n\n` +
+            `Se você estiver passando por uma crise agora, ligue 188 (CVV, 24h e gratuito) ou 192 (SAMU).`
     );
     const admin = (process.env.ADMIN_WHATSAPP || "").trim();
     if (admin) {
       void enviarWhatsApp(
         admin,
-        `Novo pedido pelo site: ${nome} — ${telefone}` +
+        `${origem === "profissional" ? "Profissional interessado" : "Novo pedido"} pelo site: ${nome} — ${telefone}` +
           (especialidade ? ` — ${especialidade}` : "") +
           `${quando}`
       );

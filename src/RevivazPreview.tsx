@@ -7,10 +7,10 @@ import { useState, useEffect, useRef } from "react";
 import EcgValor from "./sections/EcgValor";
 import HeroScrubFrames from "./sections/HeroScrubFrames";
 import {
-  Star, Search, Heart, ArrowRight, ChevronLeft, ChevronRight,
+  Star, Heart, ArrowRight, ChevronLeft, ChevronRight,
   Clock, MessageCircle, Smartphone, Video, Monitor, Sparkles, Brain,
   Stethoscope, FileText, Users, MapPin, Calendar, User, Phone, Mail,
-  Send, X, CheckCircle, Instagram, Linkedin, Newspaper, Menu,
+  Send, X, CheckCircle, Menu,
 } from "lucide-react";
 
 /* ── breakpoints: mobile < 640, tablet 640–1023, desktop ≥ 1024 ── */
@@ -96,6 +96,17 @@ export default function RevivazPreview() {
   });
   const [enviandoAgendar, setEnviandoAgendar] = useState(false);
   const [erroAgendar, setErroAgendar] = useState("");
+  /* O mesmo modal serve os dois funis do modelo de negócio: quem quer consulta
+     e quem quer ATENDER (embaixador/voluntário). A origem separa os dois no
+     painel do admin. */
+  const [modoLead, setModoLead] = useState<"paciente" | "profissional">("paciente");
+
+  function abrirCadastroProfissional() {
+    setModoLead("profissional");
+    setAgendarOk(false);
+    setErroAgendar("");
+    setModalAgendar(true);
+  }
 
   /* Envia o pedido de verdade para /api/lead. Este formulário já foi decorativo
      (o botão só marcava sucesso na tela); agora só mostra sucesso se o servidor
@@ -112,8 +123,9 @@ export default function RevivazPreview() {
           telefone: form.tel,
           email: form.email,
           especialidade: form.esp,
-          data: form.data,
-          hora: form.hora,
+          data: modoLead === "profissional" ? "" : form.data,
+          hora: modoLead === "profissional" ? "" : form.hora,
+          origem: modoLead === "profissional" ? "profissional" : "landing",
         }),
       });
       if (!res.ok) {
@@ -134,6 +146,15 @@ export default function RevivazPreview() {
       setEnviandoAgendar(false);
     }
   }
+
+  /* Navegação da home. Cada item aponta para uma seção que existe de verdade
+     nesta página — antes eram botões sem ação nenhuma. */
+  const NAV = [
+    ["Sobre", "#sobre"],
+    ["Para pacientes", "#para-pacientes"],
+    ["Especialidades", "#especialidades"],
+    ["Para profissionais", "#para-profissionais"],
+  ] as const;
 
   /* hero carousel */
   const heroLines = ["suas consultas", "seus cuidados", "sua vida"];
@@ -170,7 +191,7 @@ export default function RevivazPreview() {
     { title: "Novos profissionais voluntários em 2025", cat: "Imprensa", date: "23 set.", img: "/revivaz/team.webp", imgPos: "center 40%" },
   ];
 
-  const openAgendar = () => { setModalAgendar(true); setAgendarOk(false); };
+  const openAgendar = () => { setModoLead("paciente"); setModalAgendar(true); setAgendarOk(false); setErroAgendar(""); };
 
   /* Header integrado ao hero: enquanto o trilho do hero ainda cobre o topo da
      tela, o header flutua transparente sobre a cena; depois vira a barra branca
@@ -218,8 +239,8 @@ export default function RevivazPreview() {
             <a href="#top" style={{ fontWeight: 900, fontSize: Fp.xl, color: H.logo, fontFamily: "'Nunito',sans-serif", letterSpacing: "-0.02em", textDecoration: "none", flexShrink: 0 }}>Revivaz</a>
             {bp !== "mobile" && (
               <nav style={{ display: "flex", alignItems: "center", gap: Sp.l }}>
-                {["Especialidades", "Para pacientes", "Para profissionais", "Sobre"].map(l => (
-                  <button key={l} style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: H.nav, fontFamily: "inherit", padding: "6px 0", whiteSpace: "nowrap" }}>{l}</button>
+                {NAV.map(([l, href]) => (
+                  <a key={l} href={href} style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: H.nav, fontFamily: "inherit", padding: "6px 0", whiteSpace: "nowrap", textDecoration: "none" }}>{l}</a>
                 ))}
               </nav>
             )}
@@ -228,12 +249,8 @@ export default function RevivazPreview() {
           <div style={{ display: "flex", alignItems: "center", gap: bp === "mobile" ? Sp.s : Sp.m, flexWrap: "wrap", flex: bp === "mobile" ? "0 0 auto" : "0 0 auto" }}>
             {bp !== "mobile" && (
               <>
-                <div style={{ position: "relative", width: 200 }}>
-                  <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: H.campoTexto }} />
-                  <input aria-label="Buscar no site" placeholder="Buscar…" style={{ ...inputBase, padding: "8px 10px 8px 36px", fontSize: Fp.xs, borderRadius: 9999, minHeight: 40, background: H.campo, color: H.forte, borderColor: sobreHero ? "rgba(255,255,255,.18)" : undefined }} />
-                </div>
-                <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: H.forte, fontFamily: "inherit", padding: "8px 0", whiteSpace: "nowrap" }}>Entrar</button>
-                <button style={{ background: "none", border: `2px solid ${H.borda}`, cursor: "pointer", fontSize: Fp.sm, fontWeight: 700, color: sobreHero ? T.teal300 : T.teal700, fontFamily: "inherit", padding: "8px 16px", borderRadius: 9999, whiteSpace: "nowrap" }}>Cadastre-se</button>
+                <a href="/conta" style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: H.forte, fontFamily: "inherit", padding: "8px 0", whiteSpace: "nowrap", textDecoration: "none" }}>Entrar</a>
+                <a href="/conta" style={{ background: "none", border: `2px solid ${H.borda}`, cursor: "pointer", fontSize: Fp.sm, fontWeight: 700, color: sobreHero ? T.teal300 : T.teal700, fontFamily: "inherit", padding: "8px 16px", borderRadius: 9999, whiteSpace: "nowrap", textDecoration: "none" }}>Cadastre-se</a>
               </>
             )}
             {bp === "mobile" && (
@@ -248,15 +265,13 @@ export default function RevivazPreview() {
           {/* Menu mobile expandido */}
           {bp === "mobile" && menuOpen && (
             <nav style={{ width: "100%", display: "flex", flexDirection: "column", gap: 0, paddingTop: Sp.m, borderTop: `1px solid ${sobreHero ? "rgba(0,191,216,.28)" : T.gray200}`, order: 99, background: H.menu, marginTop: Sp.m, paddingLeft: Sp.m, paddingRight: Sp.m, paddingBottom: Sp.m }}>
-              <div style={{ position: "relative", marginBottom: Sp.s }}>
-                <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: T.gray500 }} />
-                <input aria-label="Buscar especialidade" placeholder="Buscar especialidade…" style={{ ...inputBase, padding: "10px 12px 10px 36px", fontSize: Fp.sm, borderRadius: 8, minHeight: 44, width: "100%" }} />
-              </div>
-              {["Especialidades", "Para pacientes", "Para profissionais", "Sobre", "Planos", "Contato"].map(l => (
-                <button key={l} onClick={() => setMenuOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: H.nav, fontFamily: "inherit", padding: "12px 0", textAlign: "left", borderBottom: `1px solid ${sobreHero ? "rgba(255,255,255,.10)" : T.gray100}` }}>{l}</button>
+              {/* "Planos" e "Contato" saíram: não existe página de planos, e a busca
+                  era uma caixa decorativa que não buscava nada. */}
+              {NAV.map(([l, href]) => (
+                <a key={l} href={href} onClick={() => setMenuOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: H.nav, fontFamily: "inherit", padding: "12px 0", textAlign: "left", borderBottom: `1px solid ${sobreHero ? "rgba(255,255,255,.10)" : T.gray100}`, textDecoration: "none", display: "block" }}>{l}</a>
               ))}
-              <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.teal700, fontFamily: "inherit", padding: "12px 0", textAlign: "left", marginTop: Sp.s }}>Entrar</button>
-              <button style={{ background: T.teal050, border: `2px solid ${T.teal700}`, cursor: "pointer", fontSize: Fp.sm, fontWeight: 700, color: T.teal700, fontFamily: "inherit", padding: "12px", borderRadius: 8, marginTop: Sp.s, textAlign: "center" }}>Cadastre-se</button>
+              <a href="/conta" style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.teal700, fontFamily: "inherit", padding: "12px 0", textAlign: "left", marginTop: Sp.s, textDecoration: "none", display: "block" }}>Entrar</a>
+              <a href="/conta" style={{ background: T.teal050, border: `2px solid ${T.teal700}`, cursor: "pointer", fontSize: Fp.sm, fontWeight: 700, color: T.teal700, fontFamily: "inherit", padding: "12px", borderRadius: 8, marginTop: Sp.s, textAlign: "center", textDecoration: "none", display: "block" }}>Cadastre-se</a>
             </nav>
           )}
         </div>
@@ -267,7 +282,9 @@ export default function RevivazPreview() {
       <HeroScrubFrames heroLines={heroLines} heroIdx={heroIdx} openAgendar={openAgendar} bp={bp} />
 
       {/* ═══ BLOCO 3.5 — ECG "O que é" (réplica EXATA v6 NookTrack, via nookpick) ═══ */}
-      <EcgValor />
+      <div id="sobre">
+        <EcgValor />
+      </div>
 
       {/* ═══ BLOCO 4 — Segmented control (track claro, pill ativa branca) ═══ */}
       <section style={{ background: T.white, padding: `${Sp.l}px ${Sp.m}px 0` }}>
@@ -312,23 +329,23 @@ export default function RevivazPreview() {
               <p style={{ fontSize: F.sm, color: "rgba(255,255,255,.72)", lineHeight: 1.7, marginBottom: Sp.l, maxWidth: 440 }}>Agende presencial ou online, receba receita por WhatsApp e faça parte de uma rede que reduz a fila de espera do SUS.</p>
               <div style={{ display: "flex", gap: S.m, flexWrap: "wrap" }}>
                 <button onClick={openAgendar} style={btnPrimary}>Agendar consulta</button>
-                <button style={btnGlass}>Saiba mais</button>
+                <a style={{ ...btnGlass, textDecoration: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }} href="#sobre">Saiba mais</a>
               </div>
             </>}
             {tab === 1 && <>
               <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: bp === "mobile" ? F.xl : F["2xl"], color: T.white, lineHeight: 1.15, marginBottom: S.m }}>Lidere a transformação solidária</h2>
               <p style={{ fontSize: F.sm, color: "rgba(255,255,255,.72)", lineHeight: 1.7, marginBottom: Sp.l, maxWidth: 440 }}>Reduza a fila de espera e faça do seu consultório um ponto de atendimento para quem mais precisa.</p>
               <div style={{ display: "flex", gap: S.m, flexWrap: "wrap" }}>
-                <button style={btnPrimary}>Quero ser voluntário</button>
-                <button style={btnGlass}>Outros parceiros</button>
+                <button onClick={abrirCadastroProfissional} style={btnPrimary}>Quero ser voluntário</button>
+                <a style={{ ...btnGlass, textDecoration: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }} href="#para-profissionais">Outros parceiros</a>
               </div>
             </>}
             {tab === 2 && <>
               <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: bp === "mobile" ? F.xl : F["2xl"], color: T.white, lineHeight: 1.15, marginBottom: S.m }}>Faça parte do futuro</h2>
               <p style={{ fontSize: F.sm, color: "rgba(255,255,255,.72)", lineHeight: 1.7, marginBottom: Sp.l, maxWidth: 440 }}>Otimize a gestão do consultório, atenda novos pacientes e integre uma comunidade de profissionais solidários.</p>
               <div style={{ display: "flex", gap: S.m, flexWrap: "wrap" }}>
-                <button style={btnPrimary}>Saiba mais</button>
-                <button style={btnGlass}>Fale com suporte</button>
+                <a style={{ ...btnPrimary, textDecoration: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }} href="#para-pacientes">Saiba mais</a>
+                <a style={{ ...btnGlass, textDecoration: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }} href="mailto:contato@revivaz.com.br">Fale com suporte</a>
               </div>
             </>}
           </div>
@@ -368,13 +385,15 @@ export default function RevivazPreview() {
                 </div>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.green500, boxShadow: "0 0 0 4px rgba(76,175,80,.2)", flexShrink: 0 }} />
               </div>
+              {/* Ilustração de uma chamada, não controles de verdade: viraram <span>
+                  para ninguém clicar esperando que atenda alguém. */}
               <div style={{ display: "flex", gap: Sp.s, marginTop: Sp.m, position: "relative", zIndex: 1 }}>
-                <button style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 12, border: "none", background: T.green500, color: T.white, fontSize: F.xs, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
+                <span aria-hidden="true" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 12, border: "none", background: T.green500, color: T.white, fontSize: F.xs, fontWeight: 700, fontFamily: "inherit" }}>
                   <Phone size={14} /> Atender
-                </button>
-                <button style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 12, border: "1px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.08)", color: T.white, fontSize: F.xs, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}>
+                </span>
+                <span aria-hidden="true" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 12, border: "1px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.08)", color: T.white, fontSize: F.xs, fontWeight: 700, fontFamily: "inherit", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}>
                   <Video size={14} /> Vídeo
-                </button>
+                </span>
               </div>
             </div>
           </div>
@@ -400,7 +419,7 @@ export default function RevivazPreview() {
       </section>
 
       {/* ═══ BLOCO 8 — "Muito além de consultas" ═══ */}
-      <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: `linear-gradient(135deg,${T.teal050} 0%,${T.white} 100%)` }}>
+      <section id="para-pacientes" style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: `linear-gradient(135deg,${T.teal050} 0%,${T.white} 100%)` }}>
         <div style={{ ...container }}>
           <Sparkles size={bp === "mobile" ? 20 : 22} color={T.teal700} style={{ marginBottom: Sp.s }} />
           <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.xl, color: T.gray950, marginBottom: Sp.s }}>Muito além de consultas</h2>
@@ -436,7 +455,7 @@ export default function RevivazPreview() {
       </section>
 
       {/* ═══ BLOCO 10 — "Nossas soluções" (navy bg + image + icon grid) ═══ */}
-      <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: T.navy }}>
+      <section id="especialidades" style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: T.navy }}>
         <div style={{ display: "flex", gap: Sp.xl, alignItems: "center", ...container, flexWrap: "wrap" }}>
           <div style={{ width: bp === "mobile" ? "100%" : "40%", minWidth: bp === "mobile" ? 0 : 260, borderRadius: 16, overflow: "hidden", flexShrink: 0, boxShadow: "0 12px 32px rgba(0,0,0,.3)", marginTop: bp === "mobile" ? 0 : 48 }}>
             <img loading="lazy" decoding="async" src="/revivaz/solucoes.webp" alt="Consulta online por vídeo" width="600" height="200" style={{ width: "100%", height: bp === "mobile" ? 180 : 200, objectFit: "cover", objectPosition: "center", display: "block" }} />
@@ -457,7 +476,7 @@ export default function RevivazPreview() {
       </section>
 
       {/* ═══ BLOCO 11 — "+500 profissionais" banner gradiente ═══ */}
-      <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: `linear-gradient(135deg,${T.teal900} 0%,${T.teal500} 100%)`, color: T.white, textAlign: "center" }}>
+      <section id="para-profissionais" style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: `linear-gradient(135deg,${T.teal900} 0%,${T.teal500} 100%)`, color: T.white, textAlign: "center" }}>
         <div style={{ ...container }}>
           <div style={{ fontSize: bp === "mobile" ? 32 : 40, fontWeight: 900, marginBottom: Sp.s, letterSpacing: "-0.02em" }}>+500</div>
           <div style={{ fontSize: Fp.base, opacity: 0.95, marginBottom: Sp.l, maxWidth: 400, margin: "0 auto" }}>profissionais & voluntários oferecem Revivaz para quem precisa</div>
@@ -551,9 +570,7 @@ export default function RevivazPreview() {
               <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.xl, color: T.gray950, margin: 0 }}>Revivaz em foco</h2>
               <p style={{ fontSize: F.xs, color: T.gray600, margin: "4px 0 0" }}>Principais acontecimentos e conteúdos.</p>
             </div>
-            <button style={{ padding: "10px 18px", fontSize: F.xs, fontWeight: 700, color: T.teal700, background: T.teal050, border: `2px solid ${T.teal100}`, borderRadius: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 44 }}>
-              Veja tudo <ArrowRight size={14} />
-            </button>
+            {/* Sem página de notícias, o "Veja tudo" não levava a lugar nenhum. */}
           </div>
           <div style={{ display: "flex", gap: Sp.m, flexWrap: "wrap" }}>
             {NEWS.map(n => (
@@ -577,19 +594,17 @@ export default function RevivazPreview() {
             <div>
               <div style={{ fontWeight: 900, color: T.teal300, fontSize: F.lg, marginBottom: S.s, fontFamily: "'Nunito',sans-serif" }}>Revivaz</div>
               <p style={{ lineHeight: 1.6, marginBottom: S.m, maxWidth: 320 }}>Atendimento solidário em saúde mental. Psiquiatras e psicólogos conectados a quem mais precisa.</p>
-              <div style={{ display: "flex", gap: S.s }}>
-                {[Instagram, Linkedin, Newspaper].map((Ic, i) => (
-                  <button aria-label={["Instagram", "LinkedIn", "Notícias"][i]} key={i} style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: "rgba(255,255,255,.14)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                    <Ic size={18} color="rgba(255,255,255,.92)" />
-                  </button>
-                ))}
-              </div>
+              {/* Instagram/LinkedIn/Notícias: os perfis ainda não existem. Ícone que
+                  não abre nada é promessa quebrada — volta quando houver conta. */}
             </div>
             <div>
               <div style={{ fontWeight: 700, color: T.white, marginBottom: S.m, fontSize: F.sm }}>Institucional</div>
-              {["Sobre", "Especialidades", "Para profissionais", "Privacidade"].map(l => (
+              {/* "Privacidade" saiu daqui: a Política de Privacidade ainda não foi
+                  redigida e o link não levava a nada. É pendência de compliance
+                  (LGPD), não de front — volta como link assim que a página existir. */}
+              {NAV.map(([l, href]) => (
                 <div key={l} style={{ marginBottom: 6 }}>
-                  <button style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "8px 0", fontFamily: "inherit", fontSize: F.xs, minHeight: 32, textAlign: "left" }}>{l}</button>
+                  <a href={href} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "8px 0", fontFamily: "inherit", fontSize: F.xs, minHeight: 32, textAlign: "left", textDecoration: "none", display: "block" }}>{l}</a>
                 </div>
               ))}
             </div>
@@ -601,39 +616,43 @@ export default function RevivazPreview() {
             </div>
           </div>
           <div style={{ borderTop: "1px solid rgba(255,255,255,.1)", paddingTop: Sp.m, fontSize: Fp.xs, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: Sp.m }}>
-            <span>© 2025 Revivaz. Atendimento solidário em saúde mental.</span>
+            <span>© {new Date().getFullYear()} Revivaz. Atendimento solidário em saúde mental.</span>
             <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Heart size={14} fill={T.teal500} stroke={T.teal500} /> Feito com amor</span>
           </div>
         </div>
       </footer>
       </main>
 
-      {/* CTA flutuante WhatsApp */}
+      {/* CTA flutuante — antes apontava para o WhatsApp (11) 4002-8922, que é
+          número de piada, não da empresa. Enquanto o WhatsApp da Revivaz não
+          está conectado, o único canal de conversa que responde de verdade é a
+          IA de acolhimento — 24h e sem cadastro. É para lá que este botão vai. */}
       {!modalAgendar && !modalReceita && (
         <a
-          href="https://wa.me/551140028922?text=Ol%C3%A1!%20Quero%20agendar%20uma%20consulta%20na%20Revivaz."
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Falar no WhatsApp"
+          href="/acolhimento"
+          aria-label="Conversar agora com o acolhimento"
           style={{
             position: "fixed",
             right: bp === "mobile" ? 16 : 24,
             bottom: bp === "mobile" ? 16 : 24,
             zIndex: 90,
-            background: "#25D366",
-            borderRadius: "50%",
-            width: 56,
-            height: 56,
+            background: `linear-gradient(135deg, ${T.teal700}, ${T.teal500})`,
+            borderRadius: 9999,
+            minHeight: 56,
+            padding: bp === "mobile" ? "0 18px" : "0 22px",
+            color: T.white,
+            fontFamily: "'Nunito',sans-serif",
+            fontWeight: 800,
+            fontSize: Fp.sm,
             textDecoration: "none",
-            boxShadow: "0 4px 16px rgba(0,0,0,.30)",
+            boxShadow: "0 6px 20px rgba(0,77,92,.38)",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
+            gap: 10,
           }}
         >
-          <svg viewBox="0 0 24 24" width={30} height={30} fill="#ffffff" aria-hidden="true">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-          </svg>
+          <MessageCircle size={22} aria-hidden="true" />
+          Conversar agora
         </a>
       )}
 
@@ -645,7 +664,7 @@ export default function RevivazPreview() {
           <div onClick={e => e.stopPropagation()} style={{ background: T.white, borderRadius: 18, maxWidth: 360, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 12px 48px rgba(0,0,0,.25)" }}>
             {/* header */}
             <div style={{ padding: `${S.m}px ${S.l}px`, borderBottom: `1px solid ${T.gray200}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.lg, color: T.gray950, margin: 0 }}>Agendar consulta</h3>
+              <h3 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.lg, color: T.gray950, margin: 0 }}>{modoLead === "profissional" ? "Quero atender" : "Agendar consulta"}</h3>
               <button aria-label="Fechar modal de agendamento" onClick={() => setModalAgendar(false)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}>
                 <X size={16} color={T.gray600} />
               </button>
@@ -653,6 +672,8 @@ export default function RevivazPreview() {
 
             <div style={{ padding: S.l }}>
               {!agendarOk ? (<>
+                {/* Quem quer ATENDER não escolhe tipo nem horário de consulta. */}
+                {modoLead === "paciente" && (<>
                 <label style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Tipo de consulta</label>
                 <div style={{ display: "flex", gap: S.m, marginBottom: S.m }}>
                   {([["presencial", "Presencial", MapPin], ["online", "Online", Video]] as const).map(([val, lbl, Ic]) => (
@@ -661,8 +682,9 @@ export default function RevivazPreview() {
                     </button>
                   ))}
                 </div>
+                </>)}
 
-                <label htmlFor="form-esp" style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Especialidade</label>
+                <label htmlFor="form-esp" style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>{modoLead === "profissional" ? "Sua especialidade" : "Especialidade"}</label>
                 <div style={{ position: "relative", marginBottom: S.m }}>
                   <Brain size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: T.gray600 }} />
                   <select id="form-esp" value={form.esp} onChange={e => setForm({ ...form, esp: e.target.value as any })} style={{ ...inputBase, appearance: "none" }}>
@@ -671,6 +693,7 @@ export default function RevivazPreview() {
                   </select>
                 </div>
 
+                {modoLead === "paciente" && (
                 <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1fr 1fr", gap: S.m, marginBottom: S.m }}>
                   <div>
                     <label htmlFor="form-data" style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Data</label>
@@ -687,6 +710,8 @@ export default function RevivazPreview() {
                     </div>
                   </div>
                 </div>
+
+                )}
 
                 <label htmlFor="form-nome" style={{ display: "block", fontSize: F.xs, fontWeight: 700, color: T.gray600, marginBottom: S.s }}>Nome completo</label>
                 <div style={{ position: "relative", marginBottom: S.m }}>
@@ -707,7 +732,7 @@ export default function RevivazPreview() {
                 </div>
 
                 <button onClick={enviarPedidoAgendamento} disabled={enviandoAgendar} style={{ width: "100%", padding: "14px", fontSize: F.sm, fontWeight: 700, color: T.white, background: `linear-gradient(135deg,${T.teal700},${T.teal500})`, border: "none", borderRadius: 12, cursor: enviandoAgendar ? "default" : "pointer", fontFamily: "inherit", boxShadow: "0 4px 14px rgba(0,77,92,.3)", minHeight: 48, opacity: enviandoAgendar ? 0.7 : 1 }}>
-                  {enviandoAgendar ? "Enviando…" : "Pedir agendamento"}
+                  {enviandoAgendar ? "Enviando…" : modoLead === "profissional" ? "Quero atender" : "Pedir agendamento"}
                 </button>
                 {erroAgendar && (
                   <div role="alert" style={{ marginTop: S.m, padding: "10px 12px", borderRadius: 10, background: "#FEE2E2", color: "#991B1B", fontSize: F.xs, fontWeight: 700 }}>
@@ -719,8 +744,8 @@ export default function RevivazPreview() {
                   <div style={{ width: 56, height: 56, borderRadius: "50%", background: T.green500, margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <CheckCircle size={30} color={T.white} />
                   </div>
-                  <h4 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.lg, color: T.green700, marginBottom: S.s }}>Pedido recebido!</h4>
-                  <p style={{ fontSize: F.sm, color: T.gray600, marginBottom: 4 }}>Ainda não é uma consulta marcada: nossa equipe vai te chamar no WhatsApp para confirmar dia e horário.</p>
+                  <h4 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.lg, color: T.green700, marginBottom: S.s }}>{modoLead === "profissional" ? "Recebemos seu interesse!" : "Pedido recebido!"}</h4>
+                  <p style={{ fontSize: F.sm, color: T.gray600, marginBottom: 4 }}>{modoLead === "profissional" ? "Nossa equipe vai te chamar no WhatsApp para conversar sobre como funciona a rede." : "Ainda não é uma consulta marcada: nossa equipe vai te chamar no WhatsApp para confirmar dia e horário."}</p>
                   <p style={{ fontSize: F.xs, color: T.gray600, marginBottom: S.l }}>Se você estiver em crise agora, ligue <strong>188</strong> (CVV, 24h e gratuito) ou <strong>192</strong> (SAMU).</p>
                   <div style={{ display: "flex", gap: S.m, justifyContent: "center", flexWrap: "wrap" }}>
                     <button onClick={() => setModalAgendar(false)} style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.teal700, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", minHeight: 44 }}>Fechar</button>
