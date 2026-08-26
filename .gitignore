@@ -8,3 +8,7 @@ dist
 .vercel
 .superpowers/
 tsconfig.tsbuildinfo
+
+# saída do Playwright: é resultado de execução, não código
+test-results/
+playwright-report/
