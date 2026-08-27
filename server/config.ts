@@ -56,3 +56,12 @@ export const JITSI_DOMAIN = (process.env.JITSI_DOMAIN || "").replace(/\/$/, "");
 export const JITSI_APP_ID = process.env.JITSI_APP_ID || "";
 export const JITSI_JWT_SECRET = resolveSecret("JITSI_JWT_SECRET", "JITSI_JWT_SECRET_FILE");
 
+// ─── BigDataCorp (verificação de identidade do candidato) ───────────────────
+// Contrato pago. Sem credencial o cliente degrada e o admin decide só com a
+// consulta do conselho — a fila nunca trava por falta de fornecedor.
+export const BIGDATACORP_TOKEN = resolveSecret("BIGDATACORP_TOKEN", "BIGDATACORP_TOKEN_FILE");
+export const BIGDATACORP_ACCESS_TOKEN = resolveSecret(
+  "BIGDATACORP_ACCESS_TOKEN",
+  "BIGDATACORP_ACCESS_TOKEN_FILE"
+);
+
