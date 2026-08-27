@@ -175,3 +175,147 @@ describe("POST /api/candidatura", () => {
     expect(enviado.cpf).toBe("52998224725");
   });
 });
+
+const ADMIN = "33333333-3333-4333-8333-333333333333";
+const CAND_ID = "44444444-4444-4444-8444-444444444444";
+
+/** Roteia como admin, com uma candidatura em análise já pronta. */
+function roteiaAdmin(status = "em_analise") {
+  mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+    const u = String(url);
+    if (u.includes("/auth/v1/user")) return Promise.resolve(mkRes({ id: ADMIN }));
+    if (u.includes("/rest/v1/profiles")) return Promise.resolve(mkRes([{ role: "admin" }]));
+    if (u.includes("/rest/v1/candidaturas") && (!init || init.method === "GET" || !init.method))
+      return Promise.resolve(
+        mkRes([
+          {
+            id: CAND_ID,
+            profile_id: CANDIDATO,
+            nome_completo: "Maria da Silva",
+            especialidade: "psicologia",
+            registro: "06/12345",
+            conselho: "CRP",
+            bio: null,
+            cpf: "52998224725",
+            cnpj: null,
+            status,
+          },
+        ])
+      );
+    if (u.includes("/rest/v1/profissionais")) return Promise.resolve(mkRes([{ id: "prof-1" }], 201));
+    return Promise.resolve(mkRes([{}]));
+  });
+}
+
+describe("POST /api/admin/candidatura/:id/decidir", () => {
+  let srv: http.Server;
+  beforeAll(async () => {
+    srv = await startSrv(app as unknown as http.RequestListener);
+  });
+  afterAll(() => new Promise<void>((r) => srv.close(() => r())));
+  beforeEach(() => mockFetch.mockReset());
+
+  it("sem Bearer → 401", async () => {
+    roteiaAdmin();
+    const r = await req(srv, "POST", `/api/admin/candidatura/${CAND_ID}/decidir`, { acao: "aprovar" });
+    expect(r.status).toBe(401);
+  });
+
+  it("logado mas não admin → 403", async () => {
+    mockFetch.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.includes("/auth/v1/user")) return Promise.resolve(mkRes({ id: CANDIDATO }));
+      if (u.includes("/rest/v1/profiles")) return Promise.resolve(mkRes([{ role: "paciente" }]));
+      return Promise.resolve(mkRes([{}]));
+    });
+    const r = await req(srv, "POST", `/api/admin/candidatura/${CAND_ID}/decidir`, { acao: "aprovar" }, {
+      Authorization: "Bearer tok",
+    });
+    expect(r.status).toBe(403);
+  });
+
+  it("aprovar promove: cria em profissionais e muda o papel", async () => {
+    roteiaAdmin("em_analise");
+    const r = await req(srv, "POST", `/api/admin/candidatura/${CAND_ID}/decidir`, { acao: "aprovar" }, {
+      Authorization: "Bearer tok",
+    });
+    expect(r.status).toBe(200);
+    const urls = mockFetch.mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => u.includes("/rest/v1/profissionais"))).toBe(true);
+    const patchProfile = mockFetch.mock.calls.find(
+      (c) => String(c[0]).includes("/rest/v1/profiles") && (c[1] as RequestInit)?.method === "PATCH"
+    );
+    expect(JSON.parse(String((patchProfile![1] as RequestInit).body))).toMatchObject({
+      role: "profissional",
+    });
+  });
+
+  it("aprovar de novo não cria segundo profissional — transição inválida", async () => {
+    roteiaAdmin("aprovada");
+    const r = await req(srv, "POST", `/api/admin/candidatura/${CAND_ID}/decidir`, { acao: "aprovar" }, {
+      Authorization: "Bearer tok",
+    });
+    expect(r.status).toBe(409);
+    expect(mockFetch.mock.calls.some((c) => String(c[0]).includes("/rest/v1/profissionais"))).toBe(false);
+  });
+
+  it("recusar sem motivo → 400", async () => {
+    roteiaAdmin("em_analise");
+    const r = await req(srv, "POST", `/api/admin/candidatura/${CAND_ID}/decidir`, { acao: "recusar" }, {
+      Authorization: "Bearer tok",
+    });
+    expect(r.status).toBe(400);
+  });
+
+  it("pendência com motivo → 200 e NÃO cria profissional", async () => {
+    roteiaAdmin("em_analise");
+    const r = await req(
+      srv,
+      "POST",
+      `/api/admin/candidatura/${CAND_ID}/decidir`,
+      { acao: "pendencia", motivo: "Faltou a UF do conselho." },
+      { Authorization: "Bearer tok" }
+    );
+    expect(r.status).toBe(200);
+    expect(mockFetch.mock.calls.some((c) => String(c[0]).includes("/rest/v1/profissionais"))).toBe(false);
+  });
+
+  it("ação desconhecida → 400", async () => {
+    roteiaAdmin("em_analise");
+    const r = await req(srv, "POST", `/api/admin/candidatura/${CAND_ID}/decidir`, { acao: "banir" }, {
+      Authorization: "Bearer tok",
+    });
+    expect(r.status).toBe(400);
+  });
+});
+
+describe("POST /api/admin/candidatura/:id/verificar", () => {
+  let srv: http.Server;
+  beforeAll(async () => {
+    srv = await startSrv(app as unknown as http.RequestListener);
+  });
+  afterAll(() => new Promise<void>((r) => srv.close(() => r())));
+  beforeEach(() => mockFetch.mockReset());
+
+  it("não admin → 403", async () => {
+    mockFetch.mockImplementation((url: string) => {
+      const u = String(url);
+      if (u.includes("/auth/v1/user")) return Promise.resolve(mkRes({ id: CANDIDATO }));
+      if (u.includes("/rest/v1/profiles")) return Promise.resolve(mkRes([{ role: "paciente" }]));
+      return Promise.resolve(mkRes([{}]));
+    });
+    const r = await req(srv, "POST", `/api/admin/candidatura/${CAND_ID}/verificar`, {}, {
+      Authorization: "Bearer tok",
+    });
+    expect(r.status).toBe(403);
+  });
+
+  it("admin com fornecedor desligado → 200 com configurado:false, e a fila não trava", async () => {
+    roteiaAdmin("em_analise");
+    const r = await req(srv, "POST", `/api/admin/candidatura/${CAND_ID}/verificar`, {}, {
+      Authorization: "Bearer tok",
+    });
+    expect(r.status).toBe(200);
+    expect(JSON.parse(r.body).verificacao.configurado).toBe(false);
+  });
+});
