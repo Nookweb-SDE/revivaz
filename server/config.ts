@@ -58,10 +58,7 @@ export const JITSI_JWT_SECRET = resolveSecret("JITSI_JWT_SECRET", "JITSI_JWT_SEC
 
 // ─── BigDataCorp (verificação de identidade do candidato) ───────────────────
 // Contrato pago. Sem credencial o cliente degrada e o admin decide só com a
-// consulta do conselho — a fila nunca trava por falta de fornecedor.
-export const BIGDATACORP_TOKEN = resolveSecret("BIGDATACORP_TOKEN", "BIGDATACORP_TOKEN_FILE");
-export const BIGDATACORP_ACCESS_TOKEN = resolveSecret(
-  "BIGDATACORP_ACCESS_TOKEN",
-  "BIGDATACORP_ACCESS_TOKEN_FILE"
-);
+// consulta do conselho — a fila nunca trava por falta de fornecedor. A credencial
+// é lida no cliente (server/lib/bigdatacorp.ts) via resolveSecret() para suportar
+// Docker secret em produção.
 

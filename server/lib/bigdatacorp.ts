@@ -8,6 +8,7 @@
  * Nunca lança e nunca loga documento inteiro.
  */
 import { somenteDigitos } from "../../src/lib/documentos";
+import { resolveSecret } from "../config";
 
 const ENDPOINT = "https://plataforma.bigdatacorp.com.br/pessoas";
 
@@ -20,11 +21,16 @@ export interface VerificacaoIdentidade {
   consultadoEm: string;
 }
 
-/** Lê na hora da chamada para o teste conseguir alternar o ambiente. */
+/**
+ * Lê na hora da chamada, e não no carregamento do módulo, para o teste conseguir
+ * alternar o ambiente. Passa pelo resolveSecret porque em produção a credencial
+ * vem por Docker secret (*_FILE) e a env var nem existe: ler process.env cru
+ * deixaria a verificação desligada em silêncio.
+ */
 function credenciais(): { token: string; access: string } {
   return {
-    token: (process.env.BIGDATACORP_TOKEN || "").trim(),
-    access: (process.env.BIGDATACORP_ACCESS_TOKEN || "").trim(),
+    token: resolveSecret("BIGDATACORP_TOKEN", "BIGDATACORP_TOKEN_FILE"),
+    access: resolveSecret("BIGDATACORP_ACCESS_TOKEN", "BIGDATACORP_ACCESS_TOKEN_FILE"),
   };
 }
 
@@ -38,8 +44,8 @@ export async function verificarIdentidade(params: {
     return { configurado: false, consultadoEm: agora };
   }
 
-  const doc = somenteDigitos(params.cpf);
   try {
+    const doc = somenteDigitos(params.cpf);
     const res = await fetch(ENDPOINT, {
       method: "POST",
       headers: {

@@ -18,6 +18,8 @@ describe("verificarIdentidade", () => {
     mockFetch.mockReset();
     delete process.env.BIGDATACORP_TOKEN;
     delete process.env.BIGDATACORP_ACCESS_TOKEN;
+    delete process.env.BIGDATACORP_TOKEN_FILE;
+    delete process.env.BIGDATACORP_ACCESS_TOKEN_FILE;
   });
 
   it("sem credencial devolve configurado:false e NÃO chama a rede", async () => {
@@ -70,5 +72,33 @@ describe("verificarIdentidade", () => {
     } as unknown as Response);
     const r = await verificarIdentidade({ cpf: "52998224725" });
     expect(r.erro).toBeTruthy();
+  });
+
+  it("lê a credencial de Docker secret (*_FILE) quando a env var não existe — é assim em produção", async () => {
+    const { mkdtempSync, writeFileSync, rmSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const { tmpdir } = await import("node:os");
+
+    const dir = mkdtempSync(join(tmpdir(), "bdc-"));
+    const arqToken = join(dir, "token");
+    const arqAccess = join(dir, "access");
+    writeFileSync(arqToken, "tok-do-arquivo\n");
+    writeFileSync(arqAccess, "acc-do-arquivo\n");
+    process.env.BIGDATACORP_TOKEN_FILE = arqToken;
+    process.env.BIGDATACORP_ACCESS_TOKEN_FILE = arqAccess;
+
+    try {
+      mockFetch.mockResolvedValue(resposta({ Result: [] }));
+      const r = await verificarIdentidade({ cpf: "52998224725" });
+      expect(r.configurado).toBe(true);
+      expect(mockFetch).toHaveBeenCalled();
+      const headers = (mockFetch.mock.calls[0][1] as RequestInit).headers as Record<string, string>;
+      expect(headers.TokenId).toBe("tok-do-arquivo");
+      expect(headers.AccessToken).toBe("acc-do-arquivo");
+    } finally {
+      delete process.env.BIGDATACORP_TOKEN_FILE;
+      delete process.env.BIGDATACORP_ACCESS_TOKEN_FILE;
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
