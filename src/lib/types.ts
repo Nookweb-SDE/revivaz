@@ -1,3 +1,5 @@
+import type { StatusCandidatura } from "./candidaturaEstados";
+
 export type Role = "paciente" | "profissional" | "admin";
 
 export type Profile = {
@@ -158,5 +160,30 @@ export type Lead = {
   origem: string;
   status: "novo" | "contatado" | "convertido" | "descartado";
   obs_interna: string | null;
+  created_at: string;
+};
+
+/** Candidatura de profissional. O ciclo de vida está em src/lib/candidaturaEstados.ts. */
+export type Candidatura = {
+  id: string;
+  profile_id: string;
+  nome_completo: string;
+  cpf: string;
+  telefone: string;
+  conselho: string;
+  registro: string;
+  uf_conselho: string | null;
+  especialidade: string;
+  cnpj: string | null;
+  bio: string | null;
+  horas_semana: number | null;
+  status: StatusCandidatura;
+  motivo: string | null;
+  termo_versao: string | null;
+  termo_aceito_em: string | null;
+  termo_aceito_ip: string | null;
+  verificacao: Record<string, unknown>;
+  analisado_por: string | null;
+  analisado_em: string | null;
   created_at: string;
 };
