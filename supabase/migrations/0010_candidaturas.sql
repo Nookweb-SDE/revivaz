@@ -9,10 +9,10 @@
 -- filtro esquecido pode transformá-lo em profissional com acesso a prontuário, e
 -- `is_profissional()` não muda uma vírgula.
 --
--- O trigger `candidatura_trava_decisao` libera duas rotas: admin (por RLS) e
--- servidor/service_role. A trava existe para conter escrita vinda do navegador
--- (supabase-js do candidato); o servidor é o escritor confiável e valida a
--- transição pela máquina de estados antes de gravar.
+-- O trigger `candidatura_trava_decisao` libera duas rotas: admin e servidor.
+-- A trava existe para conter escrita vinda do navegador (supabase-js do candidato);
+-- o servidor é o escritor confiável e valida a transição pela máquina de estados
+-- antes de gravar. Valida a claim JWT, não o papel da sessão.
 -- Idempotente e aditiva.
 
 create table if not exists public.candidaturas (
@@ -78,13 +78,22 @@ create policy candidatura_self_update on public.candidaturas
 create or replace function public.candidatura_trava_decisao()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  -- Libera dois escritores: o admin, e o SERVIDOR (service_role). A trava existe
-  -- para conter a escrita vinda do navegador, que é o supabase-js do candidato.
-  -- O servidor é o escritor confiável: é ele quem confere a transição pela
-  -- máquina de estados antes de gravar. Sem esta liberação, o reenvio de uma
-  -- candidatura em pendência seria revertido em silêncio e o candidato ficaria
-  -- preso vendo um motivo que já resolveu.
-  if current_user = 'service_role' or public.is_admin() then
+  -- Libera dois escritores: o admin e o SERVIDOR (service_role).
+  --
+  -- Atenção ao mecanismo: NÃO dá para usar `current_user` aqui. Esta função é
+  -- SECURITY DEFINER, e dentro dela o Postgres troca `current_user` pelo DONO da
+  -- função (no Supabase, `postgres`), não pelo papel que fez a chamada. A
+  -- checagem só funciona lendo a claim do JWT publicada pelo PostgREST, que é
+  -- parâmetro de sessão e sobrevive à troca de contexto.
+  --
+  -- O `nullif` protege o cast: quando não há requisição HTTP no contexto (psql
+  -- direto), o parâmetro vem vazio e `''::jsonb` estouraria.
+  if public.is_admin()
+     or coalesce(
+          nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role',
+          ''
+        ) = 'service_role'
+  then
     return new;
   end if;
   new.status        := old.status;
