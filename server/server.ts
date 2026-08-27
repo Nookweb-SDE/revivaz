@@ -44,6 +44,7 @@ app.use("/api", (_req, res) => res.status(404).json({ error: "Rota não encontra
 // fallback de SPA devolveria a landing.
 app.get("/acolhimento", (_req, res) => res.sendFile(path.join(DIST, "acolhimento.html")));
 app.get("/privacidade", (_req, res) => res.sendFile(path.join(DIST, "privacidade.html")));
+app.get("/termos", (_req, res) => res.sendFile(path.join(DIST, "termos.html")));
 app.use(express.static(DIST, { extensions: ["html"] }));
 // Fallback SPA (Express 5: usar middleware final, não app.get("*"))
 app.use((_req, res) => res.sendFile(path.join(DIST, "index.html")));

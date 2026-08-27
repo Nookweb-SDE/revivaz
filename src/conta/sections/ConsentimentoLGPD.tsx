@@ -593,6 +593,22 @@ export default function ConsentimentoLGPD({ onAceitar }: ConsentimentoLGPDProps)
               {/* A página é a versão canônica: abre fora do modal e pode ser
                   compartilhada por link. */}
               <a
+                href="/termos"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontFamily: "'Nunito',sans-serif",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  color: T.gray600,
+                  textDecoration: "underline",
+                  textUnderlineOffset: 2,
+                  marginLeft: 12,
+                }}
+              >
+                Termos de Uso
+              </a>
+              <a
                 href="/privacidade"
                 target="_blank"
                 rel="noopener noreferrer"

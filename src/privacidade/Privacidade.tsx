@@ -10,76 +10,23 @@
  * para ninguém tratar o rascunho como palavra final.
  */
 import React from "react";
-
-const T = {
-  teal900: "#003D4A", teal700: "#007A8C", teal050: "#EFFAFC", teal100: "#C6EEF4",
-  gray950: "#0F1720", gray700: "#39434D", gray600: "#5A6672",
-  gray200: "#E2E8EC", gray050: "#F7FAFB", white: "#FFFFFF",
-};
-const FONTE = "'Nunito', system-ui, sans-serif";
+import { PaginaLegal, Secao, T, li, tabela, th, td } from "../legal/PaginaLegal";
 
 const ATUALIZADA_EM = "26 de agosto de 2026";
 
-function Secao({ n, titulo, children }: { n: string; titulo: string; children: React.ReactNode }) {
-  return (
-    <section style={{ marginBottom: 34 }}>
-      <h2 style={{ fontSize: 19, fontWeight: 800, color: T.gray950, margin: "0 0 10px", lineHeight: 1.35 }}>
-        <span style={{ color: T.teal700 }}>{n}.</span> {titulo}
-      </h2>
-      <div style={{ fontSize: 15, lineHeight: 1.7, color: T.gray700 }}>{children}</div>
-    </section>
-  );
-}
-
-const li: React.CSSProperties = { marginBottom: 8 };
-const tabela: React.CSSProperties = {
-  width: "100%", borderCollapse: "collapse", fontSize: 14, marginTop: 10,
-};
-const th: React.CSSProperties = {
-  textAlign: "left", padding: "8px 10px", background: T.teal050,
-  borderBottom: `2px solid ${T.teal100}`, fontWeight: 800, color: T.gray950,
-};
-const td: React.CSSProperties = {
-  padding: "8px 10px", borderBottom: `1px solid ${T.gray200}`, verticalAlign: "top",
-};
-
 export default function Privacidade(): JSX.Element {
   return (
-    <div style={{ background: T.gray050, minHeight: "100dvh", fontFamily: FONTE }}>
-      <header style={{ background: T.white, borderBottom: `1px solid ${T.gray200}`, padding: "14px 20px" }}>
-        <div style={{ maxWidth: 780, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-          <a href="/" style={{ fontWeight: 900, fontSize: 19, color: T.teal700, textDecoration: "none" }}>Revivaz</a>
-          <a href="/" style={{ fontSize: 14, color: T.gray600, textDecoration: "none", fontWeight: 700 }}>Voltar ao site</a>
-        </div>
-      </header>
-
-      <main style={{ maxWidth: 780, margin: "0 auto", padding: "28px 20px 60px" }}>
-        <h1 style={{ fontSize: 30, fontWeight: 800, color: T.gray950, margin: "0 0 6px", lineHeight: 1.25 }}>
-          Política de Privacidade
-        </h1>
-        <p style={{ fontSize: 14, color: T.gray600, margin: "0 0 20px" }}>
-          Atualizada em {ATUALIZADA_EM}.
-        </p>
-
-        <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 12, padding: 14, marginBottom: 28 }}>
-          <p style={{ margin: 0, fontSize: 14, color: "#7C2D12", lineHeight: 1.6 }}>
-            <strong>Aviso de transparência:</strong> este documento descreve fielmente o que o
-            sistema faz hoje, mas <strong>ainda não passou por revisão jurídica</strong>. Estamos
-            publicando assim, e não escondendo, porque você tem direito de saber como seus dados são
-            tratados desde o primeiro dia. Dúvidas ou correções:{" "}
-            <a href="mailto:contato@revivaz.com.br" style={{ color: T.teal700 }}>contato@revivaz.com.br</a>.
-          </p>
-        </div>
-
-        <div style={{ background: T.white, border: `1px solid ${T.gray200}`, borderRadius: 14, padding: 18, marginBottom: 30 }}>
-          <strong style={{ fontSize: 15, color: T.gray950 }}>Em uma frase</strong>
-          <p style={{ margin: "8px 0 0", fontSize: 15, lineHeight: 1.65, color: T.gray700 }}>
-            Dados de saúde mental são <strong>dados sensíveis</strong>. Coletamos o mínimo para te
-            atender, ninguém além de você, do seu profissional e da administração enxerga sua ficha,
-            não vendemos nada para ninguém, e você pode pedir tudo de volta ou apagar quando quiser.
-          </p>
-        </div>
-
+    <PaginaLegal
+      titulo="Política de Privacidade"
+      atualizadaEm={ATUALIZADA_EM}
+      resumo={
+        <>
+          Dados de saúde mental são <strong>dados sensíveis</strong>. Coletamos o mínimo para te
+          atender, ninguém além de você, do seu profissional e da administração enxerga sua ficha,
+          não vendemos nada para ninguém, e você pode pedir tudo de volta ou apagar quando quiser.
+        </>
+      }
+    >
         <Secao n="1" titulo="Quem é o responsável">
           <p style={{ margin: "0 0 8px" }}>
             A plataforma é operada pela iniciativa Revivaz, projeto de saúde mental solidária.
@@ -306,12 +253,6 @@ export default function Privacidade(): JSX.Element {
           </p>
         </Secao>
 
-        <div style={{ borderTop: `1px solid ${T.gray200}`, paddingTop: 18, marginTop: 10, fontSize: 13, color: T.gray600 }}>
-          <a href="/" style={{ color: T.teal700, fontWeight: 700, textDecoration: "none" }}>Voltar ao site</a>
-          <span style={{ margin: "0 8px" }}>·</span>
-          <a href="/acolhimento" style={{ color: T.teal700, fontWeight: 700, textDecoration: "none" }}>Falar com o acolhimento</a>
-        </div>
-      </main>
-    </div>
+    </PaginaLegal>
   );
 }
