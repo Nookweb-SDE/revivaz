@@ -101,8 +101,9 @@ router.post("/api/candidatura", requireAuth, async (req: Request, res: Response)
       }),
     });
     if (!r.ok) {
-      const corpo = await r.text();
-      console.error("[candidatura] erro ao gravar:", r.status, corpo);
+      // Só o status: o corpo de erro do Postgres traz "Failing row contains (...)"
+      // com nome, CPF e telefone dentro.
+      console.error("[candidatura] erro ao gravar:", r.status);
       res.status(500).json({ error: "Não consegui registrar agora. Tente de novo." });
       return;
     }
