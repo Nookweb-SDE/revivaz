@@ -9,6 +9,7 @@ import express from "express";
 import path from "path";
 import { DIST } from "./config";
 import adminProfissionalRoutes from "./routes/adminProfissional";
+import candidaturaRoutes from "./routes/candidatura";
 import consultaRoutes from "./routes/consulta";
 import devLoginRoutes from "./routes/devLogin";
 import leadRoutes from "./routes/lead";
@@ -21,6 +22,7 @@ app.use(express.json({ limit: "256kb" }));
 
 // ─── API ─────────────────────────────────────────────────────────────────────
 app.use(adminProfissionalRoutes);
+app.use(candidaturaRoutes);
 app.use(consultaRoutes);
 app.use(devLoginRoutes);
 app.use(leadRoutes);
