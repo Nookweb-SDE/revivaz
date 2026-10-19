@@ -23,7 +23,7 @@ const RESPOSTAS: { frase: string; resposta: [string, string, string] }[] = [
 export function ConversaAcolhimento({ bp }: { bp: Bp }) {
   const mobile = bp === "mobile";
   const empilha = mobile || bp === "tablet";
-  const [escolha, setEscolha] = useState<number | null>(null);
+  const [escolha, setEscolha] = useState<number | null>(0);
   const [digitando, setDigitando] = useState(false);
   const timers = useRef<number[]>([]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);

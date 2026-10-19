@@ -178,7 +178,7 @@ export default function RevivazPreview() {
   ];
 
   const FEATURES = [
-    { icon: Brain, title: "Escuta qualificada", sub: "Uma psicóloga conduz a conversa para que todos possam falar e ser ouvidos.", img: "/revivaz/hero-alt.webp", imgPos: "center" },
+    { icon: Brain, title: "Escuta qualificada", sub: "Psicólogos e terapeutas conduzem a conversa para que todos possam falar e ser ouvidos.", img: "/revivaz/hero-alt.webp", imgPos: "center" },
     { icon: Calendar, title: "Uma quinta por mês", sub: "Encontros presenciais no condomínio, de novembro de 2026 a outubro de 2027.", img: "/revivaz/hero-alt.webp", imgPos: "center" },
     { icon: MessageCircle, title: "Um tema por mês", sub: "Relações sem violência, autocuidado, escolhas, diferenças, comunicação e mais.", img: "/revivaz/hero.webp", imgPos: "center" },
     { icon: Users, title: "Três grupos", sub: "Adolescentes de 12 a 17 anos às 18h, mulheres às 19h e homens às 20h (a confirmar).", img: "/revivaz/hero.webp", imgPos: "center" },

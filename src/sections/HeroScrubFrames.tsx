@@ -41,7 +41,7 @@ type BP = "mobile" | "tablet" | "desktop";
 const ETAPAS = [
   { titulo: "Escuta", texto: "Espaço seguro para falar, no seu tempo." },
   { titulo: "Vínculo", texto: "Conhecer quem mora ao lado fortalece a convivência." },
-  { titulo: "Convivência", texto: "Encontros mensais: 18h adolescentes, 19h mulheres." },
+  { titulo: "Convivência", texto: "Encontros mensais: 18h adolescentes, 19h mulheres, 20h homens." },
 ];
 
 export default function HeroScrubFrames({
