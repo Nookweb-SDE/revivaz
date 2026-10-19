@@ -3,13 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Revivaz — Saúde mental solidária</title>
-    <meta name="description" content="Atendimento solidário em saúde mental. Psiquiatras e psicólogos conectados a quem mais precisa. Agende presencial ou online." />
+    <title>Revivaz — Psicologia comunitária no Condomínio Vivaz</title>
+    <meta name="description" content="Aqui no Vivaz Taboão da Serra, ninguém fica sozinho. Encontros mensais para adolescentes, mulheres e homens, conversa de acolhimento e atendimento por vídeo com profissionais voluntários." />
     <meta name="theme-color" content="#0B1D3A" />
     <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://revivaz.com.br/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:site_name" content="Revivaz" />
+    <meta property="og:url" content="https://revivaz.com.br/" />
+    <meta property="og:title" content="Revivaz — Psicologia comunitária no Condomínio Vivaz" />
+    <meta property="og:description" content="Aqui no Vivaz Taboão da Serra, ninguém fica sozinho. Encontros mensais para adolescentes, mulheres e homens, conversa de acolhimento e atendimento por vídeo com profissionais voluntários." />
+    <meta property="og:image" content="https://revivaz.com.br/revivaz/og-revivaz.jpg" />
+    <meta property="og:image:secure_url" content="https://revivaz.com.br/revivaz/og-revivaz.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Mulher em casa à noite, olhando a tela, com o texto: Aqui no Vivaz Taboão da Serra, ninguém fica sozinho" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Revivaz — Psicologia comunitária no Condomínio Vivaz" />
+    <meta name="twitter:description" content="Aqui no Vivaz Taboão da Serra, ninguém fica sozinho. Encontros mensais para adolescentes, mulheres e homens, conversa de acolhimento e atendimento por vídeo com profissionais voluntários." />
+    <meta name="twitter:image" content="https://revivaz.com.br/revivaz/og-revivaz.jpg" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%230B1D3A' width='32' height='32' rx='6'/%3E%3Cpath fill='%2300BFD8' d='M16 8c-2 0-3.5 1.5-4 3.5-.5 2 .5 4 2 5s3.5.5 5-1c1.5-1.5 2-3.5 1.5-5.5S18 8 16 8z'/%3E%3Cpath fill='%2300A8BF' d='M10 20c1 1 2.5 1.5 4 1.5s3-.5 4-1.5' stroke='%2300A8BF' stroke-width='1' fill='none'/%3E%3C/svg%3E" />
-    <link rel="preload" as="image" href="/revivaz/hero-doctors.webp" type="image/webp" fetchpriority="high" media="(min-width: 640px)" />
-    <link rel="preload" as="image" href="/revivaz/team.webp" type="image/webp" fetchpriority="high" media="(max-width: 639px)" />
     <link rel="preload" as="font" href="/fonts/nunito-latin.woff2" type="font/woff2" crossorigin />
     <link rel="preload" as="font" href="/fonts/nunito-latin-ext.woff2" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/fonts/nunito.css" media="print" onload="this.media='all'" />
@@ -28,15 +43,6 @@
         #cs-hero .btns{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
         #cs-hero .bp{padding:14px 24px;font-weight:700;font-size:14px;color:#001820;background:linear-gradient(90deg,#00BFD8,#00A8BF);border:none;border-radius:12px;min-height:48px;display:inline-block}
         #cs-hero .bs{padding:14px 24px;font-weight:700;font-size:14px;color:#00BFD8;background:transparent;border:2px solid rgba(0,191,216,.5);border-radius:12px;min-height:48px;display:inline-block}
-        #cs-tabs{background:#fff;padding:16px;border-bottom:1px solid #E5E7EB;display:flex;gap:8px}
-        #cs-tabs .ta{padding:10px 20px;font-size:12px;font-weight:700;border-radius:9999px;background:#007A8C;color:#fff;white-space:nowrap}
-        #cs-tabs .tb{padding:10px 20px;font-size:12px;font-weight:700;border-radius:9999px;background:#F9FAFB;color:#4B5563;white-space:nowrap}
-        #cs-tab{background:#fff;padding:24px 16px}
-        #cs-tab h2{font-weight:800;font-size:20px;color:#0D1117;margin:0 0 12px}
-        #cs-tab p{font-size:14px;color:#4B5563;line-height:1.65;margin:0 0 20px}
-        #cs-img{border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.12);position:relative;margin-top:8px}
-        #cs-img img{width:100%;height:160px;object-fit:cover;object-position:center 40%;display:block}
-        #cs-img .badge{position:absolute;bottom:0;left:0;right:0;padding:20px 16px 12px;background:linear-gradient(transparent,rgba(0,0,0,.6));color:#fff;font-size:12px;font-weight:700}
       }
       @media(min-width:640px){#cs{display:none}}
     </style>
@@ -46,30 +52,17 @@
       <div id="cs" aria-hidden="true">
         <div id="cs-nav">
           <span class="logo">Revivaz</span>
-          <button class="cta">Agendar consulta</button>
+          <button class="cta">Quero conversar</button>
         </div>
         <div id="cs-hero">
           <div>
-            <div class="sub">Psiquiatria · Psicologia · Solidária</div>
-            <h1>Saúde que conecta</h1>
-            <p>Cuidado em saúde mental de qualidade, oferecido por psiquiatras e psicólogos em trabalho solidário. Sem filas, sem burocracia.</p>
+            <div class="sub">Psicologia comunitária</div>
+            <h1>Aqui no Vivaz Taboão da Serra, ninguém fica sozinho</h1>
+            <p>Projeto de psicologia comunitária do Condomínio Vivaz Taboão da Serra. Encontros mensais para adolescentes, mulheres e homens, e atendimento por vídeo com profissionais voluntários.</p>
             <div class="btns">
-              <span class="bp">Agendar consulta</span>
-              <span class="bs">Saiba como ativar</span>
+              <span class="bp">Quero conversar</span>
+              <span class="bs">Ver os encontros</span>
             </div>
-          </div>
-        </div>
-        <div id="cs-tabs">
-          <span class="ta">Para pacientes</span>
-          <span class="tb">Para profissionais</span>
-          <span class="tb">Como ativar</span>
-        </div>
-        <div id="cs-tab">
-          <h2>O futuro do cuidado em saúde mental</h2>
-          <p>Agende presencial ou online, receba receita por WhatsApp e faça parte de uma rede que reduz a fila de espera do SUS.</p>
-          <div id="cs-img">
-            <img src="/revivaz/team.webp" alt="Equipe Revivaz" fetchpriority="high" decoding="async" width="600" height="160" />
-            <div class="badge">+500 profissionais</div>
           </div>
         </div>
       </div>
