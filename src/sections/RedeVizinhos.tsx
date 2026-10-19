@@ -17,7 +17,7 @@ const ETAPAS = [
   { n: "01", titulo: "Escuta", texto: "Um espaço mediado por psicólogos e terapeutas, sem julgamento." },
   { n: "02", titulo: "Vínculo", texto: "Vizinhos que se conhecem se apoiam melhor." },
   { n: "03", titulo: "Convivência", texto: "Encontros mensais para adolescentes, mulheres e homens." },
-  { n: "04", titulo: "Rede de apoio", texto: "CVV 188 e encaminhamento para atendimento individual." },
+  { n: "04", titulo: "Rede de apoio", texto: "CVV 188 e encaminhamento para acolhimento individual." },
 ];
 
 // turquesa claro (#D6F4F8) → turquesa (#00BFD8), conforme a janela acende

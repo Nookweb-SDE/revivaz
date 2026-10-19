@@ -10,7 +10,7 @@ Antes de mexer em QUALQUER material do comunicado, conferir contra esta lista.
 - Equipe, nesta ordem (psicólogos em ordem alfabética, pedido da Flávia):
   1. Flávia Magalhães Farias Lima — Psicóloga — CRP 06/236718
   2. Walter Aparecido Santos — Psicólogo — CRP 06/55994-8
-  3. Felipe — Gestão de Tecnologia
+  3. Fellipe — Gestão de Tecnologia
   4. Gilberto e Walesca — Gestão do Condomínio (Gilberto = síndico)
 - Assinatura: "Organização do Projeto Revivaz & Administração do Condomínio Vivaz".
 
@@ -35,3 +35,19 @@ Antes de mexer em QUALQUER material do comunicado, conferir contra esta lista.
 - Quem busca a prévia é o WhatsApp (celular), não o servidor nosso. Se vier só o nome do site e o log do Traefik não mostrar pedido "WhatsApp/", o problema é do WhatsApp: mandar pelo app do celular e esperar a foto aparecer antes de enviar.
 - Os outros 6 modelos (A4 antigo, celular, cartaz, capas 1-3) e a pasta "Revivaz - escolha do comunicado" foram para a LIXEIRA em 19/10. Valem só: a página, o PDF A4 e a imagem única.
 - Imagem única p/ WhatsApp (formato do comunicado da Walesca, 1024x1536 @2x): fonte `previa-revivaz/comunicado/site/imagem-unica.html` → `~/Área de trabalho/comunicado-revivaz.jpg` (JPG comprimido). Página longa em PNG NÃO serve (abre pequena).
+
+## Nomes (grafia certa)
+- **Fellipe** (com dois L) — Gestão de Tecnologia. Nunca "Felipe".
+- Flávia Magalhães Farias Lima (CRP 06/236718) antes de Walter Aparecido Santos (CRP 06/55994-8).
+
+## Celular (vale para os dois links)
+- comunicado.revivaz.com.br: título do topo 30px, foto inteira acima do título, temas em 4:3.
+- revivaz.com.br: título do topo 29px em 2 linhas fixas ("Aqui no Vivaz," / "ninguém fica sozinho"). Conferir em 360, 390 e 430 de largura.
+- Sempre conferir no `celular 5173` antes de subir.
+
+## Site principal: cadastro fechado (19/10)
+- Chave única `src/cadastroAberto.ts` (`CADASTRO_ABERTO = false`) até o banco do Diogo.
+- Escondido: Entrar, Cadastre-se, Agendar consulta, voluntário, botão "Abrir minha conta", Pedir consulta/Entrar na conta dentro da conversa.
+- Fica: a seção dos celulares ("Sua conta Revivaz") SEM o botão; "Quero conversar" leva à conversa de acolhimento.
+- Telas novas de cadastro e agendamento: só em branch separada, nunca no ar antes do banco.
+- Palavra "acolhimento", nunca "atendimento" (pedido da Flávia, CRP).

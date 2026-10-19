@@ -189,13 +189,13 @@ export default function HeroScrubFrames({
         padding: "0 20px calc(26px + env(safe-area-inset-bottom))",
       }}>
         <h1 className="hm-h1" style={{
-          fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: 36, lineHeight: 1.06,
-          letterSpacing: "-0.025em", margin: "0 auto 14px", maxWidth: "12ch", color: "#fff",
+          fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: 29, lineHeight: 1.1,
+          letterSpacing: "-0.025em", margin: "0 auto 14px", maxWidth: "none", color: "#fff",
         }}>
-          Aqui no Vivaz, ninguém fica sozinho
+          Aqui no Vivaz,<br />ninguém fica sozinho
         </h1>
         <p className="hm-p" style={{ fontSize: 17, lineHeight: 1.5, margin: "0 auto 22px", maxWidth: 330, color: "rgba(255,255,255,.86)" }}>
-          Psicologia comunitária no Condomínio Vivaz Taboão da Serra: encontros mensais e atendimento por vídeo.
+          Psicologia comunitária no Condomínio Vivaz Taboão da Serra: encontros mensais e acolhimento por vídeo.
         </p>
         <div style={{ display: "grid", gap: 12 }}>
           <button onClick={openAgendar} className="hm-btn" style={{
@@ -221,7 +221,7 @@ export default function HeroScrubFrames({
       </div>
       <style>{`
         .hm-btn:focus-visible{outline:3px solid ${T.teal300};outline-offset:3px}
-        @media (max-height:720px){.hm-h1{font-size:31px!important}.hm-p{font-size:15.5px!important;margin-bottom:18px!important}}
+        @media (max-height:720px){.hm-h1{font-size:26px!important}.hm-p{font-size:15.5px!important;margin-bottom:18px!important}}
       `}</style>
     </section>
   );
@@ -316,8 +316,8 @@ export default function HeroScrubFrames({
               maxWidth: isMobile ? "100%" : "92%", color: "rgba(214,244,248,0.92)",
             }}>
               {isMobile
-                ? "Encontros mensais no condomínio e atendimento por vídeo com profissionais voluntários."
-                : "Projeto de psicologia comunitária do Condomínio Vivaz Taboão da Serra. Encontros mensais para adolescentes, mulheres e homens, e atendimento por vídeo com profissionais voluntários."}
+                ? "Encontros mensais no condomínio e acolhimento por vídeo com profissionais voluntários."
+                : "Projeto de psicologia comunitária do Condomínio Vivaz Taboão da Serra. Encontros mensais para adolescentes, mulheres e homens, e acolhimento por vídeo com profissionais voluntários."}
             </p>
 
             <div style={{ display: "flex", gap: isMobile ? 12 : 16, flexWrap: "wrap", alignItems: "center" }}>

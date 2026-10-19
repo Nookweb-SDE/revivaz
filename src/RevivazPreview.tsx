@@ -485,7 +485,7 @@ export default function RevivazPreview() {
 
       {/* ═══ BLOCO 13 — Sua conta: celulares girando na rolagem (sections/CelularesRolagem.tsx).
           Não existe app publicado: é a conta pelo navegador. ═══ */}
-      {CADASTRO_ABERTO && <CelularesRolagem bp={bp} />}
+      <CelularesRolagem bp={bp} />
 
       {/* ═══ BLOCO 14 — Perguntas frequentes ═══
           Aqui havia 3 notícias inventadas, uma delas anunciando uma "parceria
