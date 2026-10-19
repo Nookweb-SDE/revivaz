@@ -171,6 +171,60 @@ export default function HeroScrubFrames({
     position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
   };
 
+  /* Celular: vídeo em pé de tela cheia (mulher no sofá, rosto no terço de
+     cima) e o texto centralizado embaixo, sobre o degradê. Nada cobre o rosto. */
+  if (isMobile) return (
+    <section ref={trackRef} data-hero-track="" className="hm" style={{ position: "relative", height: "100svh", minHeight: 660, background: FUNDO, color: "#fff", overflow: "hidden" }}>
+      <VideoAoVer
+        src="/revivaz/topo-m.mp4" poster="/revivaz/topo-m-poster.webp" loop preload="auto"
+        style={{ ...capa, top: "-24%", height: "124%", objectPosition: "25% 50%", background: FUNDO }}
+      />
+      <div aria-hidden="true" style={{
+        ...capa,
+        background: "linear-gradient(180deg,rgba(4,8,15,.5) 0%,transparent 16%,transparent 40%,rgba(4,8,15,.72) 58%,rgba(4,8,15,.96) 78%,#04080f 100%)",
+      }} />
+      <div className="hm-texto" style={{
+        position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 2, textAlign: "center",
+        padding: "0 20px calc(26px + env(safe-area-inset-bottom))",
+      }}>
+        <h1 className="hm-h1" style={{
+          fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: 36, lineHeight: 1.06,
+          letterSpacing: "-0.025em", margin: "0 auto 14px", maxWidth: "12ch", color: "#fff",
+        }}>
+          Aqui no Vivaz, ninguém fica sozinho
+        </h1>
+        <p className="hm-p" style={{ fontSize: 17, lineHeight: 1.5, margin: "0 auto 22px", maxWidth: 330, color: "rgba(255,255,255,.86)" }}>
+          Psicologia comunitária no Condomínio Vivaz Taboão da Serra: encontros mensais e atendimento por vídeo.
+        </p>
+        <div style={{ display: "grid", gap: 12 }}>
+          <button onClick={openAgendar} className="hm-btn" style={{
+            minHeight: 54, borderRadius: 9999, border: "none", cursor: "pointer",
+            background: T.mag500, color: "#fff", font: "800 17px 'Nunito',sans-serif",
+            boxShadow: "0 8px 24px rgba(180,21,126,.35)",
+          }}>
+            Quero conversar
+          </button>
+          <a href="#encontros" className="hm-btn" style={{
+            minHeight: 54, borderRadius: 9999, display: "flex", alignItems: "center", justifyContent: "center",
+            border: "1.5px solid rgba(255,255,255,.55)", background: "rgba(255,255,255,.08)",
+            backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
+            color: "#fff", font: "800 17px 'Nunito',sans-serif", textDecoration: "none",
+          }}>
+            {proximo ? `Próximo encontro: ${rotuloData(proximo)}` : "Encontros mensais"}
+          </a>
+        </div>
+        <p style={{ margin: "16px 0 0", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,.78)" }}>
+          Precisa de ajuda agora? Ligue{" "}
+          <a href="tel:188" style={{ color: "#fff", fontWeight: 900 }}>188</a>, CVV 24h e gratuito
+        </p>
+      </div>
+      <style>{`
+        .hm-btn:focus-visible{outline:3px solid ${T.teal300};outline-offset:3px}
+        @media (max-height:720px){.hm-h1{font-size:31px!important}.hm-p{font-size:15.5px!important;margin-bottom:18px!important}}
+      `}</style>
+    </section>
+  );
+
   return (
     <section ref={trackRef} data-hero-track="" style={{ position: "relative", height: alturaTrilho, background: FUNDO }}>
       <div style={{
@@ -183,21 +237,12 @@ export default function HeroScrubFrames({
         overflow: "hidden",
         color: "#fff",
       }}>
-        {/* Celular: o filme inteiro em 16:9 (ninguém cortado), tocando sozinho,
-            e o texto embaixo dele. 385 KB no lugar dos 171 quadros do scrub. */}
-        {isMobile ? (
-          <VideoAoVer
-            src="/revivaz/topo.mp4" poster="/revivaz/topo-poster.webp" loop preload="auto"
-            style={{ display: "block", width: "100%", aspectRatio: "16 / 9", objectFit: "cover", marginTop: 60, background: FUNDO }}
-          />
-        ) : (
-          /* Poster: LCP e piso visual. Fica sob o canvas o tempo todo. */
-          <img
-            src={`${base}/poster.webp`} alt="" aria-hidden="true"
-            {...{ fetchpriority: "high" }} decoding="async"
-            style={capa}
-          />
-        )}
+        {/* Poster: LCP e piso visual. Fica sob o canvas o tempo todo. */}
+        <img
+          src={`${base}/poster.webp`} alt="" aria-hidden="true"
+          {...{ fetchpriority: "high" }} decoding="async"
+          style={capa}
+        />
 
         {!estatico && (
           <canvas

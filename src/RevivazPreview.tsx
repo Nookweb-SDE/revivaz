@@ -263,15 +263,16 @@ export default function RevivazPreview() {
       {/* ═══ BLOCO 2 — Header (layout profissional: esquerda nav, direita ações) ═══ */}
       <header style={{
         position: "fixed", top: 0, zIndex: 50, width: "100%",
-        // celular: véu escuro sob o menu, senão o texto do topo aparece por trás dele
-        background: sobreHero ? (bp === "mobile" ? "rgba(4,8,15,.72)" : "transparent") : T.white,
-        backdropFilter: sobreHero && bp === "mobile" ? "blur(10px)" : undefined,
-        WebkitBackdropFilter: sobreHero && bp === "mobile" ? "blur(10px)" : undefined,
-        borderBottom: sobreHero ? "1px solid rgba(0,191,216,.28)" : `1px solid ${T.gray200}`,
+        // celular sobre o vídeo: pílula de vidro solta do topo
+        ...(sobreHero && bp === "mobile" ? { top: 10, left: 12, width: "calc(100% - 24px)", borderRadius: menuOpen ? 24 : 9999, border: "1px solid rgba(255,255,255,.16)", overflow: "hidden" } : {}),
+        background: sobreHero ? (bp === "mobile" ? "rgba(4,8,15,.55)" : "transparent") : T.white,
+        backdropFilter: sobreHero && bp === "mobile" ? "blur(12px)" : undefined,
+        WebkitBackdropFilter: sobreHero && bp === "mobile" ? "blur(12px)" : undefined,
+        borderBottom: sobreHero ? (bp === "mobile" ? undefined : "1px solid rgba(0,191,216,.28)") : `1px solid ${T.gray200}`,
         boxShadow: sobreHero ? "none" : "0 1px 3px rgba(0,0,0,.04)",
         transition: "background .25s ease, border-color .25s ease, box-shadow .25s ease",
       }}>
-        <div style={{ padding: bp === "mobile" ? `8px ${Sp.m}px` : `${Sp.m}px ${Sp.xl}px`, minHeight: bp === "mobile" ? 56 : 64, display: "flex", alignItems: "center", justifyContent: "space-between", gap: Sp.m, flexWrap: "wrap", ...container, ...(bp === "mobile" ? { paddingLeft: Sp.m, paddingRight: Sp.m } : {}) }}>
+        <div style={{ padding: bp === "mobile" ? "7px 7px 7px 18px" : `${Sp.m}px ${Sp.xl}px`, minHeight: bp === "mobile" ? 54 : 64, display: "flex", alignItems: "center", justifyContent: "space-between", gap: bp === "mobile" ? Sp.s : Sp.m, flexWrap: "wrap", ...container, ...(bp === "mobile" ? { paddingLeft: 18, paddingRight: 7 } : {}) }}>
           {/* Esquerda: logo + navegação */}
           <div style={{ display: "flex", alignItems: "center", gap: bp === "mobile" ? Sp.s : Sp.xl, flex: bp === "mobile" ? "1 1 auto" : "0 0 auto", minWidth: 0 }}>
             <a href="#top" style={{ fontWeight: 900, fontSize: bp === "mobile" ? 21 : Fp.xl, color: H.logo, fontFamily: "'Nunito',sans-serif", letterSpacing: "-0.02em", textDecoration: "none", flexShrink: 0 }}>Revivaz</a>
@@ -284,7 +285,7 @@ export default function RevivazPreview() {
             )}
           </div>
           {/* Direita: busca + Entrar + Cadastre-se + CTA */}
-          <div style={{ display: "flex", alignItems: "center", gap: bp === "mobile" ? Sp.s : Sp.m, flexWrap: "wrap", flex: bp === "mobile" ? "0 0 auto" : "0 0 auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: bp === "mobile" ? 2 : Sp.m, flexWrap: "wrap", flex: "0 0 auto" }}>
             {bp !== "mobile" && (
               <>
                 <a href="/conta" style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: H.forte, fontFamily: "inherit", padding: "8px 0", whiteSpace: "nowrap", textDecoration: "none" }}>Entrar</a>
@@ -292,11 +293,11 @@ export default function RevivazPreview() {
               </>
             )}
             {bp === "mobile" && (
-              <button onClick={() => setMenuOpen(o => !o)} style={{ background: "none", border: "none", cursor: "pointer", padding: 8 }} aria-label="Menu">
+              <button onClick={() => setMenuOpen(o => !o)} style={{ background: "none", border: "none", cursor: "pointer", padding: 8, order: 2 }} aria-label="Menu">
                 <Menu size={24} color={H.forte} />
               </button>
             )}
-            <button onClick={openAgendar} style={{ padding: bp === "mobile" ? "10px 14px" : "10px 20px", fontWeight: 700, fontSize: Fp.sm, color: T.white, background: T.mag700, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 10px rgba(150,0,100,.3)", minHeight: bp === "mobile" ? 40 : 44, flexShrink: 0, whiteSpace: "nowrap" }}>
+            <button onClick={openAgendar} style={{ padding: bp === "mobile" ? "9px 15px" : "10px 20px", fontWeight: 700, fontSize: bp === "mobile" ? 14 : Fp.sm, color: T.white, background: T.mag700, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 10px rgba(150,0,100,.3)", minHeight: bp === "mobile" ? 40 : 44, flexShrink: 0, whiteSpace: "nowrap" }}>
               Agendar consulta
             </button>
           </div>
