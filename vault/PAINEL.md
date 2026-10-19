@@ -34,3 +34,4 @@ Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de depl
 - Mudança de tela: prévia HTML com dado real em `~/Área de trabalho/previa-revivaz/` antes.
 - A ponte é da Tecnopano: mexer só com OK do dono, sempre compatível (sem `perfil` nada muda).
 - Não commitar: `.vscode/tasks.json`, `revivaz.code-workspace`, `docs/ESTRATEGIA-CONDOMINIO-E-EXPANSAO.md`, `src/sections/ComoEEncontro.tsx`, `remotion/public/`.
+- 🔴 Comunicado Vivaz: fonte única de datas/equipe/link → [COMUNICADO-VIVAZ-SPEC.md](COMUNICADO-VIVAZ-SPEC.md) (início 26/11 quinta, Flávia antes do Walter, link só comunicado.revivaz.com.br)
