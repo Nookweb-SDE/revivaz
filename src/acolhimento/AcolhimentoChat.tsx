@@ -20,6 +20,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { CRISIS_RESOURCES } from "./crisis";
 import { ESPECIALIDADES, GRUPOS, type GrupoEspecialidade } from "../lib/especialidades";
+import { CADASTRO_ABERTO } from "../cadastroAberto";
 
 const T = {
   teal900: "#003D4A", teal700: "#007A8C", teal500: "#00A8BF", teal300: "#5FD3E3",
@@ -386,10 +387,10 @@ export default function AcolhimentoChat(): JSX.Element {
               Entendi, quero conversar
             </button>
           </div>
-          <p style={{ fontSize: 13, color: T.gray600, textAlign: "center" }}>
+          {CADASTRO_ABERTO && <p style={{ fontSize: 13, color: T.gray600, textAlign: "center" }}>
             Prefere ir direto ao ponto?{" "}
             <a href="/#agendar" style={{ color: T.teal700, fontWeight: 700 }}>Peça uma consulta</a>.
-          </p>
+          </p>}
         </div>
       </div>
     );
@@ -401,7 +402,7 @@ export default function AcolhimentoChat(): JSX.Element {
 
       <header style={{ padding: "12px 16px", borderBottom: `1px solid ${T.gray200}`, background: T.white, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <a href="/" style={{ fontWeight: 900, fontSize: 18, color: T.teal700, textDecoration: "none" }}>Revivaz</a>
-        <div style={{ display: "flex", gap: 8 }}>
+        {CADASTRO_ABERTO && <div style={{ display: "flex", gap: 8 }}>
           <button
             onClick={() => setPainel(painel === "consulta" ? null : "consulta")}
             aria-pressed={painel === "consulta"}
@@ -416,7 +417,7 @@ export default function AcolhimentoChat(): JSX.Element {
           >
             Entrar na minha conta
           </button>
-        </div>
+        </div>}
       </header>
 
       <main style={{ flex: 1, width: "100%", maxWidth: 640, margin: "0 auto", padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>

@@ -8,6 +8,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { GridPulse } from "../components/ui/grid-pulse";
 import { progressoRolagem } from "../lib/celulares";
 import type { Cena } from "./celulares3d/cena";
+import { CADASTRO_ABERTO } from "../cadastroAberto";
 
 type Bp = "mobile" | "tablet" | "desktop";
 
@@ -181,9 +182,11 @@ export function CelularesRolagem({ bp }: { bp: Bp }) {
               ? "Encontros, respiração guiada, humor e ajuda imediata. Pelo navegador, sem instalar nada."
               : "Datas dos encontros, respiração guiada, registro do humor, consulta individual quando precisar e ajuda imediata. Pelo navegador, sem instalar aplicativo."}
           </p>
-          <a href="/conta" className="cr-badge" style={{ marginTop: mobile ? 16 : 22 }}>
-            <IconeCelular /> Abrir minha conta
-          </a>
+          {CADASTRO_ABERTO && (
+            <a href="/conta" className="cr-badge" style={{ marginTop: mobile ? 16 : 22 }}>
+              <IconeCelular /> Abrir minha conta
+            </a>
+          )}
           <style>{CSS_BADGE}</style>
         </div>
   );

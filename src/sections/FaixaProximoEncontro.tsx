@@ -15,7 +15,7 @@ const T = {
 
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
-export function FaixaProximoEncontro({ bp, onVoluntario }: { bp: Bp; onVoluntario: () => void }) {
+export function FaixaProximoEncontro({ bp, onVoluntario }: { bp: Bp; onVoluntario?: () => void }) {
   const mobile = bp === "mobile";
   const empilha = mobile || bp === "tablet";
   const ingresso = useRef<HTMLDivElement>(null);
@@ -86,12 +86,14 @@ export function FaixaProximoEncontro({ bp, onVoluntario }: { bp: Bp; onVoluntari
           <a href="/acolhimento" className="fpe-btn" style={{ marginTop: 24, display: "inline-flex", alignItems: "center", minHeight: 46, padding: "0 22px", borderRadius: 9999, background: T.navy, color: T.white, fontWeight: 800, fontSize: 15, textDecoration: "none" }}>
             Tirar dúvidas
           </a>
-          <div style={{ marginTop: 28, paddingTop: 18, borderTop: `1px solid ${T.teal100}`, fontSize: 15, color: T.gray600, maxWidth: 420 }}>
-            Trabalha com psicologia ou saúde mental?{" "}
-            <button onClick={onVoluntario} className="fpe-link" style={{ background: "none", border: 0, padding: 0, font: "inherit", fontWeight: 800, color: T.teal700, textDecoration: "underline", textUnderlineOffset: 4, cursor: "pointer" }}>
-              Atenda por vídeo como voluntário
-            </button>
-          </div>
+          {onVoluntario && (
+            <div style={{ marginTop: 28, paddingTop: 18, borderTop: `1px solid ${T.teal100}`, fontSize: 15, color: T.gray600, maxWidth: 420 }}>
+              Trabalha com psicologia ou saúde mental?{" "}
+              <button onClick={onVoluntario} className="fpe-link" style={{ background: "none", border: 0, padding: 0, font: "inherit", fontWeight: 800, color: T.teal700, textDecoration: "underline", textUnderlineOffset: 4, cursor: "pointer" }}>
+                Atenda por vídeo como voluntário
+              </button>
+            </div>
+          )}
         </div>
 
         {!empilha && convite}

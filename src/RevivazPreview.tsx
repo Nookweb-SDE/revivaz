@@ -10,6 +10,7 @@ import { Encontros } from "./sections/Encontros";
 import { ConversaAcolhimento } from "./sections/ConversaAcolhimento";
 import { CelularesRolagem } from "./sections/CelularesRolagem";
 import { FaixaProximoEncontro } from "./sections/FaixaProximoEncontro";
+import { CADASTRO_ABERTO } from "./cadastroAberto";
 import { ESPECIALIDADES, GRUPOS, type GrupoEspecialidade } from "./lib/especialidades";
 import {
   Heart, ArrowRight, ClipboardList,
@@ -226,7 +227,10 @@ export default function RevivazPreview() {
     },
   ];
 
-  const openAgendar = () => { setModoLead("paciente"); setModalAgendar(true); setAgendarOk(false); setErroAgendar(""); };
+  // Cadastro fechado: "Quero conversar" leva à conversa de acolhimento (ver cadastroAberto.ts).
+  const openAgendar = CADASTRO_ABERTO
+    ? () => { setModoLead("paciente"); setModalAgendar(true); setAgendarOk(false); setErroAgendar(""); }
+    : () => { window.location.href = "/acolhimento"; };
 
   /* Header integrado ao hero: enquanto o trilho do hero ainda cobre o topo da
      tela, o header flutua transparente sobre a cena; depois vira a barra branca
@@ -290,7 +294,7 @@ export default function RevivazPreview() {
           </div>
           {/* Direita: busca + Entrar + Cadastre-se + CTA */}
           <div style={{ display: "flex", alignItems: "center", gap: bp === "mobile" ? 2 : Sp.m, flexWrap: "wrap", flex: "0 0 auto" }}>
-            {bp !== "mobile" && (
+            {CADASTRO_ABERTO && bp !== "mobile" && (
               <>
                 <a href="/conta" style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: H.forte, fontFamily: "inherit", padding: "8px 0", whiteSpace: "nowrap", textDecoration: "none" }}>Entrar</a>
                 <a href="/conta" style={{ background: "none", border: `2px solid ${H.borda}`, cursor: "pointer", fontSize: Fp.sm, fontWeight: 700, color: sobreHero ? T.teal300 : T.teal700, fontFamily: "inherit", padding: "8px 16px", borderRadius: 9999, whiteSpace: "nowrap", textDecoration: "none" }}>Cadastre-se</a>
@@ -301,9 +305,9 @@ export default function RevivazPreview() {
                 <Menu size={24} color={H.forte} />
               </button>
             )}
-            <button onClick={openAgendar} style={{ padding: bp === "mobile" ? "9px 15px" : "10px 20px", fontWeight: 700, fontSize: bp === "mobile" ? 14 : Fp.sm, color: T.white, background: T.mag700, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 10px rgba(150,0,100,.3)", minHeight: bp === "mobile" ? 40 : 44, flexShrink: 0, whiteSpace: "nowrap" }}>
+            {CADASTRO_ABERTO && <button onClick={openAgendar} style={{ padding: bp === "mobile" ? "9px 15px" : "10px 20px", fontWeight: 700, fontSize: bp === "mobile" ? 14 : Fp.sm, color: T.white, background: T.mag700, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 10px rgba(150,0,100,.3)", minHeight: bp === "mobile" ? 40 : 44, flexShrink: 0, whiteSpace: "nowrap" }}>
               Agendar consulta
-            </button>
+            </button>}
           </div>
           {/* Menu mobile expandido */}
           {bp === "mobile" && menuOpen && (
@@ -313,8 +317,12 @@ export default function RevivazPreview() {
               {NAV.map(([l, href]) => (
                 <a key={l} href={href} onClick={() => setMenuOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: H.nav, fontFamily: "inherit", padding: "12px 0", textAlign: "left", borderBottom: `1px solid ${sobreHero ? "rgba(255,255,255,.10)" : T.gray100}`, textDecoration: "none", display: "block" }}>{l}</a>
               ))}
-              <a href="/conta" style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.teal700, fontFamily: "inherit", padding: "12px 0", textAlign: "left", marginTop: Sp.s, textDecoration: "none", display: "block" }}>Entrar</a>
-              <a href="/conta" style={{ background: T.teal050, border: `2px solid ${T.teal700}`, cursor: "pointer", fontSize: Fp.sm, fontWeight: 700, color: T.teal700, fontFamily: "inherit", padding: "12px", borderRadius: 8, marginTop: Sp.s, textAlign: "center", textDecoration: "none", display: "block" }}>Cadastre-se</a>
+              {CADASTRO_ABERTO && (
+                <>
+                  <a href="/conta" style={{ background: "none", border: "none", cursor: "pointer", fontSize: Fp.sm, fontWeight: 600, color: T.teal700, fontFamily: "inherit", padding: "12px 0", textAlign: "left", marginTop: Sp.s, textDecoration: "none", display: "block" }}>Entrar</a>
+                  <a href="/conta" style={{ background: T.teal050, border: `2px solid ${T.teal700}`, cursor: "pointer", fontSize: Fp.sm, fontWeight: 700, color: T.teal700, fontFamily: "inherit", padding: "12px", borderRadius: 8, marginTop: Sp.s, textAlign: "center", textDecoration: "none", display: "block" }}>Cadastre-se</a>
+                </>
+              )}
             </nav>
           )}
         </div>
@@ -447,7 +455,7 @@ export default function RevivazPreview() {
       {/* ═══ BLOCO 11 — próximo encontro + convite a voluntários ═══
           Antes: "12 especialidades, da psiquiatria à fonoaudiologia", que não
           é o projeto do condomínio (18/10/2026). ═══ */}
-      <FaixaProximoEncontro bp={bp} onVoluntario={abrirCadastroProfissional} />
+      <FaixaProximoEncontro bp={bp} onVoluntario={CADASTRO_ABERTO ? abrirCadastroProfissional : undefined} />
 
       {/* ═══ BLOCO 12 — Como a gente cuida ═══
           Aqui havia 4 depoimentos de pessoas que não existem (um assinado com
@@ -477,7 +485,7 @@ export default function RevivazPreview() {
 
       {/* ═══ BLOCO 13 — Sua conta: celulares girando na rolagem (sections/CelularesRolagem.tsx).
           Não existe app publicado: é a conta pelo navegador. ═══ */}
-      <CelularesRolagem bp={bp} />
+      {CADASTRO_ABERTO && <CelularesRolagem bp={bp} />}
 
       {/* ═══ BLOCO 14 — Perguntas frequentes ═══
           Aqui havia 3 notícias inventadas, uma delas anunciando uma "parceria
