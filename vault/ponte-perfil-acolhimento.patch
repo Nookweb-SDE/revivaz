@@ -1,0 +1,84 @@
+--- a/bridge.mjs
++++ b/bridge.mjs
+@@ -26,6 +26,15 @@
+ const CLAUDE_BIN = process.env.CLAUDE_BIN || "claude";
+ const CLAUDE_DIR = process.env.CLAUDE_DIR || "/opt/tecnopano-claude";
+ const TIMEOUT_MS = Number(process.env.BRIDGE_TIMEOUT_MS || 60_000);
++// Perfil "acolhimento" (Revivaz, 19/out): o prompt já vem inteiro, então o CLI
++// roda enxuto (sem ferramentas, MCP, skills nem o CLAUDE.md da Tecnopano) numa
++// pasta vazia. Sem perfil no pedido, nada muda.
++const ACOLHIMENTO_DIR = process.env.BRIDGE_ACOLHIMENTO_DIR || "/home/claudeia/revivaz-vazio";
++const ACOLHIMENTO_MODEL = process.env.BRIDGE_ACOLHIMENTO_MODEL || "opus";
++const ARGS_ACOLHIMENTO = [
++  "-p", "--output-format", "text", "--model", ACOLHIMENTO_MODEL, "--effort", "low",
++  "--tools", "", "--strict-mcp-config", "--disable-slash-commands", "--setting-sources", "",
++];
+ const MAX_CONCURRENT = Number(process.env.BRIDGE_MAX_CONCURRENT || 2);
+ const RATE_PER_MIN = Number(process.env.BRIDGE_RATE_PER_MIN || 30);
+ // 1.5 (F11): failover em QUALQUER falha (não só cota/timeout), alerta de auth
+@@ -82,13 +91,14 @@
+  * @param {string} prompt
+  * @param {{ label: string; token: string }} account
+  */
+-function askClaudeWithToken(prompt, account, timeoutMs = TIMEOUT_MS) {
++function askClaudeWithToken(prompt, account, timeoutMs = TIMEOUT_MS, perfil = "") {
+   return new Promise((resolve, reject) => {
+     const id = ++reqSeq;
+     const t0 = Date.now();
+-    const child = spawn(account.bin, montarArgs(account, prompt), {
+-      cwd: CLAUDE_DIR,
+-      env: { ...process.env, ...account.env },
++    const enxuto = perfil === "acolhimento" && account.tipo === "claude";
++    const child = spawn(account.bin, enxuto ? ARGS_ACOLHIMENTO : montarArgs(account, prompt), {
++      cwd: enxuto ? ACOLHIMENTO_DIR : CLAUDE_DIR,
++      env: { ...process.env, ...account.env, ...(enxuto ? { CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1" } : {}) },
+       stdio: ["pipe", "pipe", "pipe"],
+     });
+     let out = "";
+@@ -108,7 +118,7 @@
+       const ms = Date.now() - t0;
+       const text = out.trim();
+       const detail = (err || text).slice(0, 300);
+-      console.log(`[bridge] ask #${id} ms=${ms} code=${code} account=${account.label}`);
++      console.log(`[bridge] ask #${id} ms=${ms} code=${code} account=${account.label}${enxuto ? " perfil=acolhimento" : ""}`);
+       if (code === 0 && text) return resolve(text);
+       const failMsg = text || detail || `${account.label} exit ${code}`;
+       if (isSessionLimit(failMsg)) {
+@@ -129,7 +139,7 @@
+   return ordemDeTentativa(ACCOUNTS, cooldownUntil, Date.now());
+ }
+ 
+-async function askClaude(prompt) {
++async function askClaude(prompt, perfil = "") {
+   const order = accountsInTryOrder();
+   /** @type {Error | undefined} */
+   let lastErr;
+@@ -141,6 +151,7 @@
+         prompt,
+         acc,
+         acc.tipo === "antigravity" ? AGY_TIMEOUT_MS : TIMEOUT_MS,
++        perfil,
+       );
+       cooldownUntil.delete(acc.label); // funcionou → volta a ser preferida na hora
+       authAlerts.delete(acc.label); // respondeu = auth OK, limpa o alerta
+@@ -225,15 +236,18 @@
+     if (handled) return;
+     try {
+       let prompt = "";
++      let perfil = "";
+       try {
+-        prompt = String(JSON.parse(body || "{}").prompt || "");
++        const dados = JSON.parse(body || "{}");
++        prompt = String(dados.prompt || "");
++        perfil = String(dados.perfil || "");
+       } catch {
+         return json(400, { ok: false, error: "bad_json" });
+       }
+       if (!prompt.trim()) return json(400, { ok: false, error: "prompt_vazio" });
+       handled = true;
+       try {
+-        json(200, { ok: true, text: await askClaude(prompt) });
++        json(200, { ok: true, text: await askClaude(prompt, perfil) });
+       } catch (e) {
+         json(502, { ok: false, error: String(e?.message || e) });
+       } finally {

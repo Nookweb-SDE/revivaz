@@ -24,6 +24,9 @@ export function isClaudeBridgeConfigured(): boolean {
 export async function askClaudeBridge(opts: {
   prompt: string;
   timeoutMs?: number;
+  /** "acolhimento": a ponte roda o CLI enxuto (sem ferramentas nem o contexto
+   *  da Tecnopano), mais rápido. Ponte antiga ignora o campo. */
+  perfil?: "acolhimento";
 }): Promise<string> {
   const url = process.env.CLAUDE_BRIDGE_URL;
   const secret = process.env.CLAUDE_BRIDGE_SECRET || "";
@@ -35,7 +38,7 @@ export async function askClaudeBridge(opts: {
     const r = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Bridge-Secret": secret },
-      body: JSON.stringify({ prompt: opts.prompt }),
+      body: JSON.stringify({ prompt: opts.prompt, perfil: opts.perfil }),
       signal: ac.signal,
     });
     if (!r.ok) throw new Error(`bridge HTTP ${r.status}`);

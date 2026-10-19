@@ -267,6 +267,28 @@ const botaoPrimario: React.CSSProperties = {
   background: `linear-gradient(135deg, ${T.teal700}, ${T.teal500})`, color: T.white,
   fontFamily: FONTE, fontWeight: 800, fontSize: 14, cursor: "pointer", minHeight: 48,
 };
+/** Enquanto a resposta não chega: pontinhos e, se demorar, um aviso calmo
+ *  para a pessoa não achar que travou. */
+function Pensando(): JSX.Element {
+  const [demorou, setDemorou] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setDemorou(true), 5000);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div role="status" style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 10, color: T.gray600, fontSize: 13, padding: "6px 4px" }}>
+      <style>{`@keyframes ac-ponto{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+@media (prefers-reduced-motion: reduce){.ac-ponto{animation:none!important}}`}</style>
+      <span aria-hidden="true" style={{ display: "inline-flex", gap: 4, background: T.gray050, borderRadius: 14, padding: "10px 12px" }}>
+        {[0, 1, 2].map((i) => (
+          <span key={i} className="ac-ponto" style={{ width: 7, height: 7, borderRadius: "50%", background: T.teal700, animation: `ac-ponto 1.2s ${i * 0.16}s infinite ease-in-out` }} />
+        ))}
+      </span>
+      <span>{demorou ? "Pensando com cuidado na sua resposta…" : "escrevendo…"}</span>
+    </div>
+  );
+}
+
 const aviso: React.CSSProperties = {
   margin: "0 0 10px", padding: "8px 10px", borderRadius: 8, background: "#FEE2E2",
   color: "#991B1B", fontSize: 12, fontWeight: 700, fontFamily: FONTE,
@@ -316,12 +338,14 @@ export default function AcolhimentoChat(): JSX.Element {
         return;
       }
       // A ponte não faz streaming; revelamos palavra a palavra para a conversa
-      // não chegar como um bloco seco.
+      // não chegar como um bloco seco, mas em no máximo ~0,8 s: a pessoa já
+      // esperou a resposta inteira, não pode esperar de novo para ler.
       const completo = String(dados?.reply ?? "").trim();
       setMsgs((m) => [...m, { papel: "assistant", texto: "" }]);
       const palavras = completo.split(" ");
+      const passo = Math.min(16, 800 / palavras.length);
       for (let i = 0; i < palavras.length; i++) {
-        await new Promise((r) => setTimeout(r, 28));
+        await new Promise((r) => setTimeout(r, passo));
         const parcial = palavras.slice(0, i + 1).join(" ");
         setMsgs((m) => {
           const copia = [...m];
@@ -416,11 +440,7 @@ export default function AcolhimentoChat(): JSX.Element {
               {m.texto}
             </div>
           ))}
-          {pensando && (
-            <div style={{ alignSelf: "flex-start", color: T.gray600, fontSize: 13, padding: "6px 4px" }}>
-              escrevendo…
-            </div>
-          )}
+          {pensando && <Pensando />}
         </div>
 
         {crise && <CardCrise />}

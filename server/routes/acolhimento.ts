@@ -9,7 +9,7 @@
 // o que some é só a resposta gerada.
 import { Router, type Request, type Response } from "express";
 import { detectCrisis, CRISIS_RESOURCES } from "../../src/acolhimento/crisis";
-import { ACOLHIMENTO_SYSTEM_PROMPT } from "../../src/acolhimento/systemPrompt";
+import { montarPromptAcolhimento } from "../lib/promptAcolhimento";
 import { askClaudeBridge, isClaudeBridgeConfigured } from "../lib/claudeBridge";
 
 const router = Router();
@@ -84,25 +84,10 @@ router.post("/api/acolhimento", async (req, res) => {
     return;
   }
 
-  // Monta um prompt único p/ o Claude CLI: system de acolhimento + histórico recente
-  // (últimas 12 msgs) + a pergunta atual. O CLI não tem "system role" separado, então
-  // o prompt de acolhimento entra como instrução inicial e as regras são reforçadas no fim.
-  const historico = messages
-    .slice(-12)
-    .map((m: any) => `${m.role === "assistant" ? "ASSISTENTE" : "PESSOA"}: ${String(m.content)}`)
-    .join("\n");
-
-  const prompt = [
-    ACOLHIMENTO_SYSTEM_PROMPT,
-    "",
-    "CONVERSA ATÉ AGORA:",
-    historico,
-    "",
-    "Responda à ÚLTIMA fala da PESSOA seguindo as regras acima. Responda APENAS com a fala do assistente, sem prefixo, sem aspas, 2 a 5 frases.",
-  ].join("\n");
+  const prompt = montarPromptAcolhimento(messages);
 
   try {
-    const reply = (await askClaudeBridge({ prompt, timeoutMs: 55_000 })).trim();
+    const reply = (await askClaudeBridge({ prompt, timeoutMs: 55_000, perfil: "acolhimento" })).trim();
     res.status(200).json({ reply });
   } catch (e) {
     console.error("acolhimento error:", e);

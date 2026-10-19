@@ -4,19 +4,55 @@
    bloco chega perto da tela. Com movimento reduzido mostra o leque aberto.
    No celular não roda 3D: são 96 quadros da mesma cena em pé (cel-m/),
    gravados com o modo "vertical", e o dedo na rolagem escolhe o quadro. */
-import { useEffect, useRef, useState } from "react";
-import { Smartphone } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { GridPulse } from "../components/ui/grid-pulse";
 import { progressoRolagem } from "../lib/celulares";
 import type { Cena } from "./celulares3d/cena";
 
 type Bp = "mobile" | "tablet" | "desktop";
 
-const T = { teal300: "#00BFD8", navy: "#0B1D3A", fundo: "#061226", white: "#FFFFFF" };
+const T = { navy: "#0B1D3A", texto: "#39434D", fundo: "#FFFFFF" };
 
 const QUADROS = 96, QW = 720, QH = 960;
 const quadroUrl = (k: number) => `/revivaz/cel-m/f${String(k).padStart(3, "0")}.avif`;
 // primeiro um a cada 4 (a animação já anda inteira), depois preenche os buracos
 const ORDEM = [4, 2, 1].flatMap((passo, n, l) => Array.from({ length: QUADROS }, (_, k) => k).filter(k => k % passo === 0 && (n === 0 || k % l[n - 1] !== 0)));
+/* Halo da cor do fundo em volta das letras, para as células acesas não encostarem nelas. */
+const GUARDA = `0 0 6px ${T.fundo}, 0 0 14px ${T.fundo}, 0 0 30px ${T.fundo}`;
+
+/** Celular de vidro inclinado, em leve 3D, do badge "Abrir minha conta". */
+function IconeCelular() {
+  const id = useId().replace(/:/g, "");
+  return (
+    <svg className="cr-ic" viewBox="0 0 34 34" width={34} height={34} aria-hidden="true">
+      <defs>
+        <linearGradient id={`c${id}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#8EEFFB" /><stop offset="1" stopColor="#0098AE" /></linearGradient>
+        <linearGradient id={`t${id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#16507A" /><stop offset="1" stopColor="#0B1D3A" /></linearGradient>
+        <filter id={`s${id}`} x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.4" /></filter>
+      </defs>
+      <ellipse cx="17" cy="30.5" rx="8" ry="1.8" fill="rgba(0,0,0,.45)" filter={`url(#s${id})`} />
+      <g transform="rotate(-14 17 16)">
+        <rect x="10.2" y="3.4" width="14.6" height="25" rx="3.8" fill="#00687A" />
+        <rect x="9" y="2.4" width="14.6" height="25" rx="3.8" fill={`url(#c${id})`} />
+        <rect x="10.4" y="4.6" width="11.8" height="20.6" rx="2.4" fill={`url(#t${id})`} />
+        <path d="M10.4 13 L22.2 6.2 L22.2 9.6 L10.4 16.6Z" fill="rgba(255,255,255,.28)" />
+        <rect x="14.2" y="5.6" width="4.2" height="1.3" rx=".65" fill="#04080f" />
+        <rect x="9.4" y="2.9" width="13.8" height="24" rx="3.5" fill="none" stroke="rgba(255,255,255,.65)" strokeWidth=".6" />
+      </g>
+    </svg>
+  );
+}
+
+/* Vidro fosco com borda em degradê turquesa → magenta (a borda é um ::before
+   recortado por máscara, então precisa de CSS de verdade). */
+const CSS_BADGE = `.cr-badge{position:relative;display:inline-flex;align-items:center;gap:10px;padding:7px 20px 7px 8px;min-height:48px;border-radius:9999px;font-weight:800;font-size:15px;color:#0B1D3A;text-decoration:none;white-space:nowrap;background:linear-gradient(135deg,rgba(255,255,255,.78),rgba(239,250,252,.55));-webkit-backdrop-filter:blur(16px) saturate(160%);backdrop-filter:blur(16px) saturate(160%);box-shadow:inset 0 1px 0 #fff,0 10px 28px rgba(11,29,58,.14);transition:transform .25s ease}
+.cr-badge::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.5px;background:linear-gradient(120deg,#7FE9F7,#00BFD8 40%,#B4157E);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.cr-badge:hover{transform:translateY(-2px)}
+.cr-ic{flex:none;display:block;transition:transform .3s ease}
+.cr-badge:hover .cr-ic{transform:rotate(-8deg) scale(1.06)}
+.cr-badge:focus-visible{outline:2px solid #007A8C;outline-offset:3px}
+@media (prefers-reduced-motion:reduce){.cr-badge,.cr-ic{transition:none}}`;
+
 const ROTULO = "Telas da conta Revivaz: encontros, respiração guiada, humor, consulta individual e ajuda imediata";
 
 export function CelularesRolagem({ bp }: { bp: Bp }) {
@@ -138,23 +174,26 @@ export function CelularesRolagem({ bp }: { bp: Bp }) {
   }, [mobile]);
 
   const texto = (
-        <div style={{ position: "relative", zIndex: 2, textAlign: "center", maxWidth: 600, margin: "0 auto", padding: mobile ? "72px 20px 0" : "104px 24px 0", color: T.white }}>
-          <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: mobile ? 28 : 44, lineHeight: 1.05, letterSpacing: "-0.01em", margin: "0 0 12px" }}>Sua conta Revivaz</h2>
-          <p style={{ fontSize: mobile ? 15 : 16, lineHeight: 1.6, color: "rgba(255,255,255,.78)", margin: "0 auto", maxWidth: 520 }}>
+        <div style={{ position: "relative", zIndex: 2, textAlign: "center", maxWidth: 600, margin: "0 auto", padding: mobile ? "72px 20px 0" : "104px 24px 0", color: T.navy }}>
+          <h2 data-grid-avoid style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: mobile ? 28 : 44, lineHeight: 1.05, letterSpacing: "-0.01em", margin: "0 0 12px", textShadow: GUARDA }}>Sua conta Revivaz</h2>
+          <p data-grid-avoid style={{ fontSize: mobile ? 15 : 16, lineHeight: 1.6, color: T.texto, margin: "0 auto", maxWidth: 520, textShadow: GUARDA }}>
             {mobile
               ? "Encontros, respiração guiada, humor e ajuda imediata. Pelo navegador, sem instalar nada."
               : "Datas dos encontros, respiração guiada, registro do humor, consulta individual quando precisar e ajuda imediata. Pelo navegador, sem instalar aplicativo."}
           </p>
-          <a href="/conta" style={{ marginTop: mobile ? 16 : 22, padding: "11px 22px", fontSize: 14.5, fontWeight: 800, color: T.navy, background: T.white, borderRadius: 9999, display: "inline-flex", alignItems: "center", gap: 8, minHeight: 44, textDecoration: "none", whiteSpace: "nowrap", boxShadow: "0 10px 30px rgba(0,0,0,.35)" }}>
-            <Smartphone size={17} /> Abrir minha conta
+          <a href="/conta" className="cr-badge" style={{ marginTop: mobile ? 16 : 22 }}>
+            <IconeCelular /> Abrir minha conta
           </a>
+          <style>{CSS_BADGE}</style>
         </div>
   );
 
   // celular: o palco fica preso na tela enquanto o dedo rola 300vh e troca os quadros
   if (mobile) return (
     <section ref={secao} aria-label="Sua conta Revivaz" style={{ position: "relative", background: T.fundo, height: fixo ? undefined : "300vh", paddingBottom: fixo ? 32 : 0 }}>
-      <div className={fixo ? undefined : "cr-palco"} style={fixo ? undefined : { position: "sticky", top: 0, height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div className={fixo ? undefined : "cr-palco"} style={fixo ? { position: "relative" } : { position: "sticky", top: 0, height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {/* grade só atrás do texto: os quadros têm o fundo gravado e cortariam as linhas */}
+        <GridPulse cell={22} ambient={3} style={{ maskImage: "linear-gradient(to bottom, #000 150px, transparent 290px)", WebkitMaskImage: "linear-gradient(to bottom, #000 150px, transparent 290px)" }} />
         {texto}
         {fixo
           ? <img src="/revivaz/cel-m/parado.webp" alt={ROTULO} loading="lazy" style={{ display: "block", width: "100%", aspectRatio: "3 / 4", objectFit: "contain", marginTop: 16 }} />
@@ -167,8 +206,8 @@ export function CelularesRolagem({ bp }: { bp: Bp }) {
   return (
     <section ref={secao} aria-label="Sua conta Revivaz" style={{ height: "280vh", position: "relative", background: T.fundo }}>
       <div style={{ position: "sticky", top: 0, height: "100vh", overflow: "hidden" }}>
-        {/* luz de palco: halo turquesa atrás, reflexo no chão e vinheta */}
-        <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse 55% 45% at 50% 58%, rgba(0,191,216,.22), transparent 70%), radial-gradient(ellipse 35% 30% at 72% 70%, rgba(180,21,126,.14), transparent 70%), radial-gradient(ellipse 60% 12% at 50% 93%, rgba(0,191,216,.18), transparent 70%), linear-gradient(180deg, ${T.fundo} 0%, ${T.navy} 70%, ${T.fundo} 100%)` }} />
+        {/* grade que acende onde o mouse passa (Grid Pulse, nas cores do site) */}
+        <GridPulse />
         <canvas ref={tela} aria-hidden="true" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block" }} />
         {texto}
       </div>
