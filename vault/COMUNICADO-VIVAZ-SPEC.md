@@ -20,7 +20,7 @@ Antes de mexer em QUALQUER material do comunicado, conferir contra esta lista.
 ## Modelo escolhido
 - Escolhido pelo grupo: versão **clássica** (fonte: `~/Área de trabalho/previa-revivaz/comunicado/site/index.html`).
 - Link ÚNICO para divulgar: **https://comunicado.revivaz.com.br** (sem /convite, sem /classico, sem ?v=).
-  - Só existe `public/comunicado/index.html` (19/10 noite: /convite, /classico/, /capa-*, /moradores APAGADOS a pedido do dono; dão 404). Não recriar.
+  - Só existe `public/comunicado/index.html` (19/10 noite: /convite, /classico/, /capa-*, /moradores APAGADOS a pedido do dono; esses endereços agora abrem o site principal Revivaz). Não recriar.
 - Página SEM WhatsApp (sem botão wa.me). Botão final = "Conhecer o site Revivaz" → https://revivaz.com.br/.
 - Celular (≤560px): foto do topo aparece inteira acima do título; fotos dos temas em 4:3.
 - Capa do link (og:image): logo do Vivaz no cabeçalho dos comunicados da Walesca, `img/og-vivaz-capa.jpg` (1200x630). Escolha do dono em 19/10, às 17h30; antes era a foto da roda.
