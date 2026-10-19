@@ -62,9 +62,19 @@ function encontros(c: Ctx) {
   texto(c, "Uma quinta por mês", 46, 324, 10, 700, C.gray600);
 }
 
+/** Faixa da tela de respiração que anima (bola, anéis e "Inspire"). Só ela é
+    redesenhada a cada quadro; o resto da tela é desenhado uma vez. */
+export const RESP = { y: 112, h: 214 } as const;
+const RESP_ESC = 2;
+
 function respiracao(c: Ctx, t: number) {
   moldura(c, C.white, "Autocuidado", 1);
   texto(c, "Respiração guiada", 107, 100, 16, 800, C.gray950, "center");
+  respiracaoAnimada(c, t);
+  texto(c, "4 s para dentro, 6 s para fora", 107, 336, 10, 600, C.gray600, "center");
+}
+
+function respiracaoAnimada(c: Ctx, t: number) {
   // ciclo de 10 s: 4 s inspira, 6 s solta
   const f = t % 10, inspira = f < 4;
   const k = inspira ? f / 4 : 1 - (f - 4) / 6;
@@ -77,7 +87,20 @@ function respiracao(c: Ctx, t: number) {
   g.addColorStop(0, C.white); g.addColorStop(0.35, C.teal300); g.addColorStop(1, C.teal700);
   c.beginPath(); c.arc(107, 216, r, 0, Math.PI * 2); c.fillStyle = g; c.fill();
   texto(c, inspira ? "Inspire" : "Solte devagar", 107, 316, 15, 800, C.teal700, "center");
-  texto(c, "4 s para dentro, 6 s para fora", 107, 336, 10, 600, C.gray600, "center");
+}
+
+/** Canvas da faixa animada da respiração, na escala dela. */
+export function novaFaixaRespiracao(): HTMLCanvasElement {
+  const cv = document.createElement("canvas");
+  cv.width = TELA_W * RESP_ESC; cv.height = RESP.h * RESP_ESC;
+  return cv;
+}
+
+export function desenharFaixaRespiracao(canvas: HTMLCanvasElement, t: number) {
+  const c = canvas.getContext("2d")!;
+  c.setTransform(RESP_ESC, 0, 0, RESP_ESC, 0, -RESP.y * RESP_ESC);
+  c.fillStyle = C.white; c.fillRect(0, RESP.y, TELA_W, RESP.h);
+  respiracaoAnimada(c, t);
 }
 
 function humor(c: Ctx) {

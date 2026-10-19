@@ -515,7 +515,7 @@ export default function RevivazPreview() {
             </div>
             <div>
               <div style={{ fontWeight: 700, color: T.white, marginBottom: S.m, fontSize: F.sm }}>Institucional</div>
-              {[...NAV, ["Privacidade", "/privacidade"] as const, ["Termos de Uso", "/termos"] as const].map(([l, href]) => (
+              {[...NAV, ["Privacidade", "/privacidade"] as const, ["Termos de Uso", "/termos"] as const, ["Cookies", "#cookies"] as const].map(([l, href]) => (
                 <div key={l} style={{ marginBottom: 6 }}>
                   <a href={href} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: "8px 0", fontFamily: "inherit", fontSize: F.xs, minHeight: 32, textAlign: "left", textDecoration: "none", display: "block" }}>{l}</a>
                 </div>

@@ -14,8 +14,13 @@ export const FONTE = "'Nunito', system-ui, sans-serif";
 
 export const li: React.CSSProperties = { marginBottom: 8 };
 export const tabela: React.CSSProperties = {
-  width: "100%", borderCollapse: "collapse", fontSize: 14, marginTop: 10,
+  width: "100%", borderCollapse: "collapse", fontSize: 14, marginTop: 10, minWidth: 460,
 };
+
+/** Tabela larga rola de lado no celular em vez de espremer o texto. */
+export function Rolagem({ children }: { children: React.ReactNode }): JSX.Element {
+  return <div style={{ overflowX: "auto" }}>{children}</div>;
+}
 export const th: React.CSSProperties = {
   textAlign: "left", padding: "8px 10px", background: T.teal050,
   borderBottom: `2px solid ${T.teal100}`, fontWeight: 800, color: T.gray950,
@@ -27,14 +32,17 @@ export const td: React.CSSProperties = {
 export function Secao({
   n,
   titulo,
+  id,
   children,
 }: {
   n: string;
   titulo: string;
+  /** Âncora para o índice do topo. */
+  id?: string;
   children: React.ReactNode;
 }): JSX.Element {
   return (
-    <section style={{ marginBottom: 34 }}>
+    <section id={id} style={{ marginBottom: 34, scrollMarginTop: 20 }}>
       <h2 style={{ fontSize: 19, fontWeight: 800, color: T.gray950, margin: "0 0 10px", lineHeight: 1.35 }}>
         <span style={{ color: T.teal700 }}>{n}.</span> {titulo}
       </h2>
@@ -62,19 +70,25 @@ export function PaginaLegal({
   titulo,
   atualizadaEm,
   resumo,
+  indice,
   children,
 }: {
   titulo: string;
   atualizadaEm: string;
   /** A ideia toda em uma frase, antes de qualquer seção. */
   resumo: React.ReactNode;
+  /** Lista clicável das seções: [id, título]. */
+  indice?: ReadonlyArray<readonly [string, string]>;
   children: React.ReactNode;
 }): JSX.Element {
   return (
     <div style={{ background: T.gray050, minHeight: "100dvh", fontFamily: FONTE }}>
       <header style={{ background: T.white, borderBottom: `1px solid ${T.gray200}`, padding: "14px 20px" }}>
         <div style={{ maxWidth: 780, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-          <a href="/" style={{ fontWeight: 900, fontSize: 19, color: T.teal700, textDecoration: "none" }}>Revivaz</a>
+          <a href="/" aria-label="Revivaz, início" style={{ display: "flex", alignItems: "center", gap: 7, textDecoration: "none" }}>
+            <img src="/revivaz/logo-marca.webp" alt="" width={46} height={36} style={{ display: "block" }} />
+            <img src="/revivaz/logo-nome.webp" alt="Revivaz" width={72} height={22} style={{ display: "block" }} />
+          </a>
           <a href="/" style={{ fontSize: 14, color: T.gray600, textDecoration: "none", fontWeight: 700 }}>Voltar ao site</a>
         </div>
       </header>
@@ -87,10 +101,21 @@ export function PaginaLegal({
 
         <AvisoSemRevisaoJuridica />
 
-        <div style={{ background: T.white, border: `1px solid ${T.gray200}`, borderRadius: 14, padding: 18, marginBottom: 30 }}>
-          <strong style={{ fontSize: 15, color: T.gray950 }}>Em uma frase</strong>
-          <p style={{ margin: "8px 0 0", fontSize: 15, lineHeight: 1.65, color: T.gray700 }}>{resumo}</p>
+        <div style={{ background: T.white, border: `1px solid ${T.gray200}`, borderRadius: 14, padding: 18, marginBottom: indice ? 16 : 30 }}>
+          <strong style={{ fontSize: 15, color: T.gray950 }}>Em resumo</strong>
+          <div style={{ marginTop: 8, fontSize: 15, lineHeight: 1.65, color: T.gray700 }}>{resumo}</div>
         </div>
+
+        {indice && (
+          <nav aria-label="Nesta página" style={{ background: T.white, border: `1px solid ${T.gray200}`, borderRadius: 14, padding: 18, marginBottom: 30 }}>
+            <strong style={{ fontSize: 15, color: T.gray950 }}>Nesta página</strong>
+            <ol style={{ margin: "10px 0 0", paddingLeft: 20, fontSize: 14, lineHeight: 1.9, columns: "2 220px", columnGap: 24 }}>
+              {indice.map(([id, t]) => (
+                <li key={id}><a href={`#${id}`} style={{ color: T.teal700, fontWeight: 700, textDecoration: "none" }}>{t}</a></li>
+              ))}
+            </ol>
+          </nav>
+        )}
 
         {children}
 
@@ -100,6 +125,8 @@ export function PaginaLegal({
           <a href="/privacidade" style={{ color: T.teal700, fontWeight: 700, textDecoration: "none" }}>Política de Privacidade</a>
           <span style={{ margin: "0 8px" }}>·</span>
           <a href="/termos" style={{ color: T.teal700, fontWeight: 700, textDecoration: "none" }}>Termos de Uso</a>
+          <span style={{ margin: "0 8px" }}>·</span>
+          <a href="#cookies" style={{ color: T.teal700, fontWeight: 700, textDecoration: "none" }}>Cookies</a>
           <span style={{ margin: "0 8px" }}>·</span>
           <a href="/acolhimento" style={{ color: T.teal700, fontWeight: 700, textDecoration: "none" }}>Falar com o acolhimento</a>
         </div>

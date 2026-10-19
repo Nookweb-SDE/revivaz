@@ -10,24 +10,44 @@
  * para ninguém tratar o rascunho como palavra final.
  */
 import React from "react";
-import { PaginaLegal, Secao, T, li, tabela, th, td } from "../legal/PaginaLegal";
+import { PaginaLegal, Rolagem, Secao, T, li, tabela, th, td } from "../legal/PaginaLegal";
+import { abrirConfigCookies } from "../legal/AvisoCookies";
 
-const ATUALIZADA_EM = "26 de agosto de 2026";
+const ATUALIZADA_EM = "19 de outubro de 2026";
+
+const RESUMO: ReadonlyArray<readonly [string, string]> = [
+  ["Dado sensível", "Saúde mental é o dado mais protegido pela lei. Coletamos só o mínimo."],
+  ["Quem vê", "Só você, o seu profissional e a administração."],
+  ["Não vendemos", "Nada vai para anunciante, empregador ou seguradora."],
+  ["Você manda", "Pode ver, corrigir ou apagar seus dados quando quiser."],
+];
+
+const INDICE = [
+  ["responsavel", "Quem é o responsável"], ["coleta", "O que coletamos"], ["base-legal", "Base legal"],
+  ["acesso", "Quem vê o quê"], ["servicos", "Serviços que usamos"], ["video", "Vídeo não é gravado"],
+  ["cookies-info", "Cookies"], ["prazo", "Por quanto tempo"], ["direitos", "Seus direitos"],
+  ["menores", "Criança e adolescente"], ["seguranca", "Segurança"], ["emergencia", "Emergência"],
+  ["mudancas", "Mudanças"],
+] as const;
 
 export default function Privacidade(): JSX.Element {
   return (
     <PaginaLegal
       titulo="Política de Privacidade"
       atualizadaEm={ATUALIZADA_EM}
+      indice={INDICE}
       resumo={
-        <>
-          Dados de saúde mental são <strong>dados sensíveis</strong>. Coletamos o mínimo para te
-          atender, ninguém além de você, do seu profissional e da administração enxerga sua ficha,
-          não vendemos nada para ninguém, e você pode pedir tudo de volta ou apagar quando quiser.
-        </>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+          {RESUMO.map(([t, d]) => (
+            <div key={t} style={{ background: T.teal050, borderRadius: 10, padding: "10px 12px", fontSize: 14, lineHeight: 1.45 }}>
+              <strong style={{ display: "block", color: T.teal900, fontSize: 15 }}>{t}</strong>
+              {d}
+            </div>
+          ))}
+        </div>
       }
     >
-        <Secao n="1" titulo="Quem é o responsável">
+        <Secao n="1" id="responsavel" titulo="Quem é o responsável">
           <p style={{ margin: "0 0 8px" }}>
             A plataforma é operada pela iniciativa Revivaz, projeto de saúde mental solidária.
             Contato para qualquer assunto de privacidade, incluindo o exercício dos seus direitos:{" "}
@@ -39,8 +59,8 @@ export default function Privacidade(): JSX.Element {
           </p>
         </Secao>
 
-        <Secao n="2" titulo="O que coletamos e para quê">
-          <table style={tabela}>
+        <Secao n="2" id="coleta" titulo="O que coletamos e para quê">
+          <Rolagem><table style={tabela}>
             <thead>
               <tr>
                 <th style={th}>Dado</th>
@@ -79,19 +99,20 @@ export default function Privacidade(): JSX.Element {
                 <td style={td}>Quando você avalia</td>
                 <td style={td}>Medir a qualidade do atendimento</td>
               </tr>
+              <tr>
+                <td style={td}>Endereço de internet (IP)</td>
+                <td style={td}>Em toda visita ao site</td>
+                <td style={td}>Segurança e bloqueio de ataques. Não usamos para te identificar</td>
+              </tr>
             </tbody>
-          </table>
+          </table></Rolagem>
           <p style={{ margin: "14px 0 0" }}>
             <strong>A conversa da página pública de acolhimento não é gravada.</strong> Ela é enviada
             para gerar a resposta e não fica salva no nosso banco.
           </p>
-          <p style={{ margin: "8px 0 0" }}>
-            Não usamos cookie de rastreamento, não temos pixel de rede social e não fazemos perfil de
-            publicidade. O que o navegador guarda é o necessário para manter você logado.
-          </p>
         </Secao>
 
-        <Secao n="3" titulo="Base legal">
+        <Secao n="3" id="base-legal" titulo="Base legal">
           <ul style={{ margin: 0, paddingLeft: 20 }}>
             <li style={li}>
               <strong>Consentimento</strong> para o acolhimento por IA, a triagem e o registro de
@@ -108,7 +129,7 @@ export default function Privacidade(): JSX.Element {
           </ul>
         </Secao>
 
-        <Secao n="4" titulo="Quem consegue ver o quê">
+        <Secao n="4" id="acesso" titulo="Quem consegue ver o quê">
           <p style={{ margin: "0 0 8px" }}>
             Isso não é promessa de intenção: está implementado como regra no banco de dados, aplicada
             a cada consulta feita ao sistema.
@@ -130,12 +151,12 @@ export default function Privacidade(): JSX.Element {
           </ul>
         </Secao>
 
-        <Secao n="5" titulo="Com quem os dados passam (sub-processadores)">
+        <Secao n="5" id="servicos" titulo="Serviços que usamos (sub-processadores)">
           <p style={{ margin: "0 0 4px" }}>
             Para funcionar, a plataforma usa serviços de terceiros. Eles processam dados por nossa
             conta e sob nossas instruções:
           </p>
-          <table style={tabela}>
+          <Rolagem><table style={tabela}>
             <thead>
               <tr>
                 <th style={th}>Serviço</th>
@@ -143,6 +164,13 @@ export default function Privacidade(): JSX.Element {
               </tr>
             </thead>
             <tbody>
+              <tr>
+                <td style={td}>Cloudflare</td>
+                <td style={td}>
+                  Entrega o site mais rápido e protege contra ataques. Vê o endereço de internet e a
+                  página pedida, não vê sua ficha
+                </td>
+              </tr>
               <tr>
                 <td style={td}>Supabase (banco de dados e login)</td>
                 <td style={td}>Todo o cadastro e o registro clínico, criptografados em trânsito</td>
@@ -163,14 +191,14 @@ export default function Privacidade(): JSX.Element {
                 <td style={td}>Áudio e vídeo da consulta, ao vivo. Não gravamos a consulta</td>
               </tr>
             </tbody>
-          </table>
+          </table></Rolagem>
           <p style={{ margin: "14px 0 0" }}>
             Parte desses serviços fica <strong>fora do Brasil</strong>. Isso significa transferência
             internacional de dados, feita com salvaguardas contratuais dos fornecedores.
           </p>
         </Secao>
 
-        <Secao n="6" titulo="A consulta por vídeo não é gravada">
+        <Secao n="6" id="video" titulo="A consulta por vídeo não é gravada">
           <p style={{ margin: 0 }}>
             Nem áudio, nem vídeo, nem transcrição automática. O que fica registrado é a
             <strong> evolução clínica escrita pelo profissional</strong>, do jeito que ele revisou e
@@ -180,7 +208,46 @@ export default function Privacidade(): JSX.Element {
           </p>
         </Secao>
 
-        <Secao n="7" titulo="Por quanto tempo guardamos">
+        <Secao n="7" id="cookies-info" titulo="Cookies">
+          <p style={{ margin: "0 0 4px" }}>
+            Cookie é um pequeno arquivo que o site guarda no seu navegador. Usamos o mínimo, sem
+            pixel de rede social e sem perfil de publicidade:
+          </p>
+          <Rolagem><table style={tabela}>
+            <thead>
+              <tr>
+                <th style={th}>Tipo</th>
+                <th style={th}>Para quê</th>
+                <th style={th}>Pode desligar?</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={td}>Essenciais</td>
+                <td style={td}>Manter você logado, proteger o site contra ataques e lembrar a sua escolha de cookies</td>
+                <td style={td}>Não. Sem eles o site não funciona</td>
+              </tr>
+              <tr>
+                <td style={td}>Estatística</td>
+                <td style={td}>Contar visitas de forma anônima</td>
+                <td style={td}>Sim. <strong>Hoje não usamos.</strong> Se um dia usarmos, só liga com sua permissão</td>
+              </tr>
+              <tr>
+                <td style={td}>Propaganda e rastreamento</td>
+                <td style={td}>—</td>
+                <td style={td}><strong>Não usamos e não vamos usar</strong></td>
+              </tr>
+            </tbody>
+          </table></Rolagem>
+          <button
+            type="button" onClick={abrirConfigCookies}
+            style={{ marginTop: 14, background: T.teal700, color: T.white, border: 0, borderRadius: 10, padding: "11px 18px", fontWeight: 800, fontFamily: "inherit", fontSize: 14, cursor: "pointer" }}
+          >
+            Mudar minha escolha de cookies
+          </button>
+        </Secao>
+
+        <Secao n="8" id="prazo" titulo="Por quanto tempo guardamos">
           <ul style={{ margin: 0, paddingLeft: 20 }}>
             <li style={li}>
               <strong>Registro clínico:</strong> pelo prazo que os conselhos de saúde exigem, hoje
@@ -198,7 +265,7 @@ export default function Privacidade(): JSX.Element {
           </ul>
         </Secao>
 
-        <Secao n="8" titulo="Seus direitos">
+        <Secao n="9" id="direitos" titulo="Seus direitos">
           <p style={{ margin: "0 0 8px" }}>
             Pela LGPD você pode, a qualquer momento: confirmar que tratamos seus dados, acessar tudo
             o que temos, corrigir o que estiver errado, pedir cópia em arquivo, revogar consentimento
@@ -211,7 +278,7 @@ export default function Privacidade(): JSX.Element {
           </p>
         </Secao>
 
-        <Secao n="9" titulo="Criança e adolescente">
+        <Secao n="10" id="menores" titulo="Criança e adolescente">
           <p style={{ margin: "0 0 8px" }}>
             Sete das nossas especialidades atendem menores de idade: neuropediatria, psiquiatria da
             infância e adolescência, psicologia infantil, terapia ocupacional, fonoaudiologia,
@@ -225,12 +292,13 @@ export default function Privacidade(): JSX.Element {
           </p>
         </Secao>
 
-        <Secao n="10" titulo="Segurança">
+        <Secao n="11" id="seguranca" titulo="Segurança">
           <ul style={{ margin: 0, paddingLeft: 20 }}>
             <li style={li}>Tudo trafega criptografado (HTTPS).</li>
             <li style={li}>Entrada por link de uso único no e-mail, sem senha para vazar.</li>
             <li style={li}>Separação de acesso aplicada dentro do próprio banco, não só na tela.</li>
             <li style={li}>A sala de vídeo só abre para quem é participante daquela consulta.</li>
+            <li style={li}>Proteção contra ataques na entrada do site (Cloudflare).</li>
           </ul>
           <p style={{ margin: "10px 0 0" }}>
             Nenhum sistema é infalível. Se acontecer um incidente que possa te afetar, comunicamos
@@ -238,7 +306,7 @@ export default function Privacidade(): JSX.Element {
           </p>
         </Secao>
 
-        <Secao n="11" titulo="Emergência">
+        <Secao n="12" id="emergencia" titulo="Emergência">
           <p style={{ margin: 0 }}>
             A plataforma <strong>não é serviço de emergência</strong>. Se houver risco à vida, ligue{" "}
             <a href="tel:188" style={{ color: T.teal700, fontWeight: 800 }}>188 (CVV)</a>, gratuito e
@@ -246,7 +314,7 @@ export default function Privacidade(): JSX.Element {
           </p>
         </Secao>
 
-        <Secao n="12" titulo="Mudanças nesta política">
+        <Secao n="13" id="mudancas" titulo="Mudanças nesta política">
           <p style={{ margin: 0 }}>
             Quando algo mudar, atualizamos a data no topo. Se a mudança afetar seus direitos ou
             ampliar o uso dos dados, avisamos antes de valer.

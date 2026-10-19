@@ -4,7 +4,7 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { QTD, poseCelular, poseVertical, vistaVertical } from "../../lib/celulares";
-import { desenharTela, TELA_W, TELA_H, ESC } from "./telas";
+import { desenharTela, desenharFaixaRespiracao, novaFaixaRespiracao, RESP, TELA_W, TELA_H, ESC } from "./telas";
 
 const W = 0.71, H = 1.46, D = 0.078, R = 0.115;
 const PX = 1 / 300; // px do palco de 1200 → unidades da cena
@@ -66,6 +66,13 @@ export function montarCena(canvas: HTMLCanvasElement, parado: boolean, modo: "le
   const botaoGeo = new THREE.BoxGeometry(0.014, 1, 0.032);
 
   const telas: { canvas: HTMLCanvasElement; tex: THREE.CanvasTexture }[] = [];
+  // a respiração anda: em vez de reenviar a tela inteira à placa de vídeo a
+  // cada quadro (travava a rolagem), só a faixa da bola, por cima da tela
+  const faixaCanvas = novaFaixaRespiracao();
+  desenharFaixaRespiracao(faixaCanvas, 0);
+  const faixaTex = new THREE.CanvasTexture(faixaCanvas);
+  faixaTex.colorSpace = THREE.SRGBColorSpace;
+  const faixaGeo = new THREE.PlaneGeometry(sw, sh * RESP.h / TELA_H);
   const celulares: THREE.Group[] = [];
   const maxAniso = renderer.capabilities.getMaxAnisotropy();
 
@@ -82,6 +89,11 @@ export function montarCena(canvas: HTMLCanvasElement, parado: boolean, modo: "le
     const tela = new THREE.Mesh(telaGeo, new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
     tela.position.z = D / 2 + 0.0012;
     g.add(tela);
+    if (i === 1) {
+      const faixa = new THREE.Mesh(faixaGeo, new THREE.MeshBasicMaterial({ map: faixaTex, toneMapped: false }));
+      faixa.position.set(0, sh / 2 - (RESP.y + RESP.h / 2) / TELA_H * sh, tela.position.z + 0.0004);
+      g.add(faixa);
+    }
 
     const tras = new THREE.Mesh(trasGeo, vidroTras);
     tras.position.z = -D / 2 - 0.0008; tras.rotation.y = Math.PI;
@@ -140,18 +152,19 @@ export function montarCena(canvas: HTMLCanvasElement, parado: boolean, modo: "le
       g.rotation.set(THREE.MathUtils.degToRad(-6 * aberto), THREE.MathUtils.degToRad(-q.ry), THREE.MathUtils.degToRad(-q.rz));
       g.scale.setScalar(0.92 + 0.08 * q.opacity);
     });
-    // a tela da respiração anda; redesenha a ~20 quadros por segundo
+    // a bola da respiração anda; redesenha a ~20 quadros por segundo
     if (!parado && t - ultimoDesenho > 0.05) {
       ultimoDesenho = t;
-      desenharTela(telas[1].canvas, 1, t);
-      telas[1].tex.needsUpdate = true;
+      desenharFaixaRespiracao(faixaCanvas, t);
+      faixaTex.needsUpdate = true;
     }
     renderer.render(cena, camera);
   };
 
   const destruir = () => {
     telas.forEach(x => x.tex.dispose());
-    [corpoGeo, telaGeo, trasGeo, ilhaGeo, lenteGeo, aroGeo, botaoGeo].forEach(x => x.dispose());
+    faixaTex.dispose();
+    [corpoGeo, faixaGeo, telaGeo, trasGeo, ilhaGeo, lenteGeo, aroGeo, botaoGeo].forEach(x => x.dispose());
     [aluminio, vidroFrente, vidroTras, lenteMat].forEach(x => x.dispose());
     celulares.forEach(g => g.children.forEach(m => { const mm = (m as THREE.Mesh).material; if (mm instanceof THREE.MeshBasicMaterial) mm.dispose(); }));
     ambiente.dispose(); pmrem.dispose(); renderer.dispose();

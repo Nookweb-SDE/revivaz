@@ -56,9 +56,9 @@ export function CelularesRolagem({ bp }: { bp: Bp }) {
       ORDEM.forEach(k => {
         const im = new Image();
         im.decoding = "async";
-        im.onload = () => { ok[k] = true; pedir(); };
-        if (k === 0) im.onerror = () => setSemAvif(true); // navegador sem AVIF: fica a imagem parada
         im.src = quadroUrl(k);
+        // decode() descompacta fora da rolagem; usar antes disso travava o desenho
+        im.decode().then(() => { ok[k] = true; pedir(); }, () => { if (k === 0) setSemAvif(true); }); // sem AVIF: fica a imagem parada
         imgs[k] = im;
       });
     };
@@ -84,7 +84,7 @@ export function CelularesRolagem({ bp }: { bp: Bp }) {
     // celular: vídeo gravado da própria cena, sem baixar three.js nem girar 3D
     if (!s || !c || mobile) return;
     const parado = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let cena: Cena | null = null, raf = 0, visivel = false, vivo = true, carregando = false;
+    let cena: Cena | null = null, raf = 0, visivel = false, vivo = true, carregando = false, espera = 0, rolouEm = 0;
 
     const progresso = () => {
       const r = s.getBoundingClientRect();
@@ -107,6 +107,18 @@ export function CelularesRolagem({ bp }: { bp: Bp }) {
       });
     };
 
+    // montar a cena trava a página ~0,3 s (luz do ambiente). Faz isso com a
+    // rolagem parada, a 3 telas de distância, para não cair no meio do gesto
+    const ocioso = () => {
+      espera = 0;
+      if (carregando || !vivo) return;
+      if (performance.now() - rolouEm < 300) { espera = window.setTimeout(ocioso, 300); return; }
+      carregar();
+    };
+    const perto = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { perto.disconnect(); ocioso(); }
+    }, { rootMargin: "300% 0px" });
+    perto.observe(s);
     const io = new IntersectionObserver(([e]) => {
       visivel = e.isIntersecting;
       if (visivel) carregar();
@@ -115,11 +127,11 @@ export function CelularesRolagem({ bp }: { bp: Bp }) {
     io.observe(s);
     const ro = new ResizeObserver(() => { cena?.medir(); cena?.quadro(progresso(), performance.now() / 1000); });
     ro.observe(c);
-    const rolou = () => { if (parado && cena) cena.quadro(1, 0); };
+    const rolou = () => { rolouEm = performance.now(); if (parado && cena) cena.quadro(1, 0); };
     window.addEventListener("scroll", rolou, { passive: true });
 
     return () => {
-      vivo = false; cancelAnimationFrame(raf); io.disconnect(); ro.disconnect();
+      vivo = false; cancelAnimationFrame(raf); clearTimeout(espera); perto.disconnect(); io.disconnect(); ro.disconnect();
       window.removeEventListener("scroll", rolou);
       cena?.destruir();
     };
