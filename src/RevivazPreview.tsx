@@ -275,7 +275,11 @@ export default function RevivazPreview() {
         <div style={{ padding: bp === "mobile" ? "7px 7px 7px 18px" : `${Sp.m}px ${Sp.xl}px`, minHeight: bp === "mobile" ? 54 : 64, display: "flex", alignItems: "center", justifyContent: "space-between", gap: bp === "mobile" ? Sp.s : Sp.m, flexWrap: "wrap", ...container, ...(bp === "mobile" ? { paddingLeft: 18, paddingRight: 7 } : {}) }}>
           {/* Esquerda: logo + navegação */}
           <div style={{ display: "flex", alignItems: "center", gap: bp === "mobile" ? Sp.s : Sp.xl, flex: bp === "mobile" ? "1 1 auto" : "0 0 auto", minWidth: 0 }}>
-            <a href="#top" style={{ fontWeight: 900, fontSize: bp === "mobile" ? 21 : Fp.xl, color: H.logo, fontFamily: "'Nunito',sans-serif", letterSpacing: "-0.02em", textDecoration: "none", flexShrink: 0 }}>Revivaz</a>
+            <a href="#top" aria-label="Revivaz, início" style={{ display: "flex", alignItems: "center", gap: bp === "mobile" ? 4 : 7, textDecoration: "none", flexShrink: 0 }}>
+              {/* sobre o vídeo o azul-marinho some no escuro: versão com o marinho trocado por branco */}
+              <img src={sobreHero ? "/revivaz/logo-marca-claro.webp" : "/revivaz/logo-marca.webp"} alt="" width={bp === "mobile" ? 36 : 51} height={bp === "mobile" ? 28 : 40} style={{ display: "block" }} />
+              <img src={sobreHero ? "/revivaz/logo-nome-claro.webp" : "/revivaz/logo-nome.webp"} alt="Revivaz" width={bp === "mobile" ? 65 : 78} height={bp === "mobile" ? 20 : 24} style={{ display: "block" }} />
+            </a>
             {bp !== "mobile" && (
               <nav style={{ display: "flex", alignItems: "center", gap: Sp.l }}>
                 {NAV.map(([l, href]) => (

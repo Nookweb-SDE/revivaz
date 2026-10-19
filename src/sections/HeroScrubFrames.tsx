@@ -171,13 +171,14 @@ export default function HeroScrubFrames({
     position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
   };
 
-  /* Celular: vídeo em pé de tela cheia (mulher no sofá, rosto no terço de
-     cima) e o texto centralizado embaixo, sobre o degradê. Nada cobre o rosto. */
+  /* Celular: vídeo em pé de tela cheia, feito no Remotion (HeroMobile): ela no
+     sofá e, sozinho, a tela do notebook com o psicólogo. Toca uma vez e para no
+     psicólogo. Rostos no terço de cima; o texto fica embaixo, sobre o degradê. */
   if (isMobile) return (
     <section ref={trackRef} data-hero-track="" className="hm" style={{ position: "relative", height: "100svh", minHeight: 660, background: FUNDO, color: "#fff", overflow: "hidden" }}>
       <VideoAoVer
-        src="/revivaz/topo-m.mp4" poster="/revivaz/topo-m-poster.webp" loop preload="auto"
-        style={{ ...capa, top: "-24%", height: "124%", objectPosition: "25% 50%", background: FUNDO }}
+        src="/revivaz/topo-m.mp4" poster="/revivaz/topo-m-poster.webp" preload="auto"
+        style={{ ...capa, objectPosition: "50% 0", background: FUNDO }}
       />
       <div aria-hidden="true" style={{
         ...capa,
