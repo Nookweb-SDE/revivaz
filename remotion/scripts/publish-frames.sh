@@ -19,7 +19,7 @@ WIDTH=1440
 CRF=44          # medido: indistinguível da fonte em recorte 1:1 no rosto.
                 # Parece alto porque a entrada é PNG cru, com grão; vindo de
                 # um WebP já suavizado o mesmo resultado sairia por volta de 30.
-POSTER_FRAME=85 # meio da sequência, no plano do close
+POSTER_FRAME=55 # meio da sequência, no plano do close
 BUDGET_MB=3
 
 shopt -s nullglob

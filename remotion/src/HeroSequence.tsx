@@ -1,13 +1,24 @@
 import React from "react";
-import { AbsoluteFill, Sequence, Video, staticFile, interpolate, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Sequence, interpolate, useCurrentFrame } from "remotion";
 import { KenBurns } from "./shots/KenBurns";
 
 export const FPS = 14;
 export const TOTAL = 171;
 
-const A = 60;   // plano aberto -> médio (crop da imagem-mãe)
-const B = 55;   // close (vídeo)
-const C = 56;   // ponto de vista (imagem OTS)
+// Cinco planos, todos na sala real à noite (Flow, 18/10/2026).
+// Soma dos planos = TOTAL; cada um que sai dura +X por baixo do que entra.
+const SHOTS = [
+  // 1 · aberto: ela no sofá, sacada e prédio vizinho ao lado; câmera aproxima
+  { src: "n1.jpg", d: 40, from: { x: 0.0, y: 0.0, w: 1.0 }, to: { x: 0.2, y: 0.12, w: 0.72 } },
+  // 2 · médio-close: rosto na luz da tela, fundo em bokeh
+  { src: "n2.jpg", d: 34, from: { x: 0.08, y: 0.04, w: 0.9 }, to: { x: 0.22, y: 0.08, w: 0.74 } },
+  // 3 · detalhe: mãos no teclado, câmera desliza para a tela
+  { src: "n3.jpg", d: 28, from: { x: 0.02, y: 0.12, w: 0.84 }, to: { x: 0.14, y: 0.1, w: 0.84 } },
+  // 4 · por cima do ombro: aproxima da chamada com o psicólogo
+  { src: "n4.jpg", d: 36, from: { x: 0.0, y: 0.0, w: 1.0 }, to: { x: 0.26, y: 0.26, w: 0.7 } },
+  // 5 · a tela: o psicólogo ouvindo
+  { src: "n5.jpg", d: 33, from: { x: 0.0, y: 0.03, w: 0.94 }, to: { x: 0.17, y: 0.35, w: 0.5 } },
+];
 const X = 8;    // frames de sobreposição entre planos
 
 /**
@@ -27,36 +38,26 @@ const FadeIn: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <AbsoluteFill style={{ opacity }}>{children}</AbsoluteFill>;
 };
 
+const starts = SHOTS.map((_, i) => SHOTS.slice(0, i).reduce((a, b) => a + b.d, 0));
+
 export const HeroSequence: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: "#04080f" }}>
-    {/* 1+2 · aberto -> médio: mesmo pixel, só recorte.
-        Dura X frames a mais para servir de base enquanto o close entra. */}
-    <Sequence durationInFrames={A + X}>
-      <KenBurns
-        src="mae.png"
-        from={{ x: 0.02, y: 0.02, w: 0.96 }}
-        to={{ x: 0.22, y: 0.10, w: 0.60 }}
-        durationInFrames={A}
-      />
-    </Sequence>
-
-    {/* 3 · close: vídeo, porque é onde piscar e respirar importam */}
-    <Sequence from={A} durationInFrames={B + X}>
-      <FadeIn>
-        <Video src={staticFile("close.mp4")} muted style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      </FadeIn>
-    </Sequence>
-
-    {/* 4 · ponto de vista: imagem real com tela do notebook pré-desenhada */}
-    <Sequence from={A + B} durationInFrames={C}>
-      <FadeIn>
+    {SHOTS.map((s, i) => {
+      const last = i === SHOTS.length - 1;
+      const shot = (
         <KenBurns
-          src="ots.png"
-          from={{ x: 0.06, y: 0.06, w: 0.88 }}
-          to={{ x: 0.20, y: 0.14, w: 0.64 }}
-          durationInFrames={C}
+          src={s.src}
+          from={s.from}
+          to={s.to}
+          durationInFrames={s.d + (last ? 0 : X)}
+          focusFrom={i === 0 ? 0 : 6}
         />
-      </FadeIn>
-    </Sequence>
+      );
+      return (
+        <Sequence key={s.src} from={starts[i]} durationInFrames={s.d + (last ? 0 : X)}>
+          {i === 0 ? shot : <FadeIn>{shot}</FadeIn>}
+        </Sequence>
+      );
+    })}
   </AbsoluteFill>
 );

@@ -6,8 +6,9 @@
  * movimento. Os quadros saem do Remotion (ver remotion/README.md) em AVIF.
  *
  * Três caminhos, de propósito:
- *   - desktop        → scrub no canvas
- *   - mobile         → poster estático (scrub em touch é impreciso e o download não paga)
+ *   - desktop        → scrub no canvas, quadros de 1440 px
+ *   - mobile         → scrub no canvas, recorte em pé de 432 px (~1,1 MiB);
+ *                      o dono pediu em 18/10/2026 que o topo andasse no celular
  *   - reduced-motion → poster estático (movimento não-consentido dispara náusea,
  *                      e parte do público da Revivaz convive exatamente com isso)
  *
@@ -19,14 +20,18 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { frameIndex, framePaths } from "../lib/frameScrub";
+import { proximoEncontro, rotuloData } from "../lib/encontros";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const T = {
   teal500: "#00A8BF", teal300: "#00BFD8", teal100: "#D6F4F8",
+  mag700: "#960064", mag500: "#B4157E",
 } as const;
 
 const BASE = "/revivaz/hero";
+// Celular: recorte em pé de 432 px (~1,1 MiB), gerado por publish-frames-mobile.sh.
+const BASE_MOBILE = "/revivaz/hero-m";
 const EXT = "avif";
 const TOTAL = 171;
 const FUNDO = "#04080f";
@@ -34,9 +39,9 @@ const FUNDO = "#04080f";
 type BP = "mobile" | "tablet" | "desktop";
 
 const ETAPAS = [
-  { titulo: "Acolhimento", texto: "Você não precisa esperar melhorar sozinho para pedir ajuda." },
-  { titulo: "Consulta por vídeo", texto: "Da sua poltrona, com um profissional que combina com você." },
-  { titulo: "Receita digital", texto: "Direto no seu celular, logo depois da consulta." },
+  { titulo: "Escuta", texto: "Espaço seguro para falar, no seu tempo." },
+  { titulo: "Vínculo", texto: "Conhecer quem mora ao lado fortalece a convivência." },
+  { titulo: "Convivência", texto: "Encontros mensais: 18h adolescentes, 19h mulheres." },
 ];
 
 export default function HeroScrubFrames({
@@ -44,6 +49,7 @@ export default function HeroScrubFrames({
 }: {
   heroLines: string[]; heroIdx: number; openAgendar: () => void; bp?: BP;
 }) {
+  const proximo = proximoEncontro(new Date());
   const trackRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgsRef = useRef<HTMLImageElement[]>([]);
@@ -52,8 +58,9 @@ export default function HeroScrubFrames({
   const [reduzido, setReduzido] = useState(false);
 
   const isMobile = bp === "mobile";
+  const base = isMobile ? BASE_MOBILE : BASE;
   // Uma só decisão sobre qual caminho seguir, para os três lugares que a consultam.
-  const estatico = reduzido || isMobile || semAvif;
+  const estatico = reduzido || semAvif;
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -67,9 +74,10 @@ export default function HeroScrubFrames({
      pula os quadros que ainda não baixaram. Não roda no caminho estático —
      ali os frames nunca seriam desenhados, e baixá-los seria dado jogado fora. */
   useEffect(() => {
-    if (reduzido || isMobile) return;
+    if (reduzido) return;
     let vivo = true;
-    const paths = framePaths(BASE, TOTAL, EXT);
+    setPronto(false);
+    const paths = framePaths(base, TOTAL, EXT);
     let resolvidos = 0;
     const imgs = paths.map((src, i) => {
       const im = new Image();
@@ -91,7 +99,7 @@ export default function HeroScrubFrames({
     });
     imgsRef.current = imgs;
     return () => { vivo = false; };
-  }, [reduzido, isMobile]);
+  }, [reduzido, base]);
 
   const desenhar = (i: number) => {
     const cv = canvasRef.current;
@@ -123,7 +131,24 @@ export default function HeroScrubFrames({
           trigger: trackRef.current, start: "18% top", end: "30% top", scrub: true,
         },
       });
-      ETAPAS.forEach((_, i) => {
+      // No celular o bloco de texto cobre metade da tela: sai logo no começo
+      // da rolagem para o filme aparecer, e as etapas entram como legenda.
+      if (isMobile) {
+        gsap.to("[data-hero-texto]", {
+          autoAlpha: 0, y: -16, ease: "none",
+          scrollTrigger: { trigger: trackRef.current, start: "6% top", end: "16% top", scrub: true },
+        });
+      }
+      if (isMobile) {
+        // legenda: uma etapa por vez, no mesmo lugar (empilhadas no grid)
+        const tl = gsap.timeline({
+          scrollTrigger: { trigger: trackRef.current, start: "20% top", end: "88% top", scrub: true },
+        });
+        ETAPAS.forEach((_, i) => {
+          tl.to(`[data-etapa="${i}"]`, { opacity: 1, y: 0, ease: "none", duration: 1 });
+          if (i < ETAPAS.length - 1) tl.to(`[data-etapa="${i}"]`, { opacity: 0, y: -10, ease: "none", duration: 1 }, "+=1.5");
+        });
+      } else ETAPAS.forEach((_, i) => {
         gsap.to(`[data-etapa="${i}"]`, {
           opacity: 1, y: 0, ease: "none",
           scrollTrigger: {
@@ -136,7 +161,7 @@ export default function HeroScrubFrames({
     }, trackRef);
     // Sem o revert sobram ScrollTriggers órfãos disparando depois de trocar de rota.
     return () => ctx.revert();
-  }, [pronto, estatico]);
+  }, [pronto, estatico, isMobile]);
 
   const alturaTrilho = estatico ? "auto" : "380vh";
   const capa: React.CSSProperties = {
@@ -148,14 +173,16 @@ export default function HeroScrubFrames({
       <div style={{
         position: estatico ? "relative" : "sticky",
         top: 0,
-        height: estatico ? "auto" : "100vh",
+        // svh: no celular a barra do navegador encolhe e estica a tela; com
+        // vh o quadro pulava a cada rolagem.
+        height: estatico ? "auto" : isMobile ? "100svh" : "100vh",
         minHeight: isMobile ? 360 : 520,
         overflow: "hidden",
         color: "#fff",
       }}>
         {/* Poster: LCP e piso visual. Fica sob o canvas o tempo todo. */}
         <img
-          src={`${BASE}/poster.webp`} alt="" aria-hidden="true"
+          src={`${base}/poster.webp`} alt="" aria-hidden="true"
           {...{ fetchpriority: "high" }} decoding="async"
           style={capa}
         />
@@ -197,7 +224,7 @@ export default function HeroScrubFrames({
           padding: isMobile ? "72px 16px 40px" : "96px 40px 64px",
           maxWidth: 1200, margin: "0 auto", minHeight: isMobile ? 360 : 520,
         }}>
-          <div style={{
+          <div data-hero-texto="" style={{
             flex: "1 1 0", minWidth: 0, maxWidth: isMobile ? "100%" : "56%",
             position: "relative", padding: isMobile ? "20px 18px" : "30px 34px",
             margin: isMobile ? "0 -4px" : "0 0 0 -34px",
@@ -216,7 +243,7 @@ export default function HeroScrubFrames({
               WebkitBackgroundClip: "text", backgroundClip: "text",
               WebkitTextFillColor: "transparent",
             } as React.CSSProperties}>
-              Saúde que conecta
+              Aqui no Vivaz Taboão da Serra, ninguém fica sozinho
             </h1>
 
             <div style={{
@@ -230,63 +257,66 @@ export default function HeroScrubFrames({
               fontSize: 14, opacity: 0.92, lineHeight: 1.65, marginBottom: 24,
               maxWidth: "92%", color: "rgba(214,244,248,0.92)",
             }}>
-              Cuidado em saúde mental de qualidade, oferecido por psiquiatras e psicólogos
-              em trabalho solidário. Sem filas, sem burocracia.
+              Projeto de psicologia comunitária do Condomínio Vivaz Taboão da Serra. Encontros mensais para
+              adolescentes, mulheres e homens, e atendimento por vídeo com profissionais voluntários.
             </p>
 
             <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
               <button onClick={openAgendar} style={{
-                padding: "14px 24px", fontWeight: 700, fontSize: 14, color: "#001820",
-                background: `linear-gradient(90deg, ${T.teal300}, ${T.teal500})`,
+                padding: "14px 24px", fontWeight: 700, fontSize: 14, color: "#FFFFFF",
+                background: `linear-gradient(90deg, ${T.mag500}, ${T.mag700})`,
                 border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
-                boxShadow: "0 4px 20px rgba(0,191,216,.35)", minHeight: 48,
+                boxShadow: "0 4px 20px rgba(150,0,100,.35)", minHeight: 48,
               }}>
-                Agendar consulta
+                Quero conversar
               </button>
-              {/* Era um botão sem ação nenhuma no hero — o segundo CTA da página
-                  inteira. Agora leva à seção que explica como o cuidado funciona. */}
-              <a href="#sobre" style={{
+              {/* Leva à seção dos encontros mensais da psicologia comunitária. */}
+              <a href="#encontros" style={{
                 padding: "14px 24px", fontWeight: 700, fontSize: 14, color: T.teal300,
                 background: "transparent", border: "2px solid rgba(0,191,216,0.5)",
                 borderRadius: 12, cursor: "pointer", fontFamily: "inherit", minHeight: 48,
                 textDecoration: "none", display: "inline-flex", alignItems: "center",
                 justifyContent: "center",
               }}>
-                Saiba como ativar
+                {proximo ? `Próximo encontro: ${rotuloData(proximo)}` : "Encontros mensais"}
               </a>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 24 }}>
-              <span style={{
-                width: 8, height: 8, borderRadius: "50%", background: "#25D366",
-                flexShrink: 0, boxShadow: "0 0 6px #25D366",
-              }} />
-              <span style={{ fontSize: 12, color: "rgba(214,244,248,0.86)", fontWeight: 600 }}>
-                12 especialidades, de psiquiatria a fonoaudiologia
+              <span style={{ fontSize: 12, color: "rgba(214,244,248,0.9)", fontWeight: 600 }}>
+                Precisa de ajuda agora?
+              </span>
+              <a href="tel:188" style={{
+                background: "#fff", color: T.mag700, borderRadius: 8, padding: "2px 9px",
+                fontSize: 12, fontWeight: 800, textDecoration: "none",
+              }}>188</a>
+              <span style={{ fontSize: 12, color: "rgba(214,244,248,0.9)", fontWeight: 600 }}>
+                CVV, 24h, ligação gratuita
               </span>
             </div>
           </div>
         </div>
 
-        {!isMobile && (
+        {(!isMobile || !estatico) && (
           <div data-etapa-scrim="" style={{
-            position: "absolute", zIndex: 3, right: 44, top: "50%",
-            transform: "translateY(-50%)", display: "flex", flexDirection: "column",
-            gap: 20, textAlign: "right", maxWidth: 300,
-            padding: "26px 26px 26px 34px", borderRadius: 20,
+            position: "absolute", zIndex: 3, borderRadius: 20,
+            /* celular: legenda embaixo, acima do botão flutuante de conversa */
+            ...(isMobile
+              ? { left: 16, right: 16, bottom: 96, display: "grid", textAlign: "left", padding: "20px 20px" }
+              : { display: "flex", flexDirection: "column", right: 44, top: "50%", transform: "translateY(-50%)", gap: 20, textAlign: "right", maxWidth: 300, padding: "26px 26px 26px 34px" }),
             /* Nasce invisível: uma caixa escura sozinha, antes de qualquer
                texto entrar, lia como defeito na tela. Entra junto com a
                primeira etapa. */
             opacity: estatico ? 1 : 0,
             /* mesmo princípio do texto: refletor colado no conteúdo, não
                gradiente de ponta a ponta lavando a cena. */
-            background:
-              "radial-gradient(126% 132% at 82% 50%, rgba(3,7,13,.94) 0%, rgba(3,7,13,.86) 42%, rgba(3,7,13,.48) 68%, transparent 88%)",
+            background: `radial-gradient(126% 132% at ${isMobile ? "30%" : "82%"} 50%, rgba(3,7,13,.94) 0%, rgba(3,7,13,.86) 42%, rgba(3,7,13,.48) 68%, transparent 88%)`,
           }}>
             {ETAPAS.map((e, i) => (
               <div
                 key={e.titulo} data-etapa={i}
                 style={{
+                  gridArea: isMobile ? "1 / 1" : undefined,
                   opacity: estatico ? 1 : 0,
                   transform: estatico ? "none" : "translateY(14px)",
                 }}

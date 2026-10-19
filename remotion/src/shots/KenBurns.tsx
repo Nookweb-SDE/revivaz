@@ -1,5 +1,5 @@
 import React from "react";
-import { Img, interpolate, useCurrentFrame, staticFile } from "remotion";
+import { Easing, Img, interpolate, useCurrentFrame, staticFile } from "remotion";
 
 export type Box = { x: number; y: number; w: number };
 
@@ -16,18 +16,26 @@ export const KenBurns: React.FC<{
   from: Box;
   to: Box;
   durationInFrames: number;
-}> = ({ src, from, to, durationInFrames }) => {
+  /** Foco entrando (rack focus): blur em px no 1º frame, zera em `focusFrames`. */
+  focusFrom?: number;
+  focusFrames?: number;
+}> = ({ src, from, to, durationInFrames, focusFrom = 0, focusFrames = 10 }) => {
   const frame = useCurrentFrame();
   const t = [0, durationInFrames - 1];
+  // Câmera de cinema não arranca nem freia seco: entra e sai em curva.
+  const opt = { extrapolateRight: "clamp" as const, easing: Easing.inOut(Easing.sin) };
 
-  const w = interpolate(frame, t, [from.w, to.w], { extrapolateRight: "clamp" });
-  const x = interpolate(frame, t, [from.x, to.x], { extrapolateRight: "clamp" });
-  const y = interpolate(frame, t, [from.y, to.y], { extrapolateRight: "clamp" });
+  const w = interpolate(frame, t, [from.w, to.w], opt);
+  const x = interpolate(frame, t, [from.x, to.x], opt);
+  const y = interpolate(frame, t, [from.y, to.y], opt);
+  const blur = focusFrom
+    ? interpolate(frame, [0, focusFrames], [focusFrom, 0], { extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) })
+    : 0;
 
   const scale = 1 / w;
 
   return (
-    <div style={{ width: "100%", height: "100%", overflow: "hidden", position: "relative" }}>
+    <div style={{ width: "100%", height: "100%", overflow: "hidden", position: "relative", filter: blur ? `blur(${blur}px)` : undefined }}>
       <div
         style={{
           position: "absolute",

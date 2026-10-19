@@ -4,8 +4,12 @@
    ══════════════════════════════════════════════════════════════════ */
 
 import { useState, useEffect, useRef } from "react";
-import EcgValor from "./sections/EcgValor";
+import { RedeVizinhos } from "./sections/RedeVizinhos";
 import HeroScrubFrames from "./sections/HeroScrubFrames";
+import { Encontros } from "./sections/Encontros";
+import { ConversaAcolhimento } from "./sections/ConversaAcolhimento";
+import { CelularesRolagem } from "./sections/CelularesRolagem";
+import { FaixaProximoEncontro } from "./sections/FaixaProximoEncontro";
 import { ESPECIALIDADES, GRUPOS, type GrupoEspecialidade } from "./lib/especialidades";
 import {
   Heart, ArrowRight, ClipboardList,
@@ -44,6 +48,8 @@ const T = {
   teal900: "#004D5C", teal700: "#007A8C", teal500: "#00A8BF",
   teal300: "#00BFD8", teal100: "#D6F4F8", teal050: "#EDF9FB",
   green700: "#2E7D32", green500: "#4CAF50",
+  // Magenta do Condomínio Vivaz (relacionamentovivaz.com.br): só em botões e cards.
+  mag700: "#960064", mag500: "#B4157E",
   navy: "#0B1D3A", navy800: "#112240",
   gray950: "#0D1117", gray800: "#1F2937", gray700: "#374151", gray600: "#4B5563",
   gray200: "#E5E7EB", gray100: "#F3F4F6", gray050: "#F9FAFB", gray500: "#6B7280", white: "#FFFFFF",
@@ -78,11 +84,10 @@ export default function RevivazPreview() {
   const Fp = F_r(bp);
   const container = { maxWidth: containerMax(bp), margin: "0 auto" as const, paddingLeft: containerPad(bp), paddingRight: containerPad(bp) };
   const sectionPad = { padding: `${Sp.xl}px ${Sp.m}px` };
-  const btnPrimary = { padding: "13px 24px", fontSize: F.xs, fontWeight: 700 as const, color: T.white, background: `linear-gradient(135deg, ${T.teal500}, ${T.teal700})`, border: "none", borderRadius: 12, cursor: "pointer" as const, fontFamily: "inherit", minHeight: 46, boxShadow: "0 8px 22px rgba(0,168,191,.3)" };
+  const btnPrimary = { padding: "13px 24px", fontSize: F.xs, fontWeight: 700 as const, color: T.white, background: `linear-gradient(135deg, ${T.mag500}, ${T.mag700})`, border: "none", borderRadius: 12, cursor: "pointer" as const, fontFamily: "inherit", minHeight: 46, boxShadow: "0 8px 22px rgba(150,0,100,.3)" };
   const btnGlass = { padding: "13px 24px", fontSize: F.xs, fontWeight: 700 as const, color: T.white, background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.24)", borderRadius: 12, cursor: "pointer" as const, fontFamily: "inherit", minHeight: 46, backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" };
 
   /* state */
-  const [tab, setTab] = useState(0);
   const [heroIdx, setHeroIdx] = useState(0);
   const [modalAgendar, setModalAgendar] = useState(false);
   const [agendarOk, setAgendarOk] = useState(false);
@@ -150,12 +155,12 @@ export default function RevivazPreview() {
   const NAV = [
     ["Sobre", "#sobre"],
     ["Para pacientes", "#para-pacientes"],
-    ["Especialidades", "#especialidades"],
+    ["Como funciona", "#como-funciona"],
     ["Para profissionais", "#para-profissionais"],
   ] as const;
 
   /* hero carousel */
-  const heroLines = ["suas consultas", "seus cuidados", "sua vida"];
+  const heroLines = ["escuta", "vínculo", "convivência"];
   useEffect(() => {
     const id = setInterval(() => setHeroIdx(p => (p + 1) % heroLines.length), 2500);
     return () => clearInterval(id);
@@ -164,25 +169,27 @@ export default function RevivazPreview() {
   /* data */
   /* Substitui os depoimentos falsos: cada item aqui é verificável dentro do
      próprio produto, não é alegação de marketing. */
+  // Princípios do PDF da Flávia (§7 combinados, §8 manejo do grupo).
   const CUIDADO = [
-    { icon: ClipboardList, title: "Triagem com instrumento validado", desc: "PHQ-9 e GAD-7, os mesmos questionários usados em serviço de saúde. Você responde em minutos e o profissional já recebe o resultado." },
-    { icon: Stethoscope, title: "Profissional com registro", desc: "Psiquiatras, psicólogos e a equipe multidisciplinar atendem com CRM, CRP ou o conselho da área, conferido no cadastro." },
-    { icon: FileText, title: "Sigilo por lei, não por promessa", desc: "Dado de saúde mental é sensível. Só você, seu profissional e a administração enxergam sua ficha, e a consulta por vídeo não é gravada." },
-    { icon: Heart, title: "Crise não espera consulta", desc: "CVV 188 e SAMU 192 ficam na tela o tempo todo, e o acolhimento responde 24 horas enquanto sua consulta não chega." },
+    { icon: MessageCircle, title: "Ninguém é obrigado a falar", desc: "Escutar também é participar. Ninguém é pressionado a contar algo pessoal ou íntimo." },
+    { icon: Stethoscope, title: "Profissionais com registro", desc: "Psicólogos e terapeutas com registro ativo no conselho da área conduzem a conversa, com escuta qualificada e atenção ao grupo." },
+    { icon: Users, title: "Respeito e privacidade", desc: "Histórias de outras pessoas não são expostas, e a roda não vira tribunal de conflitos do condomínio." },
+    { icon: Heart, title: "Em crise, ajuda imediata", desc: "Situações de risco são acolhidas e encaminhadas. Em emergência: CVV 188 e SAMU 192, 24 horas." },
   ];
 
   const FEATURES = [
-    { icon: Brain, title: "Psiquiatria", sub: "Acompanhamento especializado com profissionais voluntários qualificados.", img: "/revivaz/hero-alt.webp", imgPos: "center" },
-    { icon: Calendar, title: "Agendamento fácil", sub: "Presencial ou online, sem burocracia. Agende em poucos cliques.", img: "/revivaz/hero-alt.webp", imgPos: "center" },
-    { icon: FileText, title: "Receita digital", sub: "Baixe sua receita em PDF na sua conta, logo após a consulta.", img: "/revivaz/hero.webp", imgPos: "center" },
-    { icon: Users, title: "Voluntários", sub: "Psicólogos e psiquiatras dedicados ao atendimento solidário.", img: "/revivaz/hero.webp", imgPos: "center" },
+    { icon: Brain, title: "Escuta qualificada", sub: "Uma psicóloga conduz a conversa para que todos possam falar e ser ouvidos.", img: "/revivaz/hero-alt.webp", imgPos: "center" },
+    { icon: Calendar, title: "Uma quinta por mês", sub: "Encontros presenciais no condomínio, de novembro de 2026 a outubro de 2027.", img: "/revivaz/hero-alt.webp", imgPos: "center" },
+    { icon: MessageCircle, title: "Um tema por mês", sub: "Relações sem violência, autocuidado, escolhas, diferenças, comunicação e mais.", img: "/revivaz/hero.webp", imgPos: "center" },
+    { icon: Users, title: "Três grupos", sub: "Adolescentes de 12 a 17 anos às 18h, mulheres às 19h e homens às 20h (a confirmar).", img: "/revivaz/hero.webp", imgPos: "center" },
   ];
 
+  // Formatos do encontro e encaminhamento (PDF da Flávia §2 e §7).
   const SOLUCOES = [
-    { icon: Stethoscope, title: "Consulta presencial", desc: "No consultório, com horário agendado." },
-    { icon: Video, title: "Teleatendimento", desc: "Vídeo chamada com seu profissional." },
-    { icon: MessageCircle, title: "Receita digital", desc: "Em PDF na sua conta, logo após a consulta." },
-    { icon: Heart, title: "Saúde mental", desc: "A maior rede solidária em saúde mental." },
+    { icon: MessageCircle, title: "Roda de conversa", desc: "Fala quem quiser, com respeito ao tempo de cada um." },
+    { icon: Users, title: "Palestra dialogada", desc: "Uma exposição curta que abre espaço para perguntas." },
+    { icon: Sparkles, title: "Oficina breve", desc: "Dinâmicas simples para levar algo prático para a semana." },
+    { icon: Heart, title: "Encaminhamento", desc: "Quem precisar de cuidado individual recebe orientação." },
   ];
 
   /* Substitui as notícias inventadas. Toda resposta aqui é conferível no
@@ -194,7 +201,7 @@ export default function RevivazPreview() {
     },
     {
       p: "Quem vai me atender?",
-      r: "Profissionais com registro no conselho da área: psiquiatras e outros médicos pelo CRM, psicólogos pelo CRP, e a equipe multidisciplinar (terapia ocupacional, fonoaudiologia, psicopedagogia) pelos conselhos próprios. O registro é conferido no cadastro.",
+      r: "Os encontros do condomínio são conduzidos por psicólogos e terapeutas com registro ativo no conselho da área. O atendimento individual por vídeo é feito por profissionais voluntários com registro ativo no conselho da área, conferido no cadastro.",
     },
     {
       p: "É sigiloso mesmo?",
@@ -202,7 +209,7 @@ export default function RevivazPreview() {
     },
     {
       p: "Atende criança e adolescente?",
-      r: "Sim, em sete das especialidades, entre elas neuropediatria, psiquiatria infantil e terapia ocupacional. Enquanto o cadastro específico não fica pronto, a conta deve ser criada e usada pelo responsável legal.",
+      r: "Sim. Há um grupo mensal só para adolescentes de 12 a 17 anos, às 18h. Antes do primeiro encontro, o pai, a mãe ou o responsável assina um termo de ciência, que explica o objetivo do grupo, a participação livre e os limites do sigilo. Para atendimento individual, a conta deve ser criada e usada pelo responsável legal.",
     },
     {
       p: "E se eu estiver em crise agora?",
@@ -210,7 +217,11 @@ export default function RevivazPreview() {
     },
     {
       p: "Quanto tempo até eu ser atendido?",
-      r: "Você pede pelo site e a equipe entra em contato para combinar dia e horário. Enquanto isso, o acolhimento por IA responde 24 horas, sem cadastro, para você não ficar sozinho na espera.",
+      r: "Você pede pelo site e a equipe entra em contato para combinar dia e horário. Enquanto isso, o acolhimento por IA responde 24 horas, sem cadastro.",
+    },
+    {
+      p: "Como funcionam os encontros no condomínio?",
+      r: "São encontros de psicologia comunitária, conduzidos por psicólogos e terapeutas com registro ativo, uma quinta-feira por mês: 18h para adolescentes de 12 a 17 anos, 19h para mulheres e 20h para homens (horário dos homens a confirmar). A participação é livre e ninguém precisa contar nada pessoal. Os encontros não substituem psicoterapia; quem precisar de cuidado individual recebe orientação.",
     },
   ];
 
@@ -281,7 +292,7 @@ export default function RevivazPreview() {
                 <Menu size={24} color={H.forte} />
               </button>
             )}
-            <button onClick={openAgendar} style={{ padding: bp === "mobile" ? "10px 14px" : "10px 20px", fontWeight: 700, fontSize: Fp.sm, color: T.white, background: T.teal700, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 10px rgba(0,77,92,.3)", minHeight: bp === "mobile" ? 40 : 44, flexShrink: 0, whiteSpace: "nowrap" }}>
+            <button onClick={openAgendar} style={{ padding: bp === "mobile" ? "10px 14px" : "10px 20px", fontWeight: 700, fontSize: Fp.sm, color: T.white, background: T.mag700, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 10px rgba(150,0,100,.3)", minHeight: bp === "mobile" ? 40 : 44, flexShrink: 0, whiteSpace: "nowrap" }}>
               Agendar consulta
             </button>
           </div>
@@ -304,97 +315,20 @@ export default function RevivazPreview() {
       {/* ═══ BLOCO 3 — Hero (Canvas WebGL-like particle mesh) ═══ */}
       <HeroScrubFrames heroLines={heroLines} heroIdx={heroIdx} openAgendar={openAgendar} bp={bp} />
 
-      {/* ═══ BLOCO 3.5 — ECG "O que é" (réplica EXATA v6 NookTrack, via nookpick) ═══ */}
+      {/* ═══ BLOCO 3.5 — "O que é": rede de vizinhos (janelas que se ligam) ═══ */}
       <div id="sobre">
-        <EcgValor />
+        <RedeVizinhos bp={bp} />
       </div>
 
-      {/* ═══ BLOCO 4 — Segmented control (track claro, pill ativa branca) ═══ */}
-      <section style={{ background: T.white, padding: `${Sp.l}px ${Sp.m}px 0` }}>
-        <div style={{ ...container, display: "flex", justifyContent: bp === "mobile" ? "stretch" : "center" }}>
-          <div style={{ display: "inline-flex", gap: 4, padding: 4, background: T.teal050, border: `1px solid ${T.teal100}`, borderRadius: 9999, width: bp === "mobile" ? "100%" : "auto", boxShadow: "inset 0 1px 3px rgba(0,77,92,.06)" }}>
-            {["Para pacientes", "Para profissionais", "Como ativar"].map((l, i) => (
-              <button key={l} onClick={() => setTab(i)} style={{
-                flex: bp === "mobile" ? 1 : "none",
-                padding: bp === "mobile" ? "10px 8px" : "10px 22px",
-                fontSize: F.xs, fontWeight: 700, border: "none", borderRadius: 9999,
-                cursor: "pointer", fontFamily: "inherit", transition: "all .2s",
-                background: tab === i ? T.white : "transparent",
-                color: tab === i ? T.teal700 : T.gray600,
-                boxShadow: tab === i ? "0 2px 10px rgba(0,77,92,.15)" : "none",
-              }}>{l}</button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ BLOCO 5 — Card premium split (ref. Conexão Saúde, cores Revivaz + vidro fosco) ═══ */}
-      <section style={{ background: T.white, padding: `${Sp.l}px ${Sp.m}px ${Sp.xl}px` }}>
-        <div style={{ ...container }}>
-        <div style={{
-          display: "flex", gap: bp === "mobile" ? Sp.l : Sp.xxl, alignItems: "stretch", flexWrap: "wrap",
-          background: `linear-gradient(135deg, ${T.navy} 0%, ${T.navy800} 100%)`,
-          border: "1px solid rgba(0,168,191,.18)", borderRadius: 28,
-          padding: bp === "mobile" ? Sp.l : 40,
-          boxShadow: "0 24px 60px rgba(11,29,58,.28)",
-          position: "relative", overflow: "hidden",
-        }}>
-          <div style={{ position: "absolute", top: -80, right: "34%", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,168,191,.18), transparent 70%)", pointerEvents: "none" }} />
-          <div style={{ flex: "1 1 300px", minWidth: 0, position: "relative", zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: Sp.m }}>
-              <span style={{ width: 22, height: 2, background: T.teal300, borderRadius: 2 }} />
-              <span style={{ fontSize: F.xs, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 700, color: T.teal300 }}>
-                {tab === 0 ? "Para você" : tab === 1 ? "Para profissionais" : "Como ativar"}
-              </span>
-            </div>
-            {tab === 0 && <>
-              <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: bp === "mobile" ? F.xl : F["2xl"], color: T.white, lineHeight: 1.15, marginBottom: S.m }}>O futuro do cuidado em saúde mental</h2>
-              <p style={{ fontSize: F.sm, color: "rgba(255,255,255,.72)", lineHeight: 1.7, marginBottom: Sp.l, maxWidth: 440 }}>Agende presencial ou online, receba sua receita em PDF e faça parte de uma rede que reduz a fila de espera do SUS.</p>
-              <div style={{ display: "flex", gap: S.m, flexWrap: "wrap" }}>
-                <button onClick={openAgendar} style={btnPrimary}>Agendar consulta</button>
-                <a style={{ ...btnGlass, textDecoration: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }} href="#sobre">Saiba mais</a>
-              </div>
-            </>}
-            {tab === 1 && <>
-              <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: bp === "mobile" ? F.xl : F["2xl"], color: T.white, lineHeight: 1.15, marginBottom: S.m }}>Lidere a transformação solidária</h2>
-              <p style={{ fontSize: F.sm, color: "rgba(255,255,255,.72)", lineHeight: 1.7, marginBottom: Sp.l, maxWidth: 440 }}>Reduza a fila de espera e faça do seu consultório um ponto de atendimento para quem mais precisa.</p>
-              <div style={{ display: "flex", gap: S.m, flexWrap: "wrap" }}>
-                <button onClick={abrirCadastroProfissional} style={btnPrimary}>Quero ser voluntário</button>
-                <a style={{ ...btnGlass, textDecoration: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }} href="#para-profissionais">Outros parceiros</a>
-              </div>
-            </>}
-            {tab === 2 && <>
-              <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: bp === "mobile" ? F.xl : F["2xl"], color: T.white, lineHeight: 1.15, marginBottom: S.m }}>Faça parte do futuro</h2>
-              <p style={{ fontSize: F.sm, color: "rgba(255,255,255,.72)", lineHeight: 1.7, marginBottom: Sp.l, maxWidth: 440 }}>Otimize a gestão do consultório, atenda novos pacientes e integre uma comunidade de profissionais solidários.</p>
-              <div style={{ display: "flex", gap: S.m, flexWrap: "wrap" }}>
-                <a style={{ ...btnPrimary, textDecoration: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }} href="#para-pacientes">Saiba mais</a>
-                <a style={{ ...btnGlass, textDecoration: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }} href="mailto:contato@revivaz.com.br">Fale com suporte</a>
-              </div>
-            </>}
-          </div>
-          <div style={{ width: bp === "mobile" ? "100%" : "44%", minWidth: bp === "mobile" ? 0 : 260, borderRadius: 22, overflow: "hidden", position: "relative", zIndex: 1, flexShrink: 0, minHeight: bp === "mobile" ? 200 : 300, boxShadow: "0 16px 40px rgba(0,0,0,.3)" }}>
-            <img
-              src={tab === 0 ? "/revivaz/team.webp" : tab === 1 ? "/revivaz/pro.webp" : "/revivaz/ativar.webp"}
-              alt={tab === 0 ? "Paciente em consulta online" : tab === 1 ? "Profissional em teleatendimento" : "Agendamento pelo app Revivaz"}
-              {...{ fetchpriority: "high" }} decoding="async" width="600" height="300"
-              style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 40%", display: "block", position: "absolute", inset: 0 }} />
-            {/* tratamento teal p/ casar com as cores do site */}
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(150deg, rgba(0,168,191,.22) 0%, transparent 42%, rgba(11,29,58,.6) 100%)", pointerEvents: "none" }} />
-            <div style={{ position: "absolute", bottom: 14, left: 14, display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 13px", background: "rgba(255,255,255,.14)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,.3)", borderRadius: 9999 }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.green500, boxShadow: "0 0 0 3px rgba(76,175,80,.25)" }} />
-              <span style={{ fontSize: F.xs, color: T.white, fontWeight: 700 }}>12 especialidades</span>
-            </div>
-          </div>
-        </div>
-        </div>
-      </section>
+      {/* ═══ BLOCO 4 — Encontros mensais (mulheres + adolescentes) ═══ */}
+      <Encontros bp={bp} />
 
       {/* ═══ BLOCO 6 — "Saúde digital" (device card polido) ═══ */}
       <section style={{ ...sectionPad, background: T.gray050, textAlign: "center" }}>
         <div style={{ ...container }}>
-          <div style={{ fontSize: Fp.xs, color: T.teal700, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 700, marginBottom: Sp.s }}>Saúde digital</div>
-          <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp["2xl"], color: T.gray950, marginBottom: Sp.s }}>do jeito que você precisa</h2>
-          <p style={{ fontSize: Fp.sm, color: T.gray600, maxWidth: 420, margin: "0 auto" }}>Atendimentos por agendamento. Presencial ou online por vídeo.</p>
+          <div style={{ fontSize: Fp.xs, color: T.teal700, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 700, marginBottom: Sp.s }}>Atendimento individual</div>
+          <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp["2xl"], color: T.gray950, marginBottom: Sp.s }}>Consulta por vídeo, com hora marcada</h2>
+          <p style={{ fontSize: Fp.sm, color: T.gray600, maxWidth: 420, margin: "0 auto" }}>Para quem precisa de cuidado além dos encontros, com profissionais voluntários.</p>
           <div style={{ maxWidth: bp === "mobile" ? 320 : 380, margin: `${Sp.l}px auto 0` }}>
             <div style={{ background: `linear-gradient(160deg, ${T.teal900} 0%, ${T.navy} 100%)`, borderRadius: 20, padding: bp === "mobile" ? 18 : 22, position: "relative", overflow: "hidden", border: "1px solid rgba(255,255,255,.06)", boxShadow: "0 20px 50px rgba(11,29,58,.28)" }}>
               <div style={{ position: "absolute", top: -50, right: -30, width: 170, height: 170, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,191,216,.28), transparent 70%)", pointerEvents: "none" }} />
@@ -404,7 +338,7 @@ export default function RevivazPreview() {
                 </div>
                 <div style={{ textAlign: "left", color: T.white, flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: F.sm, fontWeight: 700 }}>Consulta online</div>
-                  <div style={{ fontSize: F.xs, opacity: 0.75 }}>Dr. Carlos — Psiquiatria</div>
+                  <div style={{ fontSize: F.xs, opacity: 0.75 }}>Psicólogo voluntário</div>
                 </div>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.green500, boxShadow: "0 0 0 4px rgba(76,175,80,.2)", flexShrink: 0 }} />
               </div>
@@ -423,19 +357,19 @@ export default function RevivazPreview() {
         </div>
       </section>
 
-      {/* ═══ BLOCO 7 — 2 stat cards (NAVY escuro) ═══ */}
+      {/* ═══ BLOCO 7 — 2 stat cards (NAVY escuro), números do PDF da Flávia ═══ */}
       <section style={{ padding: `${Sp.xl}px ${Sp.m}px`, background: T.white }}>
         <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1fr 1fr", gap: Sp.l, ...container }}>
           {[
-            { value: "Até 24h", label: "para agendar sua consulta", note: "*Conforme disponibilidade", Icon: Clock },
-            { value: "Na hora", label: "receita em PDF na sua conta", note: "*Emitida pelo profissional", Icon: MessageCircle },
+            { value: "12 encontros", label: "de novembro de 2026 a outubro de 2027", note: "Na última quinta de cada mês; em dezembro, dia 17/12", Icon: Calendar },
+            { value: "Até 60 min", label: "por encontro, para cada grupo", note: "Adolescentes às 18h, mulheres às 19h e homens às 20h", Icon: Clock },
           ].map(({ value, label, note, Icon }) => (
             <div key={value} style={{ textAlign: "center", padding: Sp.xl, background: T.navy, borderRadius: 16, position: "relative", overflow: "hidden", boxShadow: "0 8px 24px rgba(11,29,58,.25)" }}>
               <div style={{ position: "absolute", top: -16, right: -16, width: 64, height: 64, borderRadius: "50%", background: "rgba(0,168,191,.15)" }} />
               <Icon size={24} color={T.teal300} style={{ marginBottom: S.s }} />
               <div style={{ fontSize: F["2xl"], fontWeight: 800, color: T.white, marginBottom: S.s }}>{value}</div>
               <div style={{ fontSize: F.xs, color: "rgba(255,255,255,.85)", lineHeight: 1.45 }}>{label}</div>
-              <div style={{ fontSize: F.xs, color: "rgba(255,255,255,.5)", marginTop: S.s, fontStyle: "italic" }}>{note}</div>
+              <div style={{ fontSize: F.xs, color: "rgba(255,255,255,.5)", marginTop: S.s }}>{note}</div>
             </div>
           ))}
         </div>
@@ -445,12 +379,12 @@ export default function RevivazPreview() {
       <section id="para-pacientes" style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: `linear-gradient(135deg,${T.teal050} 0%,${T.white} 100%)` }}>
         <div style={{ ...container }}>
           <Sparkles size={bp === "mobile" ? 20 : 22} color={T.teal700} style={{ marginBottom: Sp.s }} />
-          <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.xl, color: T.gray950, marginBottom: Sp.s }}>Muito além de consultas</h2>
+          <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.xl, color: T.gray950, marginBottom: Sp.s }}>Cuidado entre um encontro e outro</h2>
           <p style={{ fontSize: F.sm, color: T.gray600, lineHeight: 1.65, marginBottom: S.l, maxWidth: 480 }}>
-            Os melhores recursos para uma jornada integral de saúde mental. Cuidado contínuo que transforma vidas.
+            Encontros no condomínio, consulta individual quando necessário e orientação para chegar à rede de apoio.
           </p>
-          <button onClick={openAgendar} style={{ padding: "14px 24px", fontSize: F.sm, fontWeight: 700, color: T.white, background: `linear-gradient(135deg,${T.teal700},${T.teal500})`, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 16px rgba(0,77,92,.3)", display: "inline-flex", alignItems: "center", gap: 6, minHeight: 48 }}>
-            Saiba como ativar <ArrowRight size={16} />
+          <button onClick={openAgendar} style={{ padding: "14px 24px", fontSize: F.sm, fontWeight: 700, color: T.white, background: `linear-gradient(135deg,${T.mag700},${T.mag500})`, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 16px rgba(150,0,100,.3)", display: "inline-flex", alignItems: "center", gap: 6, minHeight: 48 }}>
+            Pedir orientação <ArrowRight size={16} />
           </button>
         </div>
       </section>
@@ -459,10 +393,10 @@ export default function RevivazPreview() {
       <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: T.white }}>
         <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1fr 1fr", gap: Sp.l, ...container }}>
           {FEATURES.map(({ icon: Ic, title, sub, img, imgPos }) => {
-            const cardOverlay = { position: "absolute" as const, inset: 0, background: "linear-gradient(to top,rgba(11,29,58,.85) 30%,transparent 65%)" };
+            const cardOverlay = { position: "absolute" as const, inset: 0, background: "linear-gradient(to top,rgba(74,0,50,.88) 30%,transparent 65%)" };
             return (
               <div key={title} style={{ borderRadius: 16, overflow: "hidden", position: "relative", boxShadow: "0 4px 20px rgba(0,0,0,.1)" }}>
-                <img loading="lazy" decoding="async" src={img} alt={title} style={{ width: "100%", height: bp === "mobile" ? 140 : 160, objectFit: "cover", objectPosition: imgPos, display: "block" }} />
+                <img loading="lazy" decoding="async" src={img} alt={title} style={{ width: "100%", height: bp === "mobile" ? 140 : 160, objectFit: "cover", objectPosition: imgPos, display: "block", filter: "hue-rotate(135deg) saturate(1.15)" }} />
                 <div style={cardOverlay} />
                 <div style={{ position: "absolute", top: S.m, left: S.m, width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,.2)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Ic size={20} color={T.white} />
@@ -477,53 +411,17 @@ export default function RevivazPreview() {
         </div>
       </section>
 
-      {/* ═══ BLOCO 9.5 — Especialidades atendidas ═══
-          A âncora "Especialidades" apontava para "Nossas soluções", que lista
-          modalidades de atendimento. A lista de verdade não existia em lugar
-          nenhum do site, mesmo com neurodivergência sendo especialidade forte
-          do modelo de negócio. */}
-      <section id="especialidades" style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: T.white }}>
-        <div style={container}>
-          <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp["2xl"], color: T.gray950, marginBottom: S.s, textAlign: "center" }}>Quem atende você</h2>
-          <p style={{ fontSize: F.sm, color: T.gray600, textAlign: "center", maxWidth: 620, margin: `0 auto ${Sp.l}px` }}>
-            Saúde mental de adulto, criança e adolescente. Neurodivergência (autismo, TDAH e altas habilidades) é atendida pelo time inteiro, não por um profissional só.
-          </p>
+      {/* ═══ BLOCO 9.5 — Conversa de acolhimento (exemplo do assistente) ═══ */}
+      <ConversaAcolhimento bp={bp} />
 
-          {(Object.keys(GRUPOS) as GrupoEspecialidade[]).map(g => (
-            <div key={g} style={{ marginBottom: Sp.l }}>
-              <div style={{ fontSize: F.xs, fontWeight: 800, color: T.teal700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: S.m }}>{GRUPOS[g]}</div>
-              <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "repeat(auto-fit, minmax(240px, 1fr))", gap: S.m }}>
-                {ESPECIALIDADES.filter(e => e.grupo === g).map(e => (
-                  <div key={e.valor} style={{ padding: S.m, borderRadius: 14, border: `1px solid ${T.gray200}`, background: T.gray050 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                      <span style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.sm, color: T.gray950 }}>{e.label}</span>
-                      {e.atendeMenores && (
-                        <span style={{ fontSize: 10, fontWeight: 800, color: T.teal700, background: T.teal050, border: `1px solid ${T.teal100}`, borderRadius: 9999, padding: "2px 8px", whiteSpace: "nowrap" }}>atende criança</span>
-                      )}
-                    </div>
-                    <p style={{ fontSize: F.xs, color: T.gray600, lineHeight: 1.55, margin: 0 }}>{e.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-
-          <div style={{ textAlign: "center" }}>
-            <button onClick={openAgendar} style={{ padding: "14px 24px", fontSize: F.sm, fontWeight: 700, color: T.white, background: `linear-gradient(135deg,${T.teal700},${T.teal500})`, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", minHeight: 48 }}>
-              Pedir agendamento
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ BLOCO 10 — "Nossas soluções" (navy bg + image + icon grid) ═══ */}
-      <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: T.navy }}>
+      {/* ═══ BLOCO 10 — "Como os encontros acontecem" (magenta Vivaz bg + image + icon grid) ═══ */}
+      <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: `linear-gradient(135deg,${T.mag700},${T.mag500})` }}>
         <div style={{ display: "flex", gap: Sp.xl, alignItems: "center", ...container, flexWrap: "wrap" }}>
           <div style={{ width: bp === "mobile" ? "100%" : "40%", minWidth: bp === "mobile" ? 0 : 260, borderRadius: 16, overflow: "hidden", flexShrink: 0, boxShadow: "0 12px 32px rgba(0,0,0,.3)", marginTop: bp === "mobile" ? 0 : 48 }}>
-            <img loading="lazy" decoding="async" src="/revivaz/solucoes.webp" alt="Consulta online por vídeo" width="600" height="200" style={{ width: "100%", height: bp === "mobile" ? 180 : 200, objectFit: "cover", objectPosition: "center", display: "block" }} />
+            <img loading="lazy" decoding="async" src="/revivaz/solucoes.webp" alt="Mulher sorrindo de olhos fechados" width="600" height="200" style={{ width: "100%", height: bp === "mobile" ? 180 : 200, objectFit: "cover", objectPosition: "center", display: "block" }} />
           </div>
           <div style={{ flex: "1 1 280px", minWidth: 0 }}>
-            <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.xl, color: T.white, marginBottom: Sp.m }}>Nossas soluções</h2>
+            <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.xl, color: T.white, marginBottom: Sp.m }}>Como os encontros acontecem</h2>
             <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1fr 1fr", gap: Sp.m }}>
               {SOLUCOES.map(({ icon: Ic, title, desc }) => (
                 <div key={title} style={{ padding: S.m, background: "rgba(255,255,255,.10)", borderRadius: 12, border: "1px solid rgba(255,255,255,.16)" }}>
@@ -537,18 +435,10 @@ export default function RevivazPreview() {
         </div>
       </section>
 
-      {/* ═══ BLOCO 11 — banner de especialidades ═══
-          Dizia "+500 profissionais & voluntários" com 1 profissional no banco.
-          O 12 é conferível na seção "Quem atende você", logo acima. ═══ */}
-      <section id="para-profissionais" style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: `linear-gradient(135deg,${T.teal900} 0%,${T.teal500} 100%)`, color: T.white, textAlign: "center" }}>
-        <div style={{ ...container }}>
-          <div style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: bp === "mobile" ? 56 : 80, lineHeight: 1 }}>12</div>
-          <div style={{ fontSize: Fp.base, opacity: 0.95, marginBottom: Sp.l, maxWidth: 400, margin: "0 auto" }}>especialidades, de psiquiatria a fonoaudiologia, com o time que acompanha neurodivergência</div>
-          <button onClick={openAgendar} style={{ padding: "14px 28px", fontSize: F.sm, fontWeight: 700, color: T.teal700, background: T.white, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 20px rgba(0,0,0,.2)", display: "inline-flex", alignItems: "center", gap: 6, minHeight: 48 }}>
-            Faça parte <ArrowRight size={18} />
-          </button>
-        </div>
-      </section>
+      {/* ═══ BLOCO 11 — próximo encontro + convite a voluntários ═══
+          Antes: "12 especialidades, da psiquiatria à fonoaudiologia", que não
+          é o projeto do condomínio (18/10/2026). ═══ */}
+      <FaixaProximoEncontro bp={bp} onVoluntario={abrirCadastroProfissional} />
 
       {/* ═══ BLOCO 12 — Como a gente cuida ═══
           Aqui havia 4 depoimentos de pessoas que não existem (um assinado com
@@ -558,9 +448,9 @@ export default function RevivazPreview() {
           quando houver paciente atendido que autorize. ═══ */}
       <section style={{ ...sectionPad, background: T.white }}>
         <div style={container}>
-          <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp["2xl"], color: T.gray950, marginBottom: S.s, textAlign: "center" }}>Como a gente cuida</h2>
+          <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp["2xl"], color: T.gray950, marginBottom: S.s, textAlign: "center" }}>Princípios do grupo</h2>
           <p style={{ fontSize: F.sm, color: T.gray600, textAlign: "center", maxWidth: 600, margin: `0 auto ${Sp.l}px` }}>
-            Sem promessa vaga. Isto é o que está funcionando hoje, e você confere usando.
+            Combinados que valem para todos os encontros: adolescentes, mulheres e homens.
           </p>
           <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "repeat(auto-fit, minmax(250px, 1fr))", gap: S.m }}>
             {CUIDADO.map(({ icon: Ic, title, desc }) => (
@@ -576,33 +466,9 @@ export default function RevivazPreview() {
         </div>
       </section>
 
-      {/* ═══ BLOCO 13 — App (mockup celular). NÃO existe app publicado: os botões
-          de App Store / Google Play daqui não levavam a lugar nenhum e saíram. ═══ */}
-      <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: T.gray050, display: "flex", gap: Sp.xl, alignItems: "center", flexWrap: "wrap" }}>
-        <div style={{ ...container, display: "flex", gap: Sp.xl, alignItems: "center", flexWrap: "wrap" }}>
-          <div style={{ width: bp === "mobile" ? "100%" : 100, flexShrink: 0, display: "flex", justifyContent: "center" }}>
-            <div style={{ width: bp === "mobile" ? 72 : 88, margin: "0 auto", background: T.gray950, borderRadius: 20, padding: 6, position: "relative", boxShadow: "0 12px 32px rgba(0,0,0,.2)" }}>
-              <div style={{ background: T.teal900, borderRadius: 14, height: bp === "mobile" ? 130 : 160, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: Sp.s }}>
-                <Smartphone size={28} color={T.teal300} />
-                <span style={{ fontSize: F.sm, color: T.white, fontWeight: 700 }}>Revivaz</span>
-                <span style={{ fontSize: F.xs, color: "rgba(255,255,255,.9)" }}>Saúde mental</span>
-              </div>
-              <div style={{ position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)", width: 28, height: 6, background: T.gray950, borderRadius: 6 }} />
-            </div>
-          </div>
-          <div style={{ flex: "1 1 280px", minWidth: 0 }}>
-            <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.lg, color: T.gray950, marginBottom: Sp.s }}>Sua saúde ainda mais conectada</h2>
-            <p style={{ fontSize: F.sm, color: T.gray600, lineHeight: 1.55, marginBottom: S.m }}>Abra sua conta no celular e tenha agendamento, receitas e teleatendimento na palma da mão. Sem precisar instalar nada.</p>
-            <div style={{ display: "flex", gap: S.m, flexWrap: "wrap", marginBottom: S.s }}>
-              <a href="/conta" style={{ padding: "12px 20px", fontSize: F.xs, fontWeight: 700, color: T.white, background: T.gray950, border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 44, textDecoration: "none", justifyContent: "center" }}>
-                <Smartphone size={16} /> Abrir minha conta
-              </a>
-            </div>
-              {/* Saiu "4,6 · +37 mil avaliações": não existe app publicado nem
-                  avaliação nenhuma. */}
-          </div>
-        </div>
-      </section>
+      {/* ═══ BLOCO 13 — Sua conta: celulares girando na rolagem (sections/CelularesRolagem.tsx).
+          Não existe app publicado: é a conta pelo navegador. ═══ */}
+      <CelularesRolagem bp={bp} />
 
       {/* ═══ BLOCO 14 — Perguntas frequentes ═══
           Aqui havia 3 notícias inventadas, uma delas anunciando uma "parceria
@@ -613,7 +479,7 @@ export default function RevivazPreview() {
         <div style={{ ...container, maxWidth: 760 }}>
           <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp["2xl"], color: T.gray950, marginBottom: S.s, textAlign: "center" }}>Perguntas frequentes</h2>
           <p style={{ fontSize: F.sm, color: T.gray600, textAlign: "center", marginBottom: Sp.l }}>
-            O que costumam querer saber antes de pedir a primeira consulta.
+            Dúvidas comuns sobre os encontros e o atendimento individual.
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: S.m }}>
             {FAQ.map(({ p: pergunta, r }) => (
@@ -634,7 +500,7 @@ export default function RevivazPreview() {
           <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1.4fr 1fr 1fr", gap: Sp.xxl, marginBottom: Sp.xl }}>
             <div>
               <div style={{ fontWeight: 900, color: T.teal300, fontSize: F.lg, marginBottom: S.s, fontFamily: "'Nunito',sans-serif" }}>Revivaz</div>
-              <p style={{ lineHeight: 1.6, marginBottom: S.m, maxWidth: 320 }}>Atendimento solidário em saúde mental. Psiquiatras e psicólogos conectados a quem mais precisa.</p>
+              <p style={{ lineHeight: 1.6, marginBottom: S.m, maxWidth: 320 }}>Psicologia comunitária e atendimento solidário em saúde mental, com profissionais voluntários.</p>
               {/* Instagram/LinkedIn/Notícias: os perfis ainda não existem. Ícone que
                   não abre nada é promessa quebrada — volta quando houver conta. */}
             </div>
@@ -655,7 +521,7 @@ export default function RevivazPreview() {
           </div>
           <div style={{ borderTop: "1px solid rgba(255,255,255,.1)", paddingTop: Sp.m, fontSize: Fp.xs, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: Sp.m }}>
             <span>© {new Date().getFullYear()} Revivaz. Atendimento solidário em saúde mental.</span>
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Heart size={14} fill={T.teal500} stroke={T.teal500} /> Feito com amor</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Heart size={14} fill={T.teal500} stroke={T.teal500} /> Projeto solidário</span>
           </div>
         </div>
       </footer>
@@ -673,7 +539,7 @@ export default function RevivazPreview() {
             right: bp === "mobile" ? 16 : 24,
             bottom: bp === "mobile" ? 16 : 24,
             zIndex: 90,
-            background: `linear-gradient(135deg, ${T.teal700}, ${T.teal500})`,
+            background: `linear-gradient(135deg, ${T.mag700}, ${T.mag500})`,
             borderRadius: 9999,
             minHeight: 56,
             padding: bp === "mobile" ? "0 18px" : "0 22px",
@@ -682,7 +548,7 @@ export default function RevivazPreview() {
             fontWeight: 800,
             fontSize: Fp.sm,
             textDecoration: "none",
-            boxShadow: "0 6px 20px rgba(0,77,92,.38)",
+            boxShadow: "0 6px 20px rgba(150,0,100,.38)",
             display: "flex",
             alignItems: "center",
             gap: 10,
@@ -773,7 +639,7 @@ export default function RevivazPreview() {
                   <input id="form-email" type="email" placeholder="seu@email.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} style={inputBase} />
                 </div>
 
-                <button onClick={enviarPedidoAgendamento} disabled={enviandoAgendar} style={{ width: "100%", padding: "14px", fontSize: F.sm, fontWeight: 700, color: T.white, background: `linear-gradient(135deg,${T.teal700},${T.teal500})`, border: "none", borderRadius: 12, cursor: enviandoAgendar ? "default" : "pointer", fontFamily: "inherit", boxShadow: "0 4px 14px rgba(0,77,92,.3)", minHeight: 48, opacity: enviandoAgendar ? 0.7 : 1 }}>
+                <button onClick={enviarPedidoAgendamento} disabled={enviandoAgendar} style={{ width: "100%", padding: "14px", fontSize: F.sm, fontWeight: 700, color: T.white, background: `linear-gradient(135deg,${T.mag700},${T.mag500})`, border: "none", borderRadius: 12, cursor: enviandoAgendar ? "default" : "pointer", fontFamily: "inherit", boxShadow: "0 4px 14px rgba(150,0,100,.3)", minHeight: 48, opacity: enviandoAgendar ? 0.7 : 1 }}>
                   {enviandoAgendar ? "Enviando…" : modoLead === "profissional" ? "Quero atender" : "Pedir agendamento"}
                 </button>
                 {erroAgendar && (
