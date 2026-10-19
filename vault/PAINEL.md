@@ -12,6 +12,14 @@ Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de depl
 | Tela do chat | pontinhos; depois de 5 s "Pensando com cuidado na sua resposta…"; texto revela em ≤ 0,8 s |
 | Motor (ponte Claude na VPS) | perfil `acolhimento` no ar desde 19/10 19:12 (CLI enxuto, opus): IA no site 5,4–6,0 s (antes 9–11 s). Backup `bridge.mjs.bak-20261019` |
 
+## Checkpoint 19/10 noite → retomar 20/10
+
+- **No ar:** cadastro/agendamento/"Abrir minha conta"/voluntário OCULTOS (`src/cadastroAberto.ts`, `CADASTRO_ABERTO=false`); celulares ficam, só sem botão. Comunicado só `index.html` (Fellipe, sem WhatsApp, capa logo Vivaz).
+- **Branch:** `feat/design-cadastro-login` (de `4bdcbd4`), sem código ainda. NÃO subir: cadastro fica fechado até o banco do Diogo (quinta 22/10).
+- **Prévias prontas (testadas, fluxo até "Cadastro concluído"):** `~/Área de trabalho/previa-revivaz/cadastro/index.html` — A aurora · B grade · C roda. Abrir só no navegador QA (`cdp.py --slot claude-revivaz`).
+- **Amanhã, nesta ordem:** 1) dono escolhe A, B ou C; 2) dono decide: link mágico já cria a conta OU tela de cadastro separada;
+  3) implementar na branch: `src/conta/Login.tsx` + cadastro (nome, nascimento + responsável se <18, e-mail/celular, bloco/apto, consentimento LGPD) com efeitos estilo 21st; 4) testes + `tsc -b`, sem deploy.
+
 ## Próximo
 
 0. **Próxima sessão: o dono vai descrever um ajuste no "flow"** (fluxo da conversa/cadastro). Ler este painel, perguntar o que é, não sair mexendo.
