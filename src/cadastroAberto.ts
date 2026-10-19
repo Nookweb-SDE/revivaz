@@ -5,7 +5,7 @@
  * cadastro ou pedido de consulta se perderia. Desligada, somem os botões de
  * Entrar/Cadastre-se, Agendar consulta, voluntário e o botão "Abrir minha conta"
  * (a seção dos celulares fica, só sem o botão);
- * "Quero conversar" leva à conversa de acolhimento, que não depende de cadastro.
+ * "Quero conversar" do topo também some (pedido do dono 19/10).
  * /conta continua acessível pelo endereço direto (admin e profissionais).
  * Para reabrir: trocar para true e publicar.
  */

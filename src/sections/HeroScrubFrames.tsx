@@ -22,6 +22,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { frameIndex, framePaths } from "../lib/frameScrub";
 import { proximoEncontro, rotuloData } from "../lib/encontros";
 import { VideoAoVer } from "./VideoAoVer";
+import { CADASTRO_ABERTO } from "../cadastroAberto";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -198,13 +199,15 @@ export default function HeroScrubFrames({
           Psicologia comunitária no Condomínio Vivaz Taboão da Serra: encontros mensais e acolhimento por vídeo.
         </p>
         <div style={{ display: "grid", gap: 12 }}>
-          <button onClick={openAgendar} className="hm-btn" style={{
-            minHeight: 54, borderRadius: 9999, border: "none", cursor: "pointer",
-            background: T.mag500, color: "#fff", font: "800 17px 'Nunito',sans-serif",
-            boxShadow: "0 8px 24px rgba(180,21,126,.35)",
-          }}>
-            Quero conversar
-          </button>
+          {CADASTRO_ABERTO && (
+            <button onClick={openAgendar} className="hm-btn" style={{
+              minHeight: 54, borderRadius: 9999, border: "none", cursor: "pointer",
+              background: T.mag500, color: "#fff", font: "800 17px 'Nunito',sans-serif",
+              boxShadow: "0 8px 24px rgba(180,21,126,.35)",
+            }}>
+              Quero conversar
+            </button>
+          )}
           <a href="#encontros" className="hm-btn" style={{
             minHeight: 54, borderRadius: 9999, display: "flex", alignItems: "center", justifyContent: "center",
             border: "1.5px solid rgba(255,255,255,.55)", background: "rgba(255,255,255,.08)",
@@ -321,15 +324,17 @@ export default function HeroScrubFrames({
             </p>
 
             <div style={{ display: "flex", gap: isMobile ? 12 : 16, flexWrap: "wrap", alignItems: "center" }}>
-              <button onClick={openAgendar} style={{
-                padding: "14px 24px", fontWeight: 700, color: "#FFFFFF",
-                background: `linear-gradient(90deg, ${T.mag500}, ${T.mag700})`,
-                border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
-                boxShadow: "0 4px 20px rgba(150,0,100,.35)", minHeight: 48,
-                flex: isMobile ? "1 1 100%" : undefined, fontSize: isMobile ? 16 : 14,
-              }}>
-                Quero conversar
-              </button>
+              {CADASTRO_ABERTO && (
+                <button onClick={openAgendar} style={{
+                  padding: "14px 24px", fontWeight: 700, color: "#FFFFFF",
+                  background: `linear-gradient(90deg, ${T.mag500}, ${T.mag700})`,
+                  border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
+                  boxShadow: "0 4px 20px rgba(150,0,100,.35)", minHeight: 48,
+                  flex: isMobile ? "1 1 100%" : undefined, fontSize: isMobile ? 16 : 14,
+                }}>
+                  Quero conversar
+                </button>
+              )}
               {/* Leva à seção dos encontros mensais da psicologia comunitária. */}
               <a href="#encontros" style={{
                 padding: "14px 24px", fontWeight: 700, fontSize: 14, color: T.teal300,
