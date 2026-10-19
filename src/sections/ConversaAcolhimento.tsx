@@ -53,8 +53,8 @@ export function ConversaAcolhimento({ bp }: { bp: Bp }) {
   const r = escolha === null ? null : RESPOSTAS[escolha];
 
   return (
-    <section aria-labelledby="ca-titulo" style={{ background: T.white, padding: mobile ? "48px 0" : "88px 0", color: T.navy }}>
-      <div style={{ maxWidth: 1240, margin: "0 auto", padding: mobile ? "0 16px" : "0 clamp(20px,5vw,72px)", display: "grid", gridTemplateColumns: empilha ? "1fr" : "1fr 1.1fr", gap: empilha ? 28 : 64, alignItems: "center" }}>
+    <section aria-labelledby="ca-titulo" style={{ background: T.white, padding: mobile ? "56px 0" : "88px 0", color: T.navy }}>
+      <div style={{ maxWidth: 1240, margin: "0 auto", padding: mobile ? "0 20px" : "0 clamp(20px,5vw,72px)", display: "grid", gridTemplateColumns: empilha ? "1fr" : "1fr 1.1fr", gap: empilha ? 28 : 64, alignItems: "center" }}>
         <div>
           <h2 id="ca-titulo" style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: mobile ? 30 : 42, lineHeight: 1.08, margin: "0 0 14px", maxWidth: "18ch" }}>
             Precisa conversar? Comece por aqui
@@ -75,7 +75,7 @@ export function ConversaAcolhimento({ bp }: { bp: Bp }) {
             </div>
           </div>
 
-          <div aria-live="polite" style={{ display: "flex", flexDirection: "column", gap: 10, padding: "14px 0", minHeight: mobile ? 360 : empilha ? 250 : 305 }}>
+          <div aria-live="polite" style={{ display: "flex", flexDirection: "column", gap: 10, padding: "14px 0", minHeight: mobile ? 320 : empilha ? 250 : 305 }}>
             <div style={balao(true)}>{SAUDACAO}</div>
             {r && <div key={`eu${escolha}`} className="ca-sobe" style={balao(false)}>{r.frase}</div>}
             {r && (digitando

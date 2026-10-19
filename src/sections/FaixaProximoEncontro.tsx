@@ -72,8 +72,8 @@ export function FaixaProximoEncontro({ bp, onVoluntario }: { bp: Bp; onVoluntari
   );
 
   return (
-    <section id="para-profissionais" aria-label="Próximo encontro" style={{ background: T.teal050, padding: mobile ? "44px 0" : "64px 0", color: T.navy }}>
-      <div style={{ maxWidth: 1240, margin: "0 auto", padding: mobile ? "0 16px" : "0 clamp(20px,5vw,72px)", display: "grid", gridTemplateColumns: empilha ? "1fr" : "1fr 1.25fr", gap: empilha ? 28 : 56, alignItems: "center" }}>
+    <section id="para-profissionais" aria-label="Próximo encontro" style={{ background: T.teal050, padding: mobile ? "56px 0" : "64px 0", color: T.navy }}>
+      <div style={{ maxWidth: 1240, margin: "0 auto", padding: mobile ? "0 20px" : "0 clamp(20px,5vw,72px)", display: "grid", gridTemplateColumns: empilha ? "1fr" : "1fr 1.25fr", gap: empilha ? 28 : 56, alignItems: "center" }}>
         <div>
           <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: mobile ? 28 : 38, lineHeight: 1.1, margin: "0 0 12px", maxWidth: "20ch" }}>
             {p ? `Próximo encontro: ${dataLonga}` : "Novo ciclo de encontros em breve"}

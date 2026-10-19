@@ -58,10 +58,10 @@ const S = { s: 8, m: 16, l: 24, xl: 32, xxl: 48 } as const;
 const F = { xs: 12, sm: 14, base: 16, lg: 18, xl: 20, "2xl": 24, "3xl": 28 } as const;
 
 /* ── tokens responsivos (mobile / tablet / desktop) ── */
-const S_r = (bp: "mobile" | "tablet" | "desktop") => bp === "mobile" ? { s: 6, m: 12, l: 18, xl: 24, xxl: 36 } : bp === "tablet" ? { s: 8, m: 14, l: 20, xl: 28, xxl: 40 } : S;
-const F_r = (bp: "mobile" | "tablet" | "desktop") => bp === "mobile" ? { xs: 11, sm: 13, base: 15, lg: 16, xl: 18, "2xl": 20, "3xl": 24 } : bp === "tablet" ? { xs: 12, sm: 13, base: 15, lg: 17, xl: 19, "2xl": 22, "3xl": 26 } : F;
+const S_r = (bp: "mobile" | "tablet" | "desktop") => bp === "mobile" ? { s: 8, m: 20, l: 24, xl: 32, xxl: 56 } : bp === "tablet" ? { s: 8, m: 14, l: 20, xl: 28, xxl: 40 } : S;
+const F_r = (bp: "mobile" | "tablet" | "desktop") => bp === "mobile" ? { xs: 13, sm: 15, base: 16, lg: 17, xl: 24, "2xl": 26, "3xl": 30 } : bp === "tablet" ? { xs: 12, sm: 13, base: 15, lg: 17, xl: 19, "2xl": 22, "3xl": 26 } : F;
 const containerMax = (bp: "mobile" | "tablet" | "desktop") => bp === "mobile" ? 9999 : bp === "tablet" ? 720 : 1120;
-const containerPad = (bp: "mobile" | "tablet" | "desktop") => bp === "mobile" ? 12 : bp === "tablet" ? 20 : 16;
+const containerPad = (bp: "mobile" | "tablet" | "desktop") => bp === "mobile" ? 0 : bp === "tablet" ? 20 : 16;
 
 const pill = (active: boolean) => ({
   padding: "10px 20px", fontSize: F.xs, fontWeight: 700 as const,
@@ -83,7 +83,8 @@ export default function RevivazPreview() {
   const Sp = S_r(bp);
   const Fp = F_r(bp);
   const container = { maxWidth: containerMax(bp), margin: "0 auto" as const, paddingLeft: containerPad(bp), paddingRight: containerPad(bp) };
-  const sectionPad = { padding: `${Sp.xl}px ${Sp.m}px` };
+  // celular: 56 px entre seções e 20 px de borda; antes eram 24 e 12, e tudo ficava espremido
+  const sectionPad = { padding: bp === "mobile" ? `${Sp.xxl}px ${Sp.m}px` : `${Sp.xl}px ${Sp.m}px` };
   const btnPrimary = { padding: "13px 24px", fontSize: F.xs, fontWeight: 700 as const, color: T.white, background: `linear-gradient(135deg, ${T.mag500}, ${T.mag700})`, border: "none", borderRadius: 12, cursor: "pointer" as const, fontFamily: "inherit", minHeight: 46, boxShadow: "0 8px 22px rgba(150,0,100,.3)" };
   const btnGlass = { padding: "13px 24px", fontSize: F.xs, fontWeight: 700 as const, color: T.white, background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.24)", borderRadius: 12, cursor: "pointer" as const, fontFamily: "inherit", minHeight: 46, backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" };
 
@@ -262,15 +263,18 @@ export default function RevivazPreview() {
       {/* ═══ BLOCO 2 — Header (layout profissional: esquerda nav, direita ações) ═══ */}
       <header style={{
         position: "fixed", top: 0, zIndex: 50, width: "100%",
-        background: sobreHero ? "transparent" : T.white,
+        // celular: véu escuro sob o menu, senão o texto do topo aparece por trás dele
+        background: sobreHero ? (bp === "mobile" ? "rgba(4,8,15,.72)" : "transparent") : T.white,
+        backdropFilter: sobreHero && bp === "mobile" ? "blur(10px)" : undefined,
+        WebkitBackdropFilter: sobreHero && bp === "mobile" ? "blur(10px)" : undefined,
         borderBottom: sobreHero ? "1px solid rgba(0,191,216,.28)" : `1px solid ${T.gray200}`,
         boxShadow: sobreHero ? "none" : "0 1px 3px rgba(0,0,0,.04)",
         transition: "background .25s ease, border-color .25s ease, box-shadow .25s ease",
       }}>
-        <div style={{ padding: bp === "mobile" ? `${Sp.m}px ${Sp.m}px` : `${Sp.m}px ${Sp.xl}px`, minHeight: bp === "mobile" ? 56 : 64, display: "flex", alignItems: "center", justifyContent: "space-between", gap: Sp.m, flexWrap: "wrap", ...container }}>
+        <div style={{ padding: bp === "mobile" ? `8px ${Sp.m}px` : `${Sp.m}px ${Sp.xl}px`, minHeight: bp === "mobile" ? 56 : 64, display: "flex", alignItems: "center", justifyContent: "space-between", gap: Sp.m, flexWrap: "wrap", ...container, ...(bp === "mobile" ? { paddingLeft: Sp.m, paddingRight: Sp.m } : {}) }}>
           {/* Esquerda: logo + navegação */}
           <div style={{ display: "flex", alignItems: "center", gap: bp === "mobile" ? Sp.s : Sp.xl, flex: bp === "mobile" ? "1 1 auto" : "0 0 auto", minWidth: 0 }}>
-            <a href="#top" style={{ fontWeight: 900, fontSize: Fp.xl, color: H.logo, fontFamily: "'Nunito',sans-serif", letterSpacing: "-0.02em", textDecoration: "none", flexShrink: 0 }}>Revivaz</a>
+            <a href="#top" style={{ fontWeight: 900, fontSize: bp === "mobile" ? 21 : Fp.xl, color: H.logo, fontFamily: "'Nunito',sans-serif", letterSpacing: "-0.02em", textDecoration: "none", flexShrink: 0 }}>Revivaz</a>
             {bp !== "mobile" && (
               <nav style={{ display: "flex", alignItems: "center", gap: Sp.l }}>
                 {NAV.map(([l, href]) => (
@@ -358,8 +362,8 @@ export default function RevivazPreview() {
       </section>
 
       {/* ═══ BLOCO 7 — 2 stat cards (NAVY escuro), números do PDF da Flávia ═══ */}
-      <section style={{ padding: `${Sp.xl}px ${Sp.m}px`, background: T.white }}>
-        <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1fr 1fr", gap: Sp.l, ...container }}>
+      <section style={{ ...sectionPad, background: T.white }}>
+        <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1fr 1fr", gap: bp === "mobile" ? 16 : Sp.l, ...container }}>
           {[
             { value: "12 encontros", label: "de novembro de 2026 a outubro de 2027", note: "Na última quinta de cada mês; em dezembro, dia 17/12", Icon: Calendar },
             { value: "Até 60 min", label: "por encontro, para cada grupo", note: "Adolescentes às 18h, mulheres às 19h e homens às 20h", Icon: Clock },
@@ -391,12 +395,12 @@ export default function RevivazPreview() {
 
       {/* ═══ BLOCO 9 — 4 feature cards com imagem (overlay padronizado em todos) ═══ */}
       <section style={{ padding: `${Sp.xxl}px ${Sp.m}px`, background: T.white }}>
-        <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1fr 1fr", gap: Sp.l, ...container }}>
+        <div style={{ display: "grid", gridTemplateColumns: bp === "mobile" ? "1fr" : "1fr 1fr", gap: bp === "mobile" ? 16 : Sp.l, ...container }}>
           {FEATURES.map(({ icon: Ic, title, sub, img, imgPos }) => {
             const cardOverlay = { position: "absolute" as const, inset: 0, background: "linear-gradient(to top,rgba(74,0,50,.88) 30%,transparent 65%)" };
             return (
               <div key={title} style={{ borderRadius: 16, overflow: "hidden", position: "relative", boxShadow: "0 4px 20px rgba(0,0,0,.1)" }}>
-                <img loading="lazy" decoding="async" src={img} alt={title} style={{ width: "100%", height: bp === "mobile" ? 140 : 160, objectFit: "cover", objectPosition: imgPos, display: "block", filter: "hue-rotate(135deg) saturate(1.15)" }} />
+                <img loading="lazy" decoding="async" src={img} alt={title} style={{ width: "100%", height: bp === "mobile" ? 190 : 160, objectFit: "cover", objectPosition: imgPos, display: "block", filter: "hue-rotate(135deg) saturate(1.15)" }} />
                 <div style={cardOverlay} />
                 <div style={{ position: "absolute", top: S.m, left: S.m, width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,.2)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Ic size={20} color={T.white} />
@@ -530,7 +534,8 @@ export default function RevivazPreview() {
       {/* CTA flutuante: é a porta de entrada, no lugar que era do WhatsApp.
           Leva ao acolhimento, onde a pessoa conversa, é triada e sai com um dos
           dois caminhos reais (pedir consulta ou entrar na conta). */}
-      {!modalAgendar && (
+      {/* celular: some enquanto o topo está na tela, para não cobrir o «Quero conversar» */}
+      {!modalAgendar && !(bp === "mobile" && sobreHero) && (
         <a
           href="/acolhimento"
           aria-label="Conversar agora com o acolhimento"
@@ -542,7 +547,10 @@ export default function RevivazPreview() {
             background: `linear-gradient(135deg, ${T.mag700}, ${T.mag500})`,
             borderRadius: 9999,
             minHeight: 56,
-            padding: bp === "mobile" ? "0 18px" : "0 22px",
+            // celular: só o ícone, redondo; o rótulo cobria o texto das seções
+            minWidth: 56,
+            justifyContent: "center",
+            padding: bp === "mobile" ? 0 : "0 22px",
             color: T.white,
             fontFamily: "'Nunito',sans-serif",
             fontWeight: 800,
@@ -554,8 +562,8 @@ export default function RevivazPreview() {
             gap: 10,
           }}
         >
-          <MessageCircle size={22} aria-hidden="true" />
-          Conversar agora
+          <MessageCircle size={bp === "mobile" ? 26 : 22} aria-hidden="true" />
+          {bp !== "mobile" && "Conversar agora"}
         </a>
       )}
 

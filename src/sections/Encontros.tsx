@@ -62,7 +62,7 @@ export function Encontros({ bp }: { bp: Bp }) {
   };
 
   return (
-    <section id="encontros" style={{ scrollMarginTop: 80, background: T.white, padding: mobile ? "36px 12px 40px" : "64px 16px 72px" }}>
+    <section id="encontros" style={{ scrollMarginTop: 80, background: T.white, padding: mobile ? "56px 20px" : "64px 16px 72px" }}>
       <div style={{ maxWidth: bp === "tablet" ? 720 : 1120, margin: "0 auto", padding: mobile ? 0 : "0 16px" }}>
         <div style={{ textAlign: "center", maxWidth: 640, margin: "0 auto", marginBottom: mobile ? 24 : 40 }}>
           <div style={{ fontSize: 12, color: T.teal700, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 700, marginBottom: 8 }}>Psicologia comunitária no Vivaz Taboão da Serra</div>
@@ -72,12 +72,12 @@ export function Encontros({ bp }: { bp: Bp }) {
           </p>
         </div>
 
-        <div role="tablist" aria-label="Grupo" onKeyDown={teclas} style={{ position: "relative", display: "flex", width: "fit-content", margin: "0 auto", marginBottom: mobile ? 18 : 24, padding: 5, background: T.teal050, border: `1px solid ${T.teal100}`, borderRadius: 9999 }}>
+        <div role="tablist" aria-label="Grupo" onKeyDown={teclas} style={{ position: "relative", display: "flex", width: mobile ? "100%" : "fit-content", boxSizing: "border-box", margin: "0 auto", marginBottom: mobile ? 18 : 24, padding: 5, background: T.teal050, border: `1px solid ${T.teal100}`, borderRadius: 9999 }}>
           <span aria-hidden="true" style={{ position: "absolute", top: 5, bottom: 5, left: 0, width: bola.w, transform: `translateX(${bola.x}px)`, borderRadius: 9999, background: g.cor, transition: "transform .45s cubic-bezier(.2,.8,.2,1), width .45s, background .45s" }} />
           {ORDEM.map((k, i) => (
             <button key={k} ref={el => { abas.current[i] = el; }} role="tab" id={`aba-${k}`} aria-selected={grupo === k} aria-controls="painel-grupo" tabIndex={grupo === k ? 0 : -1}
               onClick={() => setGrupo(k)}
-              style={{ position: "relative", zIndex: 1, border: 0, background: "none", font: `800 ${mobile ? 13 : 14}px 'Nunito',sans-serif`, padding: mobile ? "10px 11px" : "11px 22px", whiteSpace: "nowrap", borderRadius: 9999, cursor: "pointer", color: grupo === k ? T.white : T.gray600, transition: "color .35s", minHeight: 44 }}>
+              style={{ position: "relative", zIndex: 1, border: 0, background: "none", font: `800 ${mobile ? 13 : 14}px 'Nunito',sans-serif`, padding: mobile ? "10px 4px" : "11px 22px", flex: mobile ? "1 1 0" : undefined, whiteSpace: "nowrap", borderRadius: 9999, cursor: "pointer", color: grupo === k ? T.white : T.gray600, transition: "color .35s", minHeight: 44 }}>
               {GRUPOS[k].aba}
             </button>
           ))}

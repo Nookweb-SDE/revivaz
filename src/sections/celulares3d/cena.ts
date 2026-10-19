@@ -3,7 +3,7 @@
    tela como textura. Carregado sob demanda pelo CelularesRolagem. */
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { QTD, poseCelular } from "../../lib/celulares";
+import { QTD, poseCelular, poseVertical, vistaVertical } from "../../lib/celulares";
 import { desenharTela, TELA_W, TELA_H, ESC } from "./telas";
 
 const W = 0.71, H = 1.46, D = 0.078, R = 0.115;
@@ -29,7 +29,8 @@ function uvNormalizado(g: THREE.BufferGeometry, w: number, h: number) {
 
 export type Cena = { quadro: (p: number, t: number) => void; medir: () => void; destruir: () => void };
 
-export function montarCena(canvas: HTMLCanvasElement, parado: boolean): Cena {
+// "vertical": cacho em pé da versão celular, usado só para gravar os quadros
+export function montarCena(canvas: HTMLCanvasElement, parado: boolean, modo: "leque" | "vertical" = "leque"): Cena {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -119,11 +120,20 @@ export function montarCena(canvas: HTMLCanvasElement, parado: boolean): Cena {
   };
   medir();
 
+  const enquadrarVertical = (p: number) => {
+    const vista = vistaVertical(p);
+    const z = vista / 2 / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    camera.position.set(0, 0, z);
+    camera.lookAt(0, 0, 0);
+  };
+
   let ultimoDesenho = -1;
   const quadro = (p: number, t: number) => {
-    const aberto = Math.min(1, Math.max(0, (p - 0.3) / 0.55));
+    const vertical = modo === "vertical";
+    const aberto = vertical ? Math.min(1, Math.max(0, (p - 0.3) / 0.3)) : Math.min(1, Math.max(0, (p - 0.3) / 0.55));
+    if (vertical) enquadrarVertical(p);
     celulares.forEach((g, i) => {
-      const q = poseCelular(i, p);
+      const q = vertical ? poseVertical(i, p) : poseCelular(i, p);
       const flutua = parado ? 0 : Math.sin(t * 0.9 + i * 1.3) * 0.025 * aberto;
       g.visible = q.opacity > 0.01;
       g.position.set(q.x * PX, -q.y * PX + flutua, q.z * PX);

@@ -21,6 +21,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { frameIndex, framePaths } from "../lib/frameScrub";
 import { proximoEncontro, rotuloData } from "../lib/encontros";
+import { VideoAoVer } from "./VideoAoVer";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -60,7 +61,9 @@ export default function HeroScrubFrames({
   const isMobile = bp === "mobile";
   const base = isMobile ? BASE_MOBILE : BASE;
   // Uma só decisão sobre qual caminho seguir, para os três lugares que a consultam.
-  const estatico = reduzido || semAvif;
+  // Celular também fica parado: foto em cima e texto embaixo, sem texto por
+  // cima do rosto e sem baixar ~1,1 MiB de quadros.
+  const estatico = reduzido || semAvif || isMobile;
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -74,7 +77,7 @@ export default function HeroScrubFrames({
      pula os quadros que ainda não baixaram. Não roda no caminho estático —
      ali os frames nunca seriam desenhados, e baixá-los seria dado jogado fora. */
   useEffect(() => {
-    if (reduzido) return;
+    if (reduzido || isMobile) return;
     let vivo = true;
     setPronto(false);
     const paths = framePaths(base, TOTAL, EXT);
@@ -99,7 +102,7 @@ export default function HeroScrubFrames({
     });
     imgsRef.current = imgs;
     return () => { vivo = false; };
-  }, [reduzido, base]);
+  }, [reduzido, base, isMobile]);
 
   const desenhar = (i: number) => {
     const cv = canvasRef.current;
@@ -180,12 +183,21 @@ export default function HeroScrubFrames({
         overflow: "hidden",
         color: "#fff",
       }}>
-        {/* Poster: LCP e piso visual. Fica sob o canvas o tempo todo. */}
-        <img
-          src={`${base}/poster.webp`} alt="" aria-hidden="true"
-          {...{ fetchpriority: "high" }} decoding="async"
-          style={capa}
-        />
+        {/* Celular: o filme inteiro em 16:9 (ninguém cortado), tocando sozinho,
+            e o texto embaixo dele. 385 KB no lugar dos 171 quadros do scrub. */}
+        {isMobile ? (
+          <VideoAoVer
+            src="/revivaz/topo.mp4" poster="/revivaz/topo-poster.webp" loop preload="auto"
+            style={{ display: "block", width: "100%", aspectRatio: "16 / 9", objectFit: "cover", marginTop: 60, background: FUNDO }}
+          />
+        ) : (
+          /* Poster: LCP e piso visual. Fica sob o canvas o tempo todo. */
+          <img
+            src={`${base}/poster.webp`} alt="" aria-hidden="true"
+            {...{ fetchpriority: "high" }} decoding="async"
+            style={capa}
+          />
+        )}
 
         {!estatico && (
           <canvas
@@ -200,15 +212,15 @@ export default function HeroScrubFrames({
 
         {/* Véu horizontal: é ele que garante o contraste do texto sobre
             qualquer quadro, em vez de depender do acaso do frame. */}
-        <div aria-hidden="true" style={{
+        {!isMobile && <div aria-hidden="true" style={{
           ...capa,
           background: "linear-gradient(90deg,rgba(4,8,15,.62) 0%,rgba(4,8,15,.28) 22%,transparent 44%)",
-        }} />
+        }} />}
         {/* Véu vertical: escurece sob o header e emenda com a seção seguinte. */}
-        <div aria-hidden="true" style={{
+        {!isMobile && <div aria-hidden="true" style={{
           ...capa,
           background: "linear-gradient(180deg,rgba(4,8,15,.58) 0%,transparent 16%,transparent 74%,rgba(4,8,15,.86) 100%)",
-        }} />
+        }} />}
         {/* Véu da direita: a coluna de etapas cai fora do véu horizontal, e
             medido contra o quadro mais claro (f052) o texto de 13 px ficava
             em 3,7:1 — abaixo dos 4,5:1 que a WCAG exige para texto normal. */}
@@ -221,23 +233,23 @@ export default function HeroScrubFrames({
 
         <div style={{
           position: "relative", zIndex: 2, display: "flex", alignItems: "center",
-          padding: isMobile ? "72px 16px 40px" : "96px 40px 64px",
-          maxWidth: 1200, margin: "0 auto", minHeight: isMobile ? 360 : 520,
+          padding: isMobile ? "22px 20px 40px" : "96px 40px 64px",
+          maxWidth: 1200, margin: "0 auto", minHeight: isMobile ? 0 : 520,
         }}>
           <div data-hero-texto="" style={{
             flex: "1 1 0", minWidth: 0, maxWidth: isMobile ? "100%" : "56%",
-            position: "relative", padding: isMobile ? "20px 18px" : "30px 34px",
-            margin: isMobile ? "0 -4px" : "0 0 0 -34px",
+            position: "relative", padding: isMobile ? 0 : "30px 34px",
+            margin: isMobile ? 0 : "0 0 0 -34px",
             /* Refletor: escurece SÓ atrás do texto e apaga rápido nas bordas.
                A versão anterior lavava a foto inteira com três gradientes de
                ponta a ponta — passava no contraste e matava a cor da cena. */
-            background:
+            background: isMobile ? "none" :
               "radial-gradient(118% 128% at 20% 50%, rgba(3,7,13,.95) 0%, rgba(3,7,13,.88) 40%, rgba(3,7,13,.52) 66%, transparent 86%)",
             borderRadius: 20,
           }}>
             <h1 style={{
               fontFamily: "'Nunito',sans-serif", fontWeight: 900,
-              fontSize: isMobile ? 30 : 52, lineHeight: 1.1,
+              fontSize: isMobile ? 27 : 52, lineHeight: 1.1,
               margin: "0 0 8px", letterSpacing: "-0.02em",
               background: `linear-gradient(90deg, ${T.teal300} 0%, ${T.teal100} 62%, ${T.teal300} 100%)`,
               WebkitBackgroundClip: "text", backgroundClip: "text",
@@ -247,26 +259,28 @@ export default function HeroScrubFrames({
             </h1>
 
             <div style={{
-              fontSize: 14, fontWeight: 700, marginBottom: 16, minHeight: 22,
+              fontSize: isMobile ? 12 : 14, fontWeight: 700, marginBottom: isMobile ? 10 : 16, minHeight: isMobile ? 18 : 22,
               color: T.teal300, letterSpacing: "0.12em", textTransform: "uppercase",
             }}>
               {heroLines[heroIdx]}
             </div>
 
             <p style={{
-              fontSize: 14, opacity: 0.92, lineHeight: 1.65, marginBottom: 24,
-              maxWidth: "92%", color: "rgba(214,244,248,0.92)",
+              fontSize: isMobile ? 15 : 14, opacity: 0.92, lineHeight: 1.6, marginBottom: isMobile ? 20 : 24,
+              maxWidth: isMobile ? "100%" : "92%", color: "rgba(214,244,248,0.92)",
             }}>
-              Projeto de psicologia comunitária do Condomínio Vivaz Taboão da Serra. Encontros mensais para
-              adolescentes, mulheres e homens, e atendimento por vídeo com profissionais voluntários.
+              {isMobile
+                ? "Encontros mensais no condomínio e atendimento por vídeo com profissionais voluntários."
+                : "Projeto de psicologia comunitária do Condomínio Vivaz Taboão da Serra. Encontros mensais para adolescentes, mulheres e homens, e atendimento por vídeo com profissionais voluntários."}
             </p>
 
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: isMobile ? 12 : 16, flexWrap: "wrap", alignItems: "center" }}>
               <button onClick={openAgendar} style={{
-                padding: "14px 24px", fontWeight: 700, fontSize: 14, color: "#FFFFFF",
+                padding: "14px 24px", fontWeight: 700, color: "#FFFFFF",
                 background: `linear-gradient(90deg, ${T.mag500}, ${T.mag700})`,
                 border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
                 boxShadow: "0 4px 20px rgba(150,0,100,.35)", minHeight: 48,
+                flex: isMobile ? "1 1 100%" : undefined, fontSize: isMobile ? 16 : 14,
               }}>
                 Quero conversar
               </button>
@@ -276,7 +290,8 @@ export default function HeroScrubFrames({
                 background: "transparent", border: "2px solid rgba(0,191,216,0.5)",
                 borderRadius: 12, cursor: "pointer", fontFamily: "inherit", minHeight: 48,
                 textDecoration: "none", display: "inline-flex", alignItems: "center",
-                justifyContent: "center",
+                justifyContent: "center", flex: isMobile ? "1 1 100%" : undefined,
+                boxSizing: "border-box",
               }}>
                 {proximo ? `Próximo encontro: ${rotuloData(proximo)}` : "Encontros mensais"}
               </a>

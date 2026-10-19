@@ -94,7 +94,7 @@ export function RedeVizinhos({ bp }: { bp: Bp }) {
 
   const mobile = bp === "mobile";
   return (
-    <section aria-label="O que é" style={{ background: T.bg, padding: mobile ? "40px 16px 44px" : "72px clamp(20px,5vw,72px) 80px" }}>
+    <section aria-label="O que é" style={{ background: T.bg, padding: mobile ? "56px 20px" : "72px clamp(20px,5vw,72px) 80px" }}>
       <div style={{ maxWidth: 1240, margin: "0 auto" }}>
         <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.22em", textTransform: "uppercase", color: T.teal700, marginBottom: 12 }}>O que é</div>
         <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: "clamp(2.05rem, 4.6vw + .4rem, 4.15rem)", lineHeight: 1.04, color: T.gray950, margin: 0, maxWidth: "18ch" }}>
