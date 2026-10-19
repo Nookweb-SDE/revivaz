@@ -548,7 +548,7 @@ export default function RevivazPreview() {
           Leva ao acolhimento, onde a pessoa conversa, é triada e sai com um dos
           dois caminhos reais (pedir consulta ou entrar na conta). */}
       {/* celular: some enquanto o topo está na tela, para não cobrir o «Quero conversar» */}
-      {!modalAgendar && !(bp === "mobile" && sobreHero) && (
+      {CADASTRO_ABERTO && !modalAgendar && !(bp === "mobile" && sobreHero) && (
         <a
           href="/acolhimento"
           aria-label="Conversar agora com o acolhimento"

@@ -10,6 +10,7 @@ Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de depl
 | Celulares "Sua conta Revivaz" | fundo branco + grade que acende (GridPulse) + badge vidro com borda turquesa→magenta e celular 3D |
 | IA do acolhimento | prompt curto (2–3 frases, 1 pergunta), convite "Pedir consulta" uma vez, respiração 1 passo por vez |
 | Tela do chat | pontinhos; depois de 5 s "Pensando com cuidado na sua resposta…"; texto revela em ≤ 0,8 s |
+| Oculto até o banco do Diogo | cadastro, agendamento, conversa ("Quero conversar", flutuante) — lista e como reverter em `OCULTO-ATE-O-BANCO.md` |
 | Motor (ponte Claude na VPS) | perfil `acolhimento` no ar desde 19/10 19:12 (CLI enxuto, opus): IA no site 5,4–6,0 s (antes 9–11 s). Backup `bridge.mjs.bak-20261019` |
 
 ## Checkpoint 19/10 noite → retomar 20/10
