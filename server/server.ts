@@ -16,6 +16,7 @@ import leadRoutes from "./routes/lead";
 import receitaRoutes from "./routes/receita";
 import acolhimentoRoutes from "./routes/acolhimento";
 import { leadHits } from "./lib/limitadores";
+import { cacheDe, pareceArquivo } from "./lib/estatico";
 
 const app = express();
 app.use(express.json({ limit: "256kb" }));
@@ -47,9 +48,14 @@ app.use("/api", (_req, res) => res.status(404).json({ error: "Rota não encontra
 app.get("/acolhimento", (_req, res) => res.sendFile(path.join(DIST, "acolhimento.html")));
 app.get("/privacidade", (_req, res) => res.sendFile(path.join(DIST, "privacidade.html")));
 app.get("/termos", (_req, res) => res.sendFile(path.join(DIST, "termos.html")));
-app.use(express.static(DIST, { extensions: ["html"] }));
+app.use(express.static(DIST, {
+  extensions: ["html"],
+  setHeaders: (res, arquivo) => res.setHeader("Cache-Control", cacheDe("/" + path.relative(DIST, arquivo).split(path.sep).join("/"))),
+}));
+// arquivo que não existe (ex.: /assets da versão anterior) é 404, não a página
+app.use((req, res, next) => (pareceArquivo(req.path) ? res.status(404).end() : next()));
 // Fallback SPA (Express 5: usar middleware final, não app.get("*"))
-app.use((_req, res) => res.sendFile(path.join(DIST, "index.html")));
+app.use((_req, res) => { res.setHeader("Cache-Control", "no-cache"); res.sendFile(path.join(DIST, "index.html")); });
 
 // Não há scheduler de lembrete: o canal era WhatsApp, que saiu do produto.
 // Quando existir um canal novo, o lembrete volta como módulo próprio.
