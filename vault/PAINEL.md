@@ -2,7 +2,7 @@
 
 Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de deploy em `DEPLOY.md`.
 
-## Estado (19/10/2026)
+## Estado (19/10/2026, fim do dia)
 
 | Parte | Situação |
 |---|---|
@@ -14,7 +14,17 @@ Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de depl
 
 ## Próximo
 
-1. Levar o patch da ponte para o repo da Tecnopano (`deploy/claude-vps/bridge.mjs`), senão o próximo deploy da ponte apaga o perfil. Só com OK do dono.
+0. **Próxima sessão: o dono vai descrever um ajuste no "flow"** (fluxo da conversa/cadastro). Ler este painel, perguntar o que é, não sair mexendo.
+1. **Quarta 21/10/2026: banco de dados.** O Supabase `akobilxqkwkcfyqdlzzf.supabase.co` não resolve DNS (nem PC nem VPS) desde ≤19/10:
+   "Pedir consulta" (`server/routes/lead.ts`) dá erro e o pedido se perde; Entrar/Cadastre-se não funcionam.
+   Opção 1 (recomendada): dono abre supabase.com e diz se está pausado (reativar) ou apagado (recriar + `supabase/migrations/0001–0010`).
+   Opção 2: Postgres na VPS.
+2. Depois do banco, pedido do dono (19/10): ansiedade/sono livres sem login; **falar com especialista ou continuar conversa
+   exige cadastro rápido (e-mail ou Google/Gmail)** e a conversa fica gravada (tabelas `conversas`/`mensagens`, como o `ChatIA` da conta).
+   Atenção LGPD: dado de saúde = sensível, pedir consentimento explícito no cadastro e citar na privacidade. Prévia HTML antes.
+3. Deploy: o build PRECISA de `--build-arg VITE_SUPABASE_URL/ANON_KEY` (ver `DEPLOY.md`); os envios de 19/10 saíram sem.
+
+1. (Dono: "só mexe na Revivaz, esquece Tecnopano" — não portar o patch.)
 2. Link "Como funciona" do menu: opção 1 (#encontros) ou 2 (publicar `ComoEEncontro`) — dono decide.
 3. Rodar `teste-pessoas.ts` de novo depois de qualquer mudança no prompt.
 

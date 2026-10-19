@@ -7,7 +7,8 @@ Só com "pode subir"/"deploy" do dono.
 ```bash
 cd ~/Projetos/revivaz
 npx vitest run && npm run build
-docker build -t revivaz:latest .
+set -a; . ./.env; set +a   # .env fica fora da imagem (.dockerignore); o front só conhece o Supabase via build-arg
+docker build -t revivaz:latest --build-arg VITE_SUPABASE_URL="$VITE_SUPABASE_URL" --build-arg VITE_SUPABASE_ANON_KEY="$VITE_SUPABASE_ANON_KEY" .
 docker save revivaz:latest | gzip | ssh tecnopano-vps 'gunzip | docker load'
 ssh tecnopano-vps 'docker service update --force --replicas 1 --image revivaz:latest revivaz_web'
 node ~/.local/share/revivaz-ops/cf.mjs        # Purge Everything (CDP no Chrome :9222 do dono)

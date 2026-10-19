@@ -42,3 +42,10 @@ Dono escolheu **opus** (modelo atual). `BRIDGE_ACOLHIMENTO_MODEL` troca sem mexe
 
 - Patch da ponte aplicado pelo dono às 19:12 (escrita remota é barrada para o agente: dono roda com `!`). Site: 5,4–6,0 s.
 - "Como funciona" no menu (opção 1 ou 2).
+
+## Fim do dia
+
+- Ponte com perfil acolhimento no ar (dono aplicou 19:12): IA no site 5,4–6,0 s.
+- Descoberto: Supabase fora do ar (DNS não resolve) → leads e login quebrados. Dono marcou o banco para **quarta 21/10**.
+- Dono: "só mexe na Revivaz, esquece Tecnopano".
+- Próxima sessão começa por um ajuste de flow que o dono vai mencionar.
