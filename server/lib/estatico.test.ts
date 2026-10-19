@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pareceArquivo, cacheDe } from "./estatico";
+import { pareceArquivo, cacheDe, urlNoSubdominio } from "./estatico";
 
 describe("arquivo que não existe depois de atualizar", () => {
   it("pedido com extensão é arquivo (404 se faltar), rota da página não é", () => {
@@ -15,5 +15,14 @@ describe("arquivo que não existe depois de atualizar", () => {
     expect(cacheDe("/index.html")).toBe("no-cache");
     expect(cacheDe("/acolhimento.html")).toBe("no-cache");
     expect(cacheDe("/revivaz/hero/poster.webp")).toBe("public, max-age=0");
+  });
+});
+
+describe("subdomínio do comunicado", () => {
+  it("comunicado.revivaz.com.br lê da pasta /comunicado; o site principal não muda", () => {
+    expect(urlNoSubdominio("comunicado.revivaz.com.br", "/")).toBe("/comunicado/");
+    expect(urlNoSubdominio("comunicado.revivaz.com.br", "/img/sofa.webp")).toBe("/comunicado/img/sofa.webp");
+    expect(urlNoSubdominio("revivaz.com.br", "/")).toBe("/");
+    expect(urlNoSubdominio("www.revivaz.com.br", "/acolhimento")).toBe("/acolhimento");
   });
 });

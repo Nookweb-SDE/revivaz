@@ -16,7 +16,7 @@ import leadRoutes from "./routes/lead";
 import receitaRoutes from "./routes/receita";
 import acolhimentoRoutes from "./routes/acolhimento";
 import { leadHits } from "./lib/limitadores";
-import { cacheDe, pareceArquivo } from "./lib/estatico";
+import { cacheDe, pareceArquivo, urlNoSubdominio } from "./lib/estatico";
 
 const app = express();
 app.use(express.json({ limit: "256kb" }));
@@ -43,6 +43,8 @@ app.get("/api/health", (_req, res) => res.status(200).json({ ok: true }));
 app.use("/api", (_req, res) => res.status(404).json({ error: "Rota não encontrada" }));
 
 // ─── Estático ────────────────────────────────────────────────────────────────
+// comunicado.revivaz.com.br: mesma imagem, pasta /comunicado na raiz do subdomínio.
+app.use((req, _res, next) => { req.url = urlNoSubdominio(req.hostname, req.url); next(); });
 // /acolhimento é entrada própria do Vite: precisa da rota explícita, senão o
 // fallback de SPA devolveria a landing.
 app.get("/acolhimento", (_req, res) => res.sendFile(path.join(DIST, "acolhimento.html")));

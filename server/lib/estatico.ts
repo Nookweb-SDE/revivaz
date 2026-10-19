@@ -16,3 +16,10 @@ export function cacheDe(caminho: string): string {
   if (caminho.endsWith(".html")) return "no-cache";
   return "public, max-age=0";
 }
+
+/** comunicado.revivaz.com.br é a pasta /comunicado do build servida na raiz do subdomínio. */
+export const HOST_COMUNICADO = "comunicado.revivaz.com.br";
+
+export function urlNoSubdominio(host: string, url: string): string {
+  return host === HOST_COMUNICADO ? "/comunicado" + url : url;
+}
