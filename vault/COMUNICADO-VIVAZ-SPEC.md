@@ -51,3 +51,10 @@ Antes de mexer em QUALQUER material do comunicado, conferir contra esta lista.
 - Fica: a seção dos celulares ("Sua conta Revivaz") SEM o botão; "Quero conversar" leva à conversa de acolhimento.
 - Telas novas de cadastro e agendamento: só em branch separada, nunca no ar antes do banco.
 - Palavra "acolhimento", nunca "atendimento" (pedido da Flávia, CRP).
+
+## Transmissão ao vivo da reunião 22/10 (20/10)
+
+- Pedido dos moradores (via Flávia/Walesca): reunião presencial **e** ao vivo pelo Google Meet.
+- Link: https://meet.google.com/osm-woqi-bga · telefone (19) 4560-9921, PIN 602 720 972# (evento na agenda admin nookweb, 22/10 20h–21h30).
+- Na página: linha da data 22/10 ("e ao vivo pelo Google Meet"), botão principal "Assistir ao vivo pelo Google Meet", parágrafo na carta e nas descrições (og/meta).
+- Conta Meet gratuita pode cortar em 60 min com 3+ pessoas: se cair, abrir link novo e avisar no grupo.
