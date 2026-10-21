@@ -19,7 +19,7 @@ async function postJson(url: string, body: unknown, token?: string): Promise<{ o
 
 /**
  * Pede o acesso por e-mail: o servidor manda um link e uma senha temporária
- * (código de 6 dígitos) pelo SMTP da Revivaz.
+ * (código numérico do Supabase: 6 a 10 dígitos, conforme o projeto) pelo SMTP da Revivaz.
  */
 export function pedirAcesso(email: string): Promise<{ ok: boolean; erro?: string }> {
   // /conta.html só existe no Vite (dev); em produção a rota é /conta.
@@ -44,12 +44,12 @@ function desmarcarEntradaPorCodigo(): void {
 }
 
 /**
- * Entra com a senha temporária do e-mail. Se não for um código de 6 dígitos (ou
+ * Entra com a senha temporária do e-mail. Se não for um código numérico (ou
  * o código falhar), tenta como a senha que a pessoa já criou.
  */
 export async function entrarComSenha(email: string, senha: string): Promise<{ ok: boolean }> {
   const codigo = senha.replace(/\s/g, "");
-  if (/^\d{6}$/.test(codigo)) {
+  if (/^\d{6,10}$/.test(codigo)) {
     // A marca vem ANTES: a sessão nova dispara a troca de tela na hora, e a
     // tela de criar senha precisa já encontrar a marca.
     marcarEntradaPorCodigo();

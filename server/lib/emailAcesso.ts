@@ -1,13 +1,15 @@
-// E-mail de acesso: link de um clique + senha temporária (o código de 6
-// dígitos do Supabase). Função pura, para o teste conferir o que sai.
+// E-mail de acesso: link de um clique + senha temporária (o código numérico
+// do Supabase; o projeto do Diogo gera 8 dígitos). Função pura, para o teste conferir o que sai.
 
 function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 }
 
-/** "482913" → "482 913": mais fácil de ler e de digitar no celular. */
+/** "29707570" → "2970 7570": em duas metades, mais fácil de ler e digitar no celular. */
 export function formatarCodigo(codigo: string): string {
-  return codigo.length === 6 ? `${codigo.slice(0, 3)} ${codigo.slice(3)}` : codigo;
+  if (!/^\d{6,10}$/.test(codigo)) return codigo;
+  const meio = Math.ceil(codigo.length / 2);
+  return `${codigo.slice(0, meio)} ${codigo.slice(meio)}`;
 }
 
 export function emailAcesso(link: string, codigo: string): { assunto: string; html: string; texto: string } {

@@ -2,8 +2,13 @@ import { describe, it, expect } from "vitest";
 import { emailAcesso, formatarCodigo } from "./emailAcesso";
 
 describe("formatarCodigo", () => {
-  it("separa os 6 dígitos em dois blocos", () => {
+  it("separa em duas metades (6 ou 8 dígitos)", () => {
     expect(formatarCodigo("482913")).toBe("482 913");
+    expect(formatarCodigo("29707570")).toBe("2970 7570");
+  });
+
+  it("o que não é código numérico sai como veio", () => {
+    expect(formatarCodigo("abc")).toBe("abc");
   });
 });
 

@@ -210,9 +210,9 @@ function AcessoEmail() {
           autoFocus
           value={senha}
           onChange={(e) => setSenha(e.target.value)}
-          placeholder="000 000"
+          placeholder="Números do e-mail"
           disabled={ocupado}
-          style={{ ...inputBase, letterSpacing: ".12em", fontWeight: 800, background: ocupado ? T.gray100 : T.white }}
+          style={{ ...inputBase, letterSpacing: senha ? ".12em" : "normal", fontWeight: senha ? 800 : 500, background: ocupado ? T.gray100 : T.white }}
         />
       </div>
       <p style={{ margin: "0 0 10px", fontSize: 12, color: T.gray600 }}>Já criou a sua senha? Pode digitar ela aqui.</p>
