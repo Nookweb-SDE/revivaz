@@ -20,7 +20,8 @@ Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de depl
 - Comunicado: sem o botão "Conhecer o site Revivaz".
 - Diogo vai montar o banco novo (Supabase) a partir do repo Nookweb: migrations 0001–0010 + seed. Chaves chegam por fora do git.
 - Config de agente (.claude, .cursor, .agents, .mcp.json, skills-lock.json) saiu do git (fica no disco, no .gitignore).
-- 2ª leva da Flávia (16:12): 3 perguntas frequentes da consulta ocultas + frase do responsável legal. Ainda citam consulta: "Cuidado entre um encontro e outro", "Sua conta Revivaz" ("consulta individual quando precisar") e a pergunta "Quanto tempo até eu ser atendido?" — Flávia não pediu; dono decide.
+- 2ª leva da Flávia (16:12): 3 perguntas frequentes da consulta ocultas + frase do responsável legal.
+- 3ª leva (dono, 21/10): sem menção a consulta no site, só "Não espere consulta. Ligue 188" (crise, fica). Falta decidir: exemplo de conversa "Quero falar com um psicólogo" (`ConversaAcolhimento.tsx`) responde "consulta individual por vídeo" ao clicar; os celulares 3D podem mostrar tela de consulta (imagem).
 
 ## Checkpoint 19/10 noite → retomar 20/10
 

@@ -25,6 +25,9 @@ Reverter só uma parte: tirar o `CADASTRO_ABERTO &&` do item na tabela abaixo.
 | Seção "Atendimento individual — Consulta por vídeo, com hora marcada" (cartão Atender/Vídeo) | `src/RevivazPreview.tsx` (BLOCO 6) | volta a mostrar a seção inteira |
 | Perguntas frequentes "Quanto custa?", "Quem vai me atender?", "É sigiloso mesmo?" + subtítulo "…e o atendimento individual" | `src/RevivazPreview.tsx` (`FAQ`, marca `soComCadastro`) | voltam as 3 perguntas e o subtítulo completo (pedido da Flávia, 21/10) |
 | Frase "Para atendimento individual, a conta deve ser criada e usada pelo responsável legal." (pergunta "Atende criança e adolescente?") | `src/RevivazPreview.tsx` (`FAQ`) | a frase volta ao fim da resposta |
+| Pergunta "Quanto tempo até eu ser atendido?" | `src/RevivazPreview.tsx` (`FAQ`, `soComCadastro`) | volta a pergunta |
+| "consulta individual quando necessário" em "Cuidado entre um encontro e outro" | `src/RevivazPreview.tsx` (BLOCO 8, seção fica: o menu "Para participantes" aponta pra ela) | texto volta completo |
+| "consulta individual quando precisar" em "Sua conta Revivaz" (texto do PC e rótulo de acessibilidade) | `src/sections/CelularesRolagem.tsx` | texto volta completo |
 
 ## O que continua no ar
 

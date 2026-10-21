@@ -54,7 +54,9 @@ const CSS_BADGE = `.cr-badge{position:relative;display:inline-flex;align-items:c
 .cr-badge:focus-visible{outline:2px solid #007A8C;outline-offset:3px}
 @media (prefers-reduced-motion:reduce){.cr-badge,.cr-ic{transition:none}}`;
 
-const ROTULO = "Telas da conta Revivaz: encontros, respiração guiada, humor, consulta individual e ajuda imediata";
+const ROTULO = CADASTRO_ABERTO
+  ? "Telas da conta Revivaz: encontros, respiração guiada, humor, consulta individual e ajuda imediata"
+  : "Telas da conta Revivaz: encontros, respiração guiada, humor e ajuda imediata";
 
 export function CelularesRolagem({ bp }: { bp: Bp }) {
   const secao = useRef<HTMLElement>(null);
@@ -180,7 +182,9 @@ export function CelularesRolagem({ bp }: { bp: Bp }) {
           <p data-grid-avoid style={{ fontSize: mobile ? 15 : 16, lineHeight: 1.6, color: T.texto, margin: "0 auto", maxWidth: 520, textShadow: GUARDA }}>
             {mobile
               ? "Encontros, respiração guiada, humor e ajuda imediata. Pelo navegador, sem instalar nada."
-              : "Datas dos encontros, respiração guiada, registro do humor, consulta individual quando precisar e ajuda imediata. Pelo navegador, sem instalar aplicativo."}
+              : CADASTRO_ABERTO
+                ? "Datas dos encontros, respiração guiada, registro do humor, consulta individual quando precisar e ajuda imediata. Pelo navegador, sem instalar aplicativo."
+                : "Datas dos encontros, respiração guiada, registro do humor e ajuda imediata. Pelo navegador, sem instalar aplicativo."}
           </p>
           {CADASTRO_ABERTO && (
             <a href="/conta" className="cr-badge" style={{ marginTop: mobile ? 16 : 22 }}>

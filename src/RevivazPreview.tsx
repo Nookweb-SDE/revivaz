@@ -220,7 +220,7 @@ export default function RevivazPreview() {
       r: "Não espere consulta. Ligue 188 (CVV), que é gratuito e funciona 24 horas, ou 192 (SAMU) se houver risco imediato. Esta plataforma não é serviço de emergência, e esses números ficam visíveis em todas as telas de atendimento.",
     },
     {
-      p: "Quanto tempo até eu ser atendido?",
+      p: "Quanto tempo até eu ser atendido?", soComCadastro: true,
       r: "Você pede pelo site e a equipe entra em contato para combinar dia e horário. Enquanto isso, o acolhimento por IA responde 24 horas, sem cadastro.",
     },
     {
@@ -402,7 +402,9 @@ export default function RevivazPreview() {
           <Sparkles size={bp === "mobile" ? 20 : 22} color={T.teal700} style={{ marginBottom: Sp.s }} />
           <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp.xl, color: T.gray950, marginBottom: Sp.s }}>Cuidado entre um encontro e outro</h2>
           <p style={{ fontSize: F.sm, color: T.gray600, lineHeight: 1.65, marginBottom: S.l, maxWidth: 480 }}>
-            Encontros no condomínio, consulta individual quando necessário e orientação para chegar à rede de apoio.
+            {CADASTRO_ABERTO
+              ? "Encontros no condomínio, consulta individual quando necessário e orientação para chegar à rede de apoio."
+              : "Encontros no condomínio e orientação para chegar à rede de apoio."}
           </p>
           <button onClick={openAgendar} style={{ padding: "14px 24px", fontSize: F.sm, fontWeight: 700, color: T.white, background: `linear-gradient(135deg,${T.mag700},${T.mag500})`, border: "none", borderRadius: 9999, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 16px rgba(150,0,100,.3)", display: "inline-flex", alignItems: "center", gap: 6, minHeight: 48 }}>
             Pedir orientação <ArrowRight size={16} />
