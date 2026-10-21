@@ -2,7 +2,7 @@
 
 Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de deploy em `DEPLOY.md`.
 
-## Estado (19/10/2026, fim do dia)
+## Estado (21/10/2026)
 
 | Parte | Situação |
 |---|---|
@@ -10,8 +10,17 @@ Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de depl
 | Celulares "Sua conta Revivaz" | fundo branco + grade que acende (GridPulse) + badge vidro com borda turquesa→magenta e celular 3D |
 | IA do acolhimento | prompt curto (2–3 frases, 1 pergunta), convite "Pedir consulta" uma vez, respiração 1 passo por vez |
 | Tela do chat | pontinhos; depois de 5 s "Pensando com cuidado na sua resposta…"; texto revela em ≤ 0,8 s |
-| Oculto até o banco do Diogo | cadastro, agendamento, conversa ("Quero conversar", flutuante) — lista e como reverter em `OCULTO-ATE-O-BANCO.md` |
+| Oculto até o banco do Diogo | cadastro, agendamento, conversa ("Quero conversar", flutuante) e, desde 21/10, a seção "Consulta por vídeo, com hora marcada" — lista e como reverter em `OCULTO-ATE-O-BANCO.md` |
+| Repositório principal | **github.com/Nookweb-SDE/revivaz** (`main`), remote local `nookweb`; push com `gh auth switch --user Nookweb-SDE` e voltar para IZAI-SDE. O antigo `origin` (IZAI-SDE) parou em 9c40e20 |
 | Motor (ponte Claude na VPS) | perfil `acolhimento` no ar desde 19/10 19:12 (CLI enxuto, opus): IA no site 5,4–6,0 s (antes 9–11 s). Backup `bridge.mjs.bak-20261019` |
+
+## Checkpoint 21/10
+
+- Pedidos da Flávia no ar (commit `691935e`): consulta por vídeo oculta, menu "Para participantes", "terapeutas" → "profissionais da saúde" (lei em tramitação no Senado). Detalhe em `OCULTO-ATE-O-BANCO.md`.
+- Comunicado: sem o botão "Conhecer o site Revivaz".
+- Diogo vai montar o banco novo (Supabase) a partir do repo Nookweb: migrations 0001–0010 + seed. Chaves chegam por fora do git.
+- Config de agente (.claude, .cursor, .agents, .mcp.json, skills-lock.json) saiu do git (fica no disco, no .gitignore).
+- 2ª leva da Flávia (16:12): 3 perguntas frequentes da consulta ocultas + frase do responsável legal. Ainda citam consulta: "Cuidado entre um encontro e outro", "Sua conta Revivaz" ("consulta individual quando precisar") e a pergunta "Quanto tempo até eu ser atendido?" — Flávia não pediu; dono decide.
 
 ## Checkpoint 19/10 noite → retomar 20/10
 

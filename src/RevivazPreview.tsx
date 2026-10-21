@@ -196,22 +196,24 @@ export default function RevivazPreview() {
 
   /* Substitui as notícias inventadas. Toda resposta aqui é conferível no
      produto: se alguma deixar de ser verdade, muda aqui junto. */
+  /* soComCadastro: falam da consulta individual; ocultas até o banco (vault/OCULTO-ATE-O-BANCO.md). */
   const FAQ = [
     {
-      p: "Quanto custa?",
+      p: "Quanto custa?", soComCadastro: true,
       r: "Hoje o atendimento é gratuito. Ainda não existe cobrança na plataforma, e quando existir você vai saber o valor antes de marcar. A proposta do projeto é que quem pode pagar sustente quem não pode.",
     },
     {
-      p: "Quem vai me atender?",
+      p: "Quem vai me atender?", soComCadastro: true,
       r: "Os encontros do condomínio são conduzidos por psicólogos e profissionais da saúde com registro ativo no conselho da área. O atendimento individual por vídeo é feito por profissionais voluntários com registro ativo no conselho da área, conferido no cadastro.",
     },
     {
-      p: "É sigiloso mesmo?",
+      p: "É sigiloso mesmo?", soComCadastro: true,
       r: "Dado de saúde mental é sensível e a separação de acesso está no banco, não só na tela: só você, o seu profissional e a administração enxergam sua ficha. A consulta por vídeo não é gravada. Está tudo escrito na Política de Privacidade.",
     },
     {
       p: "Atende criança e adolescente?",
-      r: "Sim. Há um grupo mensal só para adolescentes de 12 a 17 anos, às 18h. Antes do primeiro encontro, o pai, a mãe ou o responsável assina um termo de ciência, que explica o objetivo do grupo, a participação livre e os limites do sigilo. Para atendimento individual, a conta deve ser criada e usada pelo responsável legal.",
+      r: "Sim. Há um grupo mensal só para adolescentes de 12 a 17 anos, às 18h. Antes do primeiro encontro, o pai, a mãe ou o responsável assina um termo de ciência, que explica o objetivo do grupo, a participação livre e os limites do sigilo."
+        + (CADASTRO_ABERTO ? " Para atendimento individual, a conta deve ser criada e usada pelo responsável legal." : ""),
     },
     {
       p: "E se eu estiver em crise agora?",
@@ -498,10 +500,10 @@ export default function RevivazPreview() {
         <div style={{ ...container, maxWidth: 760 }}>
           <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp["2xl"], color: T.gray950, marginBottom: S.s, textAlign: "center" }}>Perguntas frequentes</h2>
           <p style={{ fontSize: F.sm, color: T.gray600, textAlign: "center", marginBottom: Sp.l }}>
-            Dúvidas comuns sobre os encontros e o atendimento individual.
+            {CADASTRO_ABERTO ? "Dúvidas comuns sobre os encontros e o atendimento individual." : "Dúvidas comuns sobre os encontros."}
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: S.m }}>
-            {FAQ.map(({ p: pergunta, r }) => (
+            {FAQ.filter((f) => CADASTRO_ABERTO || !("soComCadastro" in f)).map(({ p: pergunta, r }) => (
               <details key={pergunta} style={{ background: T.white, border: `1px solid ${T.gray200}`, borderRadius: 14, padding: `${S.m}px ${S.l}px` }}>
                 <summary style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: F.base, color: T.gray950, cursor: "pointer", listStyle: "none", minHeight: 32, display: "flex", alignItems: "center" }}>
                   {pergunta}
