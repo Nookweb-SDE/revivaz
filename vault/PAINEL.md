@@ -16,6 +16,8 @@ Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de depl
 
 ## Checkpoint 21/10 noite — banco do Diogo + login por e-mail
 
+- **NO AR 21/10 noite** (`1c6af03`, deploy leve + `npm ci` no delta, `docker stack deploy`, imagem anterior = `revivaz:prev-20261021b`, Purge feito, MISS): banco do Diogo ligado (secret `revivaz_service_role_operation`, criado pelo dono); `/conta` = "Acesso em breve"; `/api/auth/acesso` = 404; home sem botões de entrar/cadastro; bundle sem modo dev. Falta: dono pôr `SMTP_PASS` no `.env` para o teste de e-mail de verdade em dev.
+
 - **Banco:** projeto "Operation" do Diogo (`vsztmvkuojmsftnfkzma`), schema `revivaz`; `profiles` virou `revivaz_users`. Auth é COMPARTILHADO com os outros apps dele (a senha que a pessoa cria vale lá também). Chaves só no `.env` / Docker secret.
 - **Branch `feat/login-link-senha-card`** (push em `nookweb` e `origin`, SEM deploy): `458634e` banco → `8a93349` → `9010c70` login → `701352e` código 8 dígitos → `a7e9831` e-mail estilo NookTrack → commit do deploy (este).
 - **Como funciona:** e-mail → servidor gera link + senha temporária (8 dígitos, `generate_link` do admin, o GoTrue NÃO manda e-mail) → manda pelo SMTP da Revivaz → pessoa clica no link OU digita a senha → 1º acesso cria a própria senha. Avisos no canto com cadeado 3D (medidas da NookTrack).
