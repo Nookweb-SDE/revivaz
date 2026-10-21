@@ -1,16 +1,15 @@
-import React, { useState } from "react";
-import { Mail, Phone, ArrowRight, CheckCircle, AlertCircle, MessageCircle, User, Stethoscope, Shield } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Mail, ArrowRight, AlertCircle, KeyRound, User, Stethoscope, Shield } from "lucide-react";
 import { T, btnPrimary } from "./ui";
-import { enviarLinkEmail, entrarComGoogle } from "../lib/auth";
+import { pedirAcesso, entrarComSenha, entrarPeloLink, criarSenha } from "../lib/auth";
+import { avisar } from "../components/avisos/aviso.logic";
 import { supabase } from "../lib/supabase";
 import ConsentimentoLGPD, { CONSENT_KEY } from "./sections/ConsentimentoLGPD";
 
 
-// ─── Email flow phases ───────────────────────────────────────────────────────
-type EmailPhase = "idle" | "loading" | "sent" | "error";
-
-// O login por WhatsApp (OTP) saiu junto com o canal. Ficam dois caminhos na
-// mesma tela, sem abas: conta Google (1 clique) e magic-link por e-mail.
+// O login por WhatsApp (OTP) saiu junto com o canal. Fica o acesso por e-mail:
+// o servidor manda um link de um clique e uma senha temporária (código de 6
+// dígitos) pelo SMTP da Revivaz; no primeiro acesso a pessoa cria a senha dela.
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 const inputBase: React.CSSProperties = {
   width: "100%",
@@ -40,235 +39,275 @@ const errorBox: React.CSSProperties = {
   color: "#991B1B",
 };
 
-// ─── Email section (unchanged logic) ─────────────────────────────────────────
-function EmailLogin() {
+const botaoPrincipal = (desligado: boolean): React.CSSProperties => ({
+  ...btnPrimary,
+  width: "100%",
+  marginTop: 16,
+  fontSize: 15,
+  fontFamily: "'Nunito',sans-serif",
+  fontWeight: 800,
+  borderRadius: 14,
+  minHeight: 52,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  background: desligado ? T.teal300 : `linear-gradient(90deg, ${T.teal900} 0%, ${T.teal700} 100%)`,
+  cursor: desligado ? "not-allowed" : "pointer",
+  opacity: 1,
+  boxShadow: desligado ? "none" : "0 4px 14px rgba(0,122,140,0.28)",
+  transition: "background 0.2s, box-shadow 0.2s",
+});
+
+const linkTexto: React.CSSProperties = {
+  display: "block",
+  margin: "14px auto 0",
+  background: "none",
+  border: "none",
+  fontFamily: "'Nunito',sans-serif",
+  fontWeight: 700,
+  fontSize: 13,
+  color: T.teal700,
+  cursor: "pointer",
+};
+
+const rotulo: React.CSSProperties = { display: "block", fontWeight: 700, fontSize: 13, color: T.gray700, marginBottom: 8 };
+const iconeCampo: React.CSSProperties = { position: "absolute", top: "50%", left: 14, transform: "translateY(-50%)", pointerEvents: "none" };
+
+function Girando() {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: 16, height: 16, borderRadius: "50%", display: "inline-block",
+        border: "2.5px solid rgba(255,255,255,0.35)", borderTopColor: "#fff",
+        animation: "spin 0.7s linear infinite",
+      }}
+    />
+  );
+}
+
+function Cabecalho({ titulo, sub }: { titulo: string; sub: React.ReactNode }) {
+  return (
+    <>
+      <p style={{ margin: "0 0 8px", fontWeight: 800, fontSize: 20, color: T.gray950, lineHeight: 1.3 }}>{titulo}</p>
+      <p style={{ margin: "0 0 20px", fontWeight: 500, fontSize: 14, color: T.gray600, lineHeight: 1.5 }}>{sub}</p>
+    </>
+  );
+}
+
+// ─── Acesso por e-mail: pede (A) → entra com a senha do e-mail (B) ──────────
+type Passo = "email" | "senha";
+
+function AcessoEmail() {
+  const [passo, setPasso] = useState<Passo>("email");
   const [email, setEmail] = useState("");
-  const [phase, setPhase] = useState<EmailPhase>("idle");
+  const [senha, setSenha] = useState("");
+  const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.trim() || phase === "loading") return;
-    setPhase("loading");
+  // Chegou pelo link do e-mail: troca o token por sessão. Dando certo, a
+  // sessão nova tira esta tela sozinha.
+  useEffect(() => {
+    entrarPeloLink().then((r) => {
+      if (r === "expirado") {
+        avisar("link-expirado", "Peça um acesso novo abaixo");
+        setErro("Esse link já foi usado ou expirou. Peça um novo.");
+      }
+    });
+  }, []);
+
+  async function pedir(e?: React.FormEvent) {
+    e?.preventDefault();
+    const alvo = email.trim();
+    if (!alvo || ocupado) return;
+    setOcupado(true);
     setErro(null);
-    const result = await enviarLinkEmail(email.trim());
-    if (result.ok) {
-      setPhase("sent");
+    const r = await pedirAcesso(alvo);
+    setOcupado(false);
+    if (r.ok) {
+      avisar("acesso-enviado", `${alvo} · olhe também o spam`, `acesso-enviado:${alvo}`);
+      setPasso("senha");
     } else {
-      setErro(result.erro ?? "Erro desconhecido. Tente novamente.");
-      setPhase("error");
+      setErro(r.erro ?? "Não consegui enviar. Tente de novo.");
+      avisar("acesso-falhou", r.erro ?? null);
     }
   }
 
-  if (phase === "sent") {
-    return (
-      <div
-        role="status"
-        aria-live="polite"
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 14,
-          padding: "20px 0 8px",
-          textAlign: "center",
-        }}
-      >
-        <CheckCircle size={52} color={T.teal700} strokeWidth={1.8} aria-hidden="true" />
-        <p style={{ margin: 0, fontWeight: 800, fontSize: 17, color: T.gray950, lineHeight: 1.4 }}>
-          Link enviado!
-        </p>
-        <p style={{ margin: 0, fontWeight: 500, fontSize: 14, color: T.gray600, lineHeight: 1.5 }}>
-          Enviamos um link de acesso pro seu e-mail{" "}
-          <strong style={{ color: T.gray950 }}>{email}</strong>.
-          <br />
-          Verifique sua caixa de entrada (e o spam).
-        </p>
-        <button
-          type="button"
-          style={{
-            ...btnPrimary,
-            marginTop: 8,
-            fontSize: 14,
-            fontFamily: "'Nunito',sans-serif",
-            fontWeight: 700,
-            background: "transparent",
-            color: T.teal700,
-            border: `1.5px solid ${T.teal700}`,
-            borderRadius: 12,
-          }}
-          onClick={() => { setPhase("idle"); setEmail(""); }}
-        >
-          Usar outro e-mail
-        </button>
-      </div>
-    );
+  async function entrar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim() || !senha.trim() || ocupado) return;
+    setOcupado(true);
+    setErro(null);
+    const r = await entrarComSenha(email.trim(), senha.trim());
+    setOcupado(false);
+    if (!r.ok) {
+      setErro("Senha errada ou vencida. Confira o e-mail mais recente.");
+      avisar("senha-errada", "Confira o e-mail mais recente");
+    }
   }
 
-  return (
-    <form onSubmit={handleSubmit} noValidate>
-      <label
-        htmlFor="login-email"
-        style={{ display: "block", fontWeight: 700, fontSize: 13, color: T.gray700, marginBottom: 8 }}
-      >
-        E-mail
-      </label>
-      <div style={{ position: "relative", marginBottom: 8 }}>
-        <Mail
-          size={17}
-          color={T.gray600}
-          aria-hidden="true"
-          style={{ position: "absolute", top: "50%", left: 14, transform: "translateY(-50%)", pointerEvents: "none" }}
-        />
+  const caixaErro = erro && (
+    <div role="alert" style={errorBox}>
+      <AlertCircle size={15} aria-hidden="true" />
+      {erro}
+    </div>
+  );
+
+  const campoEmail = (
+    <>
+      <label htmlFor="login-email" style={rotulo}>E-mail</label>
+      <div style={{ position: "relative", marginBottom: 14 }}>
+        <Mail size={17} color={T.gray600} aria-hidden="true" style={iconeCampo} />
         <input
           id="login-email"
           type="email"
           autoComplete="email"
-          autoFocus
+          autoFocus={passo === "email"}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="seu@email.com"
           required
-          disabled={phase === "loading"}
-          style={{
-            ...inputBase,
-            border: `1.5px solid ${phase === "error" ? "#E5484D" : T.gray200}`,
-            background: phase === "loading" ? T.gray100 : T.white,
-          }}
-          onFocus={(e) => { if (phase !== "error") e.currentTarget.style.borderColor = T.teal700; }}
-          onBlur={(e) => { if (phase !== "error") e.currentTarget.style.borderColor = T.gray200; }}
+          disabled={ocupado}
+          style={{ ...inputBase, background: ocupado ? T.gray100 : T.white }}
         />
       </div>
+    </>
+  );
 
-      {phase === "error" && erro && (
-        <div role="alert" style={errorBox}>
-          <AlertCircle size={15} aria-hidden="true" />
-          {erro}
-        </div>
-      )}
+  if (passo === "email") {
+    const desligado = !email.trim() || ocupado;
+    return (
+      <form onSubmit={pedir} noValidate>
+        <Cabecalho titulo="Acessar minha conta" sub="Mandamos um link e uma senha temporária para o seu e-mail." />
+        {campoEmail}
+        {caixaErro}
+        <button type="submit" disabled={desligado} style={botaoPrincipal(desligado)}>
+          {ocupado ? <><Girando /> Enviando…</> : <>Enviar acesso <ArrowRight size={17} strokeWidth={2.5} aria-hidden="true" /></>}
+        </button>
+        <button type="button" style={linkTexto} onClick={() => { setErro(null); setPasso("senha"); }}>
+          Já tenho a senha temporária
+        </button>
+      </form>
+    );
+  }
 
-      <button
-        type="submit"
-        disabled={!email.trim() || phase === "loading"}
-        aria-label="Enviar link de acesso"
-        style={{
-          ...btnPrimary,
-          width: "100%",
-          marginTop: 16,
-          fontSize: 15,
-          fontFamily: "'Nunito',sans-serif",
-          fontWeight: 800,
-          borderRadius: 14,
-          minHeight: 52,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 8,
-          background:
-            !email.trim() || phase === "loading"
-              ? T.teal300
-              : `linear-gradient(90deg, ${T.teal900} 0%, ${T.teal700} 100%)`,
-          cursor: !email.trim() || phase === "loading" ? "not-allowed" : "pointer",
-          opacity: 1,
-          boxShadow:
-            !email.trim() || phase === "loading" ? "none" : "0 4px 14px rgba(0,122,140,0.28)",
-          transition: "background 0.2s, box-shadow 0.2s",
-        }}
-      >
-        {phase === "loading" ? (
-          <>
-            <span
-              aria-hidden="true"
-              style={{
-                width: 16,
-                height: 16,
-                borderRadius: "50%",
-                border: "2.5px solid rgba(255,255,255,0.35)",
-                borderTopColor: "#fff",
-                display: "inline-block",
-                animation: "spin 0.7s linear infinite",
-              }}
-            />
-            Enviando…
-          </>
-        ) : (
-          <>
-            Enviar link de acesso
-            <ArrowRight size={17} strokeWidth={2.5} aria-hidden="true" />
-          </>
-        )}
+  const desligado = !email.trim() || !senha.trim() || ocupado;
+  return (
+    <form onSubmit={entrar} noValidate>
+      <Cabecalho
+        titulo="Entrar com a senha do e-mail"
+        sub={<>Clique no link do e-mail <strong>ou</strong> digite a senha temporária aqui.</>}
+      />
+      {campoEmail}
+      <label htmlFor="login-senha" style={rotulo}>Senha temporária</label>
+      <div style={{ position: "relative", marginBottom: 6 }}>
+        <KeyRound size={17} color={T.gray600} aria-hidden="true" style={iconeCampo} />
+        <input
+          id="login-senha"
+          type="text"
+          autoComplete="one-time-code"
+          autoFocus
+          value={senha}
+          onChange={(e) => setSenha(e.target.value)}
+          placeholder="000 000"
+          disabled={ocupado}
+          style={{ ...inputBase, letterSpacing: ".12em", fontWeight: 800, background: ocupado ? T.gray100 : T.white }}
+        />
+      </div>
+      <p style={{ margin: "0 0 10px", fontSize: 12, color: T.gray600 }}>Já criou a sua senha? Pode digitar ela aqui.</p>
+      {caixaErro}
+      <button type="submit" disabled={desligado} style={botaoPrincipal(desligado)}>
+        {ocupado ? <><Girando /> Entrando…</> : <>Entrar <ArrowRight size={17} strokeWidth={2.5} aria-hidden="true" /></>}
+      </button>
+      <button type="button" style={linkTexto} disabled={ocupado} onClick={() => pedir()}>
+        Reenviar e-mail
       </button>
     </form>
   );
 }
 
-// ─── Google ──────────────────────────────────────────────────────────────────
-// Botão no padrão do Google (fundo branco, "G" colorido). O e-mail fica abaixo
-// para quem não tem conta Google.
-function GoogleLogin() {
-  const [indo, setIndo] = useState(false);
+// ─── Primeiro acesso: troca a senha temporária pela da pessoa (C) ───────────
+export function CriarSenha({ onPronto }: { onPronto: () => void }) {
+  const [senha, setSenha] = useState("");
+  const [repete, setRepete] = useState("");
+  const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  async function entrar() {
-    if (indo) return;
-    setIndo(true);
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault();
+    if (ocupado) return;
+    if (senha.length < 8) return setErro("A senha precisa ter pelo menos 8 caracteres.");
+    if (senha !== repete) return setErro("As duas senhas não estão iguais.");
+    setOcupado(true);
     setErro(null);
-    const r = await entrarComGoogle();
-    // ok = o navegador já está indo para o Google; só volta o estado se falhou.
-    if (!r.ok) {
-      setErro("Não consegui abrir o Google agora. Tente o link por e-mail.");
-      setIndo(false);
-    }
+    const r = await criarSenha(senha);
+    setOcupado(false);
+    if (!r.ok) return setErro(r.erro ?? "Não consegui salvar. Tente de novo.");
+    avisar("senha-criada", "Pronto, a temporária não vale mais");
+    onPronto();
   }
 
+  const desligado = !senha || !repete || ocupado;
   return (
-    <>
-      {erro && (
-        <div role="alert" style={errorBox}>
-          <AlertCircle size={15} aria-hidden="true" />
-          {erro}
+    <Moldura>
+      <form onSubmit={salvar} noValidate>
+        <Cabecalho titulo="Crie sua senha" sub="A senha temporária só vale uma vez. Escolha a sua." />
+        <label htmlFor="nova-senha" style={rotulo}>Nova senha</label>
+        <div style={{ position: "relative", marginBottom: 6 }}>
+          <KeyRound size={17} color={T.gray600} aria-hidden="true" style={iconeCampo} />
+          <input id="nova-senha" type="password" autoComplete="new-password" autoFocus value={senha}
+            onChange={(e) => setSenha(e.target.value)} disabled={ocupado} style={inputBase} />
         </div>
-      )}
-      <button
-        type="button"
-        onClick={entrar}
-        disabled={indo}
+        <p style={{ margin: "0 0 14px", fontSize: 12, color: T.gray600 }}>Mínimo 8 caracteres.</p>
+        <label htmlFor="repete-senha" style={rotulo}>Repita a senha</label>
+        <div style={{ position: "relative", marginBottom: 14 }}>
+          <KeyRound size={17} color={T.gray600} aria-hidden="true" style={iconeCampo} />
+          <input id="repete-senha" type="password" autoComplete="new-password" value={repete}
+            onChange={(e) => setRepete(e.target.value)} disabled={ocupado} style={inputBase} />
+        </div>
+        {erro && (
+          <div role="alert" style={errorBox}>
+            <AlertCircle size={15} aria-hidden="true" />
+            {erro}
+          </div>
+        )}
+        <button type="submit" disabled={desligado} style={botaoPrincipal(desligado)}>
+          {ocupado ? <><Girando /> Salvando…</> : <>Salvar e entrar <ArrowRight size={17} strokeWidth={2.5} aria-hidden="true" /></>}
+        </button>
+      </form>
+    </Moldura>
+  );
+}
+
+/** Fundo e cartão da tela de entrada, com o logo. */
+function Moldura({ children, rodape }: { children: React.ReactNode; rodape?: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        background: T.gray050, minHeight: "100vh", fontFamily: "'Nunito', sans-serif",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        padding: "24px 16px",
+      }}
+    >
+      <div
         style={{
-          width: "100%",
-          minHeight: 52,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 10,
-          background: T.white,
-          border: `1.5px solid ${T.gray200}`,
-          borderRadius: 14,
-          fontFamily: "'Nunito',sans-serif",
-          fontWeight: 800,
-          fontSize: 15,
-          color: T.gray950,
-          cursor: indo ? "wait" : "pointer",
-          opacity: indo ? 0.7 : 1,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+          width: "100%", maxWidth: 400, background: T.white, borderRadius: 20, padding: "32px 28px",
+          boxShadow: "0 8px 40px rgba(0,122,140,0.13), 0 2px 8px rgba(0,0,0,0.06)",
+          border: `1px solid ${T.gray200}`, boxSizing: "border-box",
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
-          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
-          <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
-          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/>
-        </svg>
-        {indo ? "Abrindo o Google…" : "Entrar com Google"}
-      </button>
-      <div
-        aria-hidden="true"
-        style={{ display: "flex", alignItems: "center", gap: 10, margin: "20px 0", color: T.gray600, fontSize: 13, fontWeight: 600 }}
-      >
-        <span style={{ flex: 1, height: 1, background: T.gray200 }} />
-        ou receba um link no e-mail
-        <span style={{ flex: 1, height: 1, background: T.gray200 }} />
+        <p style={{ margin: "0 0 6px", fontWeight: 800, fontSize: 26, color: T.teal700, letterSpacing: "-0.5px", lineHeight: 1 }}>
+          Revivaz
+        </p>
+        {children}
       </div>
-    </>
+      <p style={{ marginTop: 24, fontWeight: 500, fontSize: 13, color: T.gray600, textAlign: "center", lineHeight: 1.5 }}>
+        Saúde mental acessível para todos.
+      </p>
+      {rodape}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
   );
 }
 
@@ -411,8 +450,6 @@ export default function Login(): JSX.Element {
     () => !!localStorage.getItem(CONSENT_KEY)
   );
 
-  const subtitle = "Entre com sua conta Google ou receba um link no e-mail.";
-
   // Show LGPD consent modal before anything else
   if (!consentido) {
     return (
@@ -452,7 +489,7 @@ export default function Login(): JSX.Element {
               Acessar minha conta
             </p>
             <p style={{ margin: 0, fontWeight: 500, fontSize: 14, color: T.gray600 }}>
-              Entre com sua conta Google ou receba um link no e-mail.
+              Mandamos um link e uma senha temporária para o seu e-mail.
             </p>
           </div>
         </div>
@@ -463,96 +500,8 @@ export default function Login(): JSX.Element {
   }
 
   return (
-    <div
-      style={{
-        background: T.gray050,
-        minHeight: "100vh",
-        fontFamily: "'Nunito', sans-serif",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px 16px",
-      }}
-    >
-      {/* Card container */}
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 400,
-          background: T.white,
-          borderRadius: 20,
-          padding: "32px 28px",
-          boxShadow: "0 8px 40px rgba(0,122,140,0.13), 0 2px 8px rgba(0,0,0,0.06)",
-          border: `1px solid ${T.gray200}`,
-        }}
-      >
-        {/* Logo */}
-        <p
-          style={{
-            margin: "0 0 6px",
-            fontWeight: 800,
-            fontSize: 26,
-            color: T.teal700,
-            letterSpacing: "-0.5px",
-            lineHeight: 1,
-          }}
-        >
-          Revivaz
-        </p>
-
-        {/* Heading */}
-        <p
-          style={{
-            margin: "0 0 8px",
-            fontWeight: 800,
-            fontSize: 20,
-            color: T.gray950,
-            lineHeight: 1.3,
-          }}
-        >
-          Acessar minha conta
-        </p>
-        <p
-          style={{
-            margin: "0 0 20px",
-            fontWeight: 500,
-            fontSize: 14,
-            color: T.gray600,
-            lineHeight: 1.5,
-          }}
-        >
-          {subtitle}
-        </p>
-
-        {/* Google primeiro (1 clique); magic-link por e-mail para quem não tem. */}
-        <GoogleLogin />
-        <EmailLogin />
-      </div>
-
-      {/* Tagline */}
-      <p
-        style={{
-          marginTop: 24,
-          fontWeight: 500,
-          fontSize: 13,
-          color: T.gray600,
-          textAlign: "center",
-          lineHeight: 1.5,
-        }}
-      >
-        Saúde mental acessível para todos.
-      </p>
-
-      {/* Acesso rápido por perfil — só em dev (removido do build de produção) */}
-      {import.meta.env.DEV && <DevLoginBand />}
-
-      {/* Spinner keyframe injected inline via a style tag */}
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
+    <Moldura rodape={import.meta.env.DEV && <DevLoginBand />}>
+      <AcessoEmail />
+    </Moldura>
   );
 }

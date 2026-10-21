@@ -58,6 +58,16 @@ export const SCHEMA_HEADERS: Record<string, string> = {
 // ─── Auth middleware (Supabase Bearer → res.locals.uid) ─────────────────────
 export const requireAuth = makeRequireAuth(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// ─── E-mail (SMTP do contato@revivaz.com.br) ───────────────────────────────
+// O e-mail de acesso sai daqui, não do Supabase: o projeto Auth é dividido com
+// outros apps, e o SMTP de lá vale para todos eles. Sem senha, em dev o e-mail
+// só vai pro console; em produção a rota recusa (503).
+export const SMTP_HOST = process.env.SMTP_HOST || "mail.revivaz.com.br";
+export const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
+export const SMTP_USER = process.env.SMTP_USER || "contato@revivaz.com.br";
+export const SMTP_PASS = resolveSecret("SMTP_PASS", "SMTP_PASS_FILE");
+export const EMAIL_FROM = process.env.EMAIL_FROM || `Revivaz <${SMTP_USER}>`;
+
 // ─── Jitsi (vídeo) ──────────────────────────────────────────────────────────
 // Domínio e app_id podem ser env simples (públicos); o secret do JWT é o único
 // sensível e resolve via env OU Docker secret *_FILE (nunca exposto ao front).

@@ -17,7 +17,6 @@
  * mesma, tenha a conta ou não.
  */
 import React, { useEffect, useRef, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 import { CRISIS_RESOURCES } from "./crisis";
 import { ESPECIALIDADES, GRUPOS, type GrupoEspecialidade } from "../lib/especialidades";
 import { CADASTRO_ABERTO } from "../cadastroAberto";
@@ -30,9 +29,6 @@ const T = {
 };
 const FONTE = "'Nunito', system-ui, sans-serif";
 
-const URL_SB = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const ANON = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-const supabase = URL_SB && ANON ? createClient(URL_SB, ANON, { db: { schema: "revivaz" } }) : null;
 
 type Papel = "user" | "assistant";
 interface Msg {
@@ -192,22 +188,24 @@ function EntrarNaConta(): JSX.Element {
       setErro("Confira o e-mail.");
       return;
     }
-    if (!supabase) {
-      setErro("Acesso indisponível agora. Tente pela página de entrada.");
-      return;
-    }
     setEnviando(true);
     try {
-      // shouldCreateUser padrão (true): o mesmo link serve para quem já tem
-      // conta e para quem ainda não tem. Por isso a resposta na tela é a mesma
-      // nos dois casos — dizer "esse e-mail não tem cadastro" entregaria quem
-      // faz tratamento aqui para qualquer um que quisesse testar e-mails.
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: `${window.location.origin}/conta` },
+      // O servidor cria a conta se ainda não existe e manda link + senha
+      // temporária pelo e-mail da Revivaz. A resposta é a mesma nos dois casos
+      // — dizer "esse e-mail não tem cadastro" entregaria quem faz tratamento
+      // aqui para qualquer um que quisesse testar e-mails.
+      const volta = window.location.pathname.endsWith(".html") ? "/conta.html" : "/conta";
+      const r = await fetch("/api/auth/acesso", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, volta }),
       });
-      if (error) {
-        setErro("Não consegui enviar agora. Tente de novo em instantes.");
+      if (!r.ok) {
+        setErro(
+          r.status === 429
+            ? "Muitos pedidos seguidos. Espere alguns minutos."
+            : "Não consegui enviar agora. Tente de novo em instantes.",
+        );
         return;
       }
       setEnviado(true);
@@ -221,10 +219,10 @@ function EntrarNaConta(): JSX.Element {
   if (enviado) {
     return (
       <div role="status" style={{ ...caixaAcao, borderColor: T.verde, background: "#F0FDF7" }}>
-        <strong style={{ color: "#065F46", fontSize: 14 }}>Link enviado.</strong>
+        <strong style={{ color: "#065F46", fontSize: 14 }}>Acesso enviado.</strong>
         <p style={{ margin: "6px 0 0", fontSize: 13, color: T.gray600, lineHeight: 1.5 }}>
-          Abra o e-mail que mandamos para <strong>{email}</strong> e clique no link. Se você já tinha
-          conta, ele entra direto; se não tinha, cria a sua.
+          Abra o e-mail que mandamos para <strong>{email}</strong> e clique no link, ou use a senha
+          temporária na página de entrada. Olhe também o spam.
         </p>
       </div>
     );
@@ -234,7 +232,7 @@ function EntrarNaConta(): JSX.Element {
     <div style={caixaAcao}>
       <strong style={{ fontSize: 14, color: T.gray950 }}>Entrar na minha conta</strong>
       <p style={{ margin: "4px 0 12px", fontSize: 12, color: T.gray600 }}>
-        Mandamos um link de acesso no seu e-mail. Serve tanto para quem já tem conta quanto para
+        Mandamos um link e uma senha temporária no seu e-mail. Serve tanto para quem já tem conta quanto para
         quem está começando agora.
       </p>
       <label style={rotulo} htmlFor="ac-email">E-mail</label>

@@ -15,6 +15,7 @@ import devLoginRoutes from "./routes/devLogin";
 import leadRoutes from "./routes/lead";
 import receitaRoutes from "./routes/receita";
 import acolhimentoRoutes from "./routes/acolhimento";
+import acessoRoutes from "./routes/acesso";
 import { leadHits } from "./lib/limitadores";
 import { cacheDe, pareceArquivo, urlNoSubdominio } from "./lib/estatico";
 
@@ -29,6 +30,7 @@ app.use(devLoginRoutes);
 app.use(leadRoutes);
 app.use(receitaRoutes);
 app.use(acolhimentoRoutes);
+app.use(acessoRoutes);
 
 // ─── Saúde ───────────────────────────────────────────────────────────────────
 // Sonda pública e barata: responde só "o processo está de pé e servindo".

@@ -1,50 +1,108 @@
 import { supabase } from "./supabase";
 
-/**
- * Envia um magic link / OTP por e-mail para o usuário.
- * Usa signInWithOtp — o Supabase envia um link de acesso ao e-mail informado.
- */
-export async function enviarLinkEmail(
-  email: string
-): Promise<{ ok: boolean; erro?: string }> {
+const MARCA_CODIGO = "revivaz:entrou-por-codigo";
+
+async function postJson(url: string, body: unknown, token?: string): Promise<{ ok: boolean; erro?: string }> {
   try {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: voltarParaCa() },
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify(body),
     });
-    if (error) {
-      return { ok: false, erro: error.message };
-    }
-    return { ok: true };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Erro desconhecido";
-    return { ok: false, erro: message };
+    if (r.ok) return { ok: true };
+    const j = (await r.json().catch(() => ({}))) as { error?: string };
+    return { ok: false, erro: j.error ?? "Não deu certo. Tente de novo." };
+  } catch {
+    return { ok: false, erro: "Sem conexão. Confira a internet e tente de novo." };
   }
 }
 
 /**
- * Entra com a conta Google (OAuth do Supabase). O navegador sai para o Google
- * e volta para esta mesma página já com a sessão.
+ * Pede o acesso por e-mail: o servidor manda um link e uma senha temporária
+ * (código de 6 dígitos) pelo SMTP da Revivaz.
  */
-export async function entrarComGoogle(): Promise<{ ok: boolean; erro?: string }> {
+export function pedirAcesso(email: string): Promise<{ ok: boolean; erro?: string }> {
+  // /conta.html só existe no Vite (dev); em produção a rota é /conta.
+  const volta = window.location.pathname.endsWith(".html") ? "/conta.html" : "/conta";
+  return postJson("/api/auth/acesso", { email, volta });
+}
+
+function marcarEntradaPorCodigo(): void {
   try {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: voltarParaCa() },
-    });
-    if (error) return { ok: false, erro: error.message };
-    return { ok: true };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Erro desconhecido";
-    return { ok: false, erro: message };
+    sessionStorage.setItem(MARCA_CODIGO, "1");
+  } catch {
+    /* sem storage: só não pede para criar a senha */
   }
 }
 
-// O Auth é dividido com outros apps do projeto: sem redirect explícito o link
-// voltaria para o Site URL de lá. Volta para a página onde a pessoa estava
-// (/conta em produção, /conta.html no Vite).
-function voltarParaCa(): string {
-  return `${window.location.origin}${window.location.pathname}`;
+function desmarcarEntradaPorCodigo(): void {
+  try {
+    sessionStorage.removeItem(MARCA_CODIGO);
+  } catch {
+    /* nada */
+  }
+}
+
+/**
+ * Entra com a senha temporária do e-mail. Se não for um código de 6 dígitos (ou
+ * o código falhar), tenta como a senha que a pessoa já criou.
+ */
+export async function entrarComSenha(email: string, senha: string): Promise<{ ok: boolean }> {
+  const codigo = senha.replace(/\s/g, "");
+  if (/^\d{6}$/.test(codigo)) {
+    // A marca vem ANTES: a sessão nova dispara a troca de tela na hora, e a
+    // tela de criar senha precisa já encontrar a marca.
+    marcarEntradaPorCodigo();
+    const { error } = await supabase.auth.verifyOtp({ email, token: codigo, type: "email" });
+    if (!error) return { ok: true };
+    desmarcarEntradaPorCodigo();
+  }
+  const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
+  return { ok: !error };
+}
+
+/** Entra pelo link do e-mail (?token_hash=...&type=...). Limpa a URL em seguida. */
+export async function entrarPeloLink(): Promise<"sem-link" | "ok" | "expirado"> {
+  const q = new URLSearchParams(window.location.search);
+  const tokenHash = q.get("token_hash");
+  if (!tokenHash) return "sem-link";
+  const tipo = q.get("type") === "signup" ? "signup" : "magiclink";
+  window.history.replaceState(null, "", window.location.pathname);
+  marcarEntradaPorCodigo();
+  const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: tipo });
+  if (error) {
+    desmarcarEntradaPorCodigo();
+    return "expirado";
+  }
+  return "ok";
+}
+
+/**
+ * Primeiro acesso: entrou pela senha temporária ou pelo link e ainda não criou a
+ * própria senha. A marca de "já criou" vem do servidor (app_metadata).
+ */
+export async function precisaCriarSenha(): Promise<boolean> {
+  let veioPorCodigo = false;
+  try {
+    veioPorCodigo = sessionStorage.getItem(MARCA_CODIGO) === "1";
+  } catch {
+    return false;
+  }
+  if (!veioPorCodigo) return false;
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user.app_metadata?.revivaz_senha_criada !== true;
+}
+
+/** Grava a senha nova pelo servidor e atualiza a sessão com a marca. */
+export async function criarSenha(senha: string): Promise<{ ok: boolean; erro?: string }> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { ok: false, erro: "Sua sessão caiu. Entre de novo." };
+  const r = await postJson("/api/auth/criar-senha", { senha }, token);
+  if (!r.ok) return r;
+  await supabase.auth.refreshSession();
+  desmarcarEntradaPorCodigo();
+  return { ok: true };
 }
 
 /**

@@ -9,7 +9,8 @@ import {
 } from "./sampleData";
 import type { ConsultaUI, ReceitaUI, UsuarioUI } from "./types";
 import { useSession } from "./useSession";
-import Login from "./Login";
+import Login, { CriarSenha } from "./Login";
+import { AvisoStack } from "../components/avisos/AvisoStack";
 import Header from "./sections/Header";
 import ProximaConsulta from "./sections/ProximaConsulta";
 import Atalhos from "./sections/Atalhos";
@@ -41,7 +42,7 @@ import {
   cancelarConsulta,
   getRoomToken,
 } from "../lib/data";
-import { sair } from "../lib/auth";
+import { sair, precisaCriarSenha } from "../lib/auth";
 import type { Profissional, Conversa, Profile } from "../lib/types";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -926,15 +927,39 @@ function AuthenticatedApp({ userId }: { userId: string }) {
 
 export default function ContaApp() {
   const { userId, loading } = useSession();
+  // null = ainda conferindo; true = entrou pela senha temporária e não criou a dele.
+  const [criarSenha, setCriarSenha] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!userId) {
+      setCriarSenha(null);
+      return;
+    }
+    let vivo = true;
+    precisaCriarSenha().then((v) => vivo && setCriarSenha(v));
+    return () => {
+      vivo = false;
+    };
+  }, [userId]);
 
   // No Supabase configured → demo mode (dev/build always works)
   if (!supabaseConfigured) {
     return <DemoApp />;
   }
 
-  if (loading) return <LoadingState />;
+  // A pilha de avisos fica fora das telas: o aviso sobrevive à troca de tela
+  // (ex.: "Senha criada" aparece já dentro da conta).
+  let tela: JSX.Element;
+  if (loading) tela = <LoadingState />;
+  else if (!userId) tela = <Login />;
+  else if (criarSenha === null) tela = <LoadingState />;
+  else if (criarSenha) tela = <CriarSenha onPronto={() => setCriarSenha(false)} />;
+  else tela = <AuthenticatedApp userId={userId} />;
 
-  if (!userId) return <Login />;
-
-  return <AuthenticatedApp userId={userId} />;
+  return (
+    <>
+      {tela}
+      <AvisoStack />
+    </>
+  );
 }
