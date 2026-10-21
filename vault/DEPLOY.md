@@ -16,6 +16,28 @@ node ~/.local/share/revivaz-ops/cf.mjs        # Purge Everything (CDP no Chrome 
 
 Depois: abrir revivaz.com.br no celular (390) e no PC, conversar com o acolhimento, conferir console.
 
+## Deploy leve (internet de subida lenta) — usado em 21/10
+
+A imagem inteira tem ~561 MB; em 21/10 a subida estava a ~15 KB/s (11 h). Se `package*.json` e o `Dockerfile`
+NÃO mudaram desde a imagem que roda na VPS, mande só o que muda (~29 MB) e monte em cima dela:
+
+```bash
+npx vitest run && npm run build
+tar czf /tmp/app.tgz dist server src/acolhimento src/video src/lib tsconfig.json   # pastas = allowlist do Dockerfile
+ssh tecnopano-vps 'rm -rf /tmp/revivaz-delta && mkdir -p /tmp/revivaz-delta/app && cat > /tmp/revivaz-delta/app.tgz' < /tmp/app.tgz
+ssh tecnopano-vps 'cd /tmp/revivaz-delta && tar xzf app.tgz -C app \
+  && docker tag revivaz:latest revivaz:prev-$(date +%Y%m%d) \
+  && printf "FROM revivaz:prev-$(date +%Y%m%d)\nRUN rm -rf /app/dist /app/server /app/src\nCOPY app/ /app/\n" > Dockerfile \
+  && docker build -q -t revivaz:latest . && docker service update --force --replicas 1 --image revivaz:latest revivaz_web'
+```
+
+`FROM` tem que ser uma TAG (com ID puro o BuildKit tenta baixar do Docker Hub e falha).
+Voltar atrás: `docker service update --image revivaz:prev-AAAAMMDD revivaz_web`.
+
+Purge: o `cf.mjs` sozinho só abre o painel. Passar o clique como argumento:
+`D=<pasta> node ~/.local/share/revivaz-ops/cf.mjs '<ir a /<conta>/revivaz.com.br/caching/configuration, clicar "Purge Everything" e depois o ÚLTIMO botão "Purge Everything" (diálogo)>'`.
+Conferir: `curl -sI --compressed https://revivaz.com.br/ | grep cf-cache-status` → MISS.
+
 ## Ponte (motor da IA, compartilhada com a Tecnopano)
 
 Roda na VPS: systemd `claude-bridge`, `User=claudeia`, `/opt/tecnopano-claude/bridge.mjs`.

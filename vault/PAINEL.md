@@ -16,6 +16,7 @@ Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de depl
 
 ## Checkpoint 21/10
 
+- **NO AR 21/10 ~17:20** (`f1058dd`, deploy leve, imagem anterior = `revivaz:prev-20261021`, Purge feito, MISS): conferido no PC — sem "terapeuta", sem consulta (só "Não espere consulta. Ligue 188"), menu "Para participantes", comunicado sem botão do site. A conferência no celular (390) não rodou: o `clica --lab largura` não mudou a largura.
 - Pedidos da Flávia no ar (commit `691935e`): consulta por vídeo oculta, menu "Para participantes", "terapeutas" → "profissionais da saúde" (lei em tramitação no Senado). Detalhe em `OCULTO-ATE-O-BANCO.md`.
 - Comunicado: sem o botão "Conhecer o site Revivaz".
 - Diogo vai montar o banco novo (Supabase) a partir do repo Nookweb: migrations 0001–0010 + seed. Chaves chegam por fora do git.
