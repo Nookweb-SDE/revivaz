@@ -21,7 +21,7 @@ Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de depl
 - Diogo vai montar o banco novo (Supabase) a partir do repo Nookweb: migrations 0001–0010 + seed. Chaves chegam por fora do git.
 - Config de agente (.claude, .cursor, .agents, .mcp.json, skills-lock.json) saiu do git (fica no disco, no .gitignore).
 - 2ª leva da Flávia (16:12): 3 perguntas frequentes da consulta ocultas + frase do responsável legal.
-- 3ª leva (dono, 21/10): sem menção a consulta no site, só "Não espere consulta. Ligue 188" (crise, fica). Opção "Quero falar com um psicólogo" do exemplo de conversa também oculta. Falta conferir: os celulares 3D podem mostrar tela de consulta (imagem).
+- 3ª leva (dono, 21/10): sem menção a consulta no site, só "Não espere consulta. Ligue 188" (crise, fica). Opção "Quero falar com um psicólogo" do exemplo de conversa também oculta. Celulares 3D ficam como estão (dono, 21/10).
 
 ## Checkpoint 19/10 noite → retomar 20/10
 
