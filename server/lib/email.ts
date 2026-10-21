@@ -14,12 +14,20 @@ export interface EmailSaida {
 
 export type ResultadoEnvio = { ok: true; via: "smtp" | "console" } | { ok: false; erro: string };
 
-/** Cadeado 3D anexado por CID: Gmail e Outlook bloqueiam imagem em data: URI. */
-function anexoCadeado() {
-  const noBuild = path.join(DIST, "cadeado-revivaz.png");
-  const noFonte = path.join(DIST, "..", "public", "cadeado-revivaz.png");
-  const arquivo = existsSync(noBuild) ? noBuild : noFonte;
-  return existsSync(arquivo) ? [{ filename: "cadeado.png", path: arquivo, cid: "cadeado@revivaz" }] : [];
+/** Logo e cadeado 3D anexados por CID: Gmail e Outlook bloqueiam imagem em data: URI. */
+function anexosImagens() {
+  const achar = (nome: string) => {
+    const noBuild = path.join(DIST, nome);
+    const noFonte = path.join(DIST, "..", "public", nome);
+    return existsSync(noBuild) ? noBuild : existsSync(noFonte) ? noFonte : null;
+  };
+  return [
+    { nome: "cadeado-revivaz.png", cid: "cadeado@revivaz" },
+    { nome: "icon-192.png", cid: "logo@revivaz" },
+  ].flatMap(({ nome, cid }) => {
+    const arquivo = achar(nome);
+    return arquivo ? [{ filename: nome, path: arquivo, cid }] : [];
+  });
 }
 
 let transporte: nodemailer.Transporter | null = null;
@@ -44,7 +52,7 @@ export async function enviarEmail(m: EmailSaida): Promise<ResultadoEnvio> {
       subject: m.assunto,
       html: m.html,
       text: m.texto,
-      attachments: anexoCadeado(),
+      attachments: anexosImagens(),
     });
     return { ok: true, via: "smtp" };
   } catch (err) {
