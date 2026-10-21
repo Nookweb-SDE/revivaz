@@ -21,7 +21,9 @@ Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de depl
 - **Como funciona:** e-mail → servidor gera link + senha temporária (8 dígitos, `generate_link` do admin, o GoTrue NÃO manda e-mail) → manda pelo SMTP da Revivaz → pessoa clica no link OU digita a senha → 1º acesso cria a própria senha. Avisos no canto com cadeado 3D (medidas da NookTrack).
 - **Testado local (QA lab):** pedir acesso, senha temporária, criar senha, link, link reusado (bloqueia), código errado (bloqueia). Conta de teste: `profissional.teste@revivaz.app`.
 - **SMTP:** `mail.revivaz.com.br` aponta para a VPS — NÃO serve. O servidor real é `r220us.hmservers.net` (465 SSL e 587, cert Let's Encrypt ok). Usuário `contato@revivaz.com.br`.
-- **Falta para funcionar no ar:** 1) dono manda a senha do e-mail → `.env` (SMTP_PASS) e na VPS `revivaz_smtp_pass`; 2) na VPS criar `revivaz_service_role_operation` (service_role do Diogo); 3) "pode subir" → build com o `.env` novo, `docker stack deploy` (o stack mudou: secrets novos), Purge Everything.
+- **Dono 21/10 noite: "pode subir, mas sem os botões"** → produção: `/conta` mostra "Acesso em breve" e `/api/auth/acesso` responde 404 (`ACESSO_EMAIL_ABERTO=0` no stack). Dev: tudo funciona. Abrir no ar = `CADASTRO_ABERTO=true` + `ACESSO_EMAIL_ABERTO=1` + secret `revivaz_smtp_pass` (ver comentário no `docker-stack.yml`).
+- O classificador NÃO deixa o Claude criar Docker secret nem usar senha achada em conversa antiga: esses passos o dono roda com `!`.
+- **Falta para funcionar no ar (quando abrir):** 1) dono manda a senha do e-mail → `.env` (SMTP_PASS) e na VPS `revivaz_smtp_pass`; 2) na VPS criar `revivaz_service_role_operation` (service_role do Diogo); 3) "pode subir" → build com o `.env` novo, `docker stack deploy` (o stack mudou: secrets novos), Purge Everything.
 - Sem SMTP_PASS: em dev o e-mail sai no console da API; em produção a rota responde 503 ("Não consegui enviar o e-mail").
 
 ## Checkpoint 21/10

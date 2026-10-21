@@ -16,6 +16,13 @@ node ~/.local/share/revivaz-ops/cf.mjs        # Purge Everything (CDP no Chrome 
 
 Depois: abrir revivaz.com.br no celular (390) e no PC, conversar com o acolhimento, conferir console.
 
+> ⚠️ 21/10 noite: o `.env` tem `NODE_ENV=development` (liga o dev-login no `npm run dev:api`). O `vite build`
+> obedecia a isso e o site no ar saiu em modo dev (faixa "Acesso rápido (dev)" no bundle). Desde `989fcf4`+ o
+> script `build` força `NODE_ENV=production`. Conferir antes de subir: `grep -c 'fileName:"/home' dist/assets/conta-*.js` → 0.
+>
+> Se `package*.json` mudou (ex.: nodemailer em 21/10), o deploy leve manda também `package*.json` e o Dockerfile
+> do delta roda `npm ci --omit=dev` em cima da imagem anterior.
+
 ## Deploy leve (internet de subida lenta) — usado em 21/10
 
 A imagem inteira tem ~561 MB; em 21/10 a subida estava a ~15 KB/s (11 h). Se `package*.json` e o `Dockerfile`
