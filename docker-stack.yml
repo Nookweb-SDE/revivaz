@@ -18,13 +18,15 @@ version: "3.8"
 # INTEIRO (outros apps dele também): só aqui, nunca no git. Secret com nome novo
 # porque Docker secret não se edita:
 #   printf '%s' "<v>" | docker secret create revivaz_service_role_operation -
-# E-mail de acesso (link + senha temporária) sai pelo SMTP do contato@revivaz.com.br:
+# E-mail de acesso (link + senha temporária): FECHADO em produção até o dono abrir.
+# Para abrir: criar o secret, descomentar as 3 linhas marcadas "abrir acesso" e
+# trocar ACESSO_EMAIL_ABERTO para 1.
 #   printf '%s' "<senha do e-mail>" | docker secret create revivaz_smtp_pass -
 secrets:
   revivaz_claude_bridge_url: { external: true }
   revivaz_claude_bridge_secret: { external: true }
   revivaz_service_role_operation: { external: true }
-  revivaz_smtp_pass: { external: true }
+  # revivaz_smtp_pass: { external: true }   # abrir acesso
   # Atendimento virtual: MESMO secret que o stack do Jitsi (prosody) usa p/ validar
   # o JWT das salas. O server assina com ele; o Jitsi valida com ele.
   revivaz_jitsi_jwt_secret: { external: true }
@@ -44,13 +46,14 @@ services:
       - SUPABASE_URL=https://vsztmvkuojmsftnfkzma.supabase.co
       - SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzenRtdmt1b2ptc2Z0bmZrem1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjAyNjQsImV4cCI6MjA5MDM5NjI2NH0.XbFMJUAQhChIzMm_DRXIq5n3_8MsSIPYSkQCN3ARt5M
       - SUPABASE_SERVICE_ROLE_KEY_FILE=/run/secrets/revivaz_service_role_operation
-      - SMTP_PASS_FILE=/run/secrets/revivaz_smtp_pass
+      - ACESSO_EMAIL_ABERTO=0
+      # - SMTP_PASS_FILE=/run/secrets/revivaz_smtp_pass   # abrir acesso
       # O WhatsApp (Evolution) saiu do produto: nenhuma env nem secret aqui.
       # Atendimento virtual (Jitsi). DOMAIN/APP_ID públicos; o JWT_SECRET via secret.
       - JITSI_DOMAIN=meet.revivaz.com.br
       - JITSI_APP_ID=revivaz
       - JITSI_JWT_SECRET_FILE=/run/secrets/revivaz_jitsi_jwt_secret
-    secrets: [revivaz_claude_bridge_url, revivaz_claude_bridge_secret, revivaz_service_role_operation, revivaz_smtp_pass, revivaz_jitsi_jwt_secret]
+    secrets: [revivaz_claude_bridge_url, revivaz_claude_bridge_secret, revivaz_service_role_operation, revivaz_jitsi_jwt_secret]   # abrir acesso: + revivaz_smtp_pass
     # Sonda barata: se o processo travar de pé, o Swarm derruba e sobe de novo.
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]

@@ -146,6 +146,32 @@ describe("POST /api/auth/acesso", () => {
   });
 });
 
+describe("produção: fechado até o dono abrir", () => {
+  it("sem ACESSO_EMAIL_ABERTO=1 responde 404 e não chama o GoTrue", async () => {
+    process.env.NODE_ENV = "production";
+    try {
+      const r = await post(srv, "/api/auth/acesso", { email: "ana@exemplo.com" });
+      expect(r.status).toBe(404);
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(enviarEmail).not.toHaveBeenCalled();
+    } finally {
+      process.env.NODE_ENV = "test";
+    }
+  });
+
+  it("com ACESSO_EMAIL_ABERTO=1 funciona", async () => {
+    process.env.NODE_ENV = "production";
+    process.env.ACESSO_EMAIL_ABERTO = "1";
+    mockFetch.mockResolvedValueOnce(mkRes(LINK));
+    try {
+      expect((await post(srv, "/api/auth/acesso", { email: "ana@exemplo.com" })).status).toBe(200);
+    } finally {
+      process.env.NODE_ENV = "test";
+      delete process.env.ACESSO_EMAIL_ABERTO;
+    }
+  });
+});
+
 describe("POST /api/auth/criar-senha", () => {
   it("sem login: 401", async () => {
     const r = await post(srv, "/api/auth/criar-senha", { senha: "12345678" });

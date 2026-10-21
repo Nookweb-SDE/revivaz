@@ -18,6 +18,21 @@ import { emailAcesso } from "../lib/emailAcesso";
 
 const router = Router();
 
+/**
+ * Em produção o acesso por e-mail fica fechado até o dono abrir (21/10): sem
+ * isto, qualquer um criaria conta no auth do Diogo e dispararia e-mail. Em dev
+ * funciona sempre. Abrir no ar: ACESSO_EMAIL_ABERTO=1 no docker-stack.
+ */
+function acessoAberto(): boolean {
+  return process.env.NODE_ENV !== "production" || process.env.ACESSO_EMAIL_ABERTO === "1";
+}
+
+function fechado(res: Response): boolean {
+  if (acessoAberto()) return false;
+  res.status(404).json({ error: "Rota não encontrada" });
+  return true;
+}
+
 const SITE = "https://revivaz.com.br";
 
 /** Para onde o link volta. Só a Revivaz e o dev local; o resto cai no site. */
@@ -78,6 +93,7 @@ async function gerarLink(email: string): Promise<LinkGerado | null> {
 // Rota pública. A resposta é a mesma tenha ou não conta: dizer "esse e-mail não
 // existe" entregaria quem faz tratamento aqui.
 router.post("/api/auth/acesso", async (req: Request, res: Response): Promise<void> => {
+  if (fechado(res)) return;
   const fwd = req.headers["x-forwarded-for"];
   const ip =
     (Array.isArray(fwd) ? fwd[0] : (fwd || "").toString().split(",")[0].trim()) ||
@@ -127,6 +143,7 @@ router.post("/api/auth/acesso", async (req: Request, res: Response): Promise<voi
 // (e não por updateUser no front) para gravar junto a marca de que ela já
 // criou a senha, que o front lê em app_metadata e a pessoa não consegue forjar.
 router.post("/api/auth/criar-senha", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  if (fechado(res)) return;
   const uid = res.locals.uid as string;
   const senha = String(req.body?.senha ?? "");
   if (senha.length < 8 || senha.length > 72) {

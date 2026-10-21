@@ -11,3 +11,10 @@
  * Para reabrir: trocar para true e publicar.
  */
 export const CADASTRO_ABERTO = false;
+
+/**
+ * Entrar por e-mail (link + senha temporária) em /conta. Em produção fica
+ * oculto junto com o cadastro (dono, 21/10); em dev funciona sempre, para
+ * testar. O servidor tem a mesma trava (server/routes/acesso.ts).
+ */
+export const ACESSO_EMAIL_ABERTO = CADASTRO_ABERTO || import.meta.env.DEV;

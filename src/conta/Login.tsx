@@ -280,6 +280,15 @@ export function CriarSenha({ onPronto }: { onPronto: () => void }) {
   );
 }
 
+/** Produção enquanto o acesso não abre: só o aviso, sem formulário. */
+export function AcessoEmBreve() {
+  return (
+    <Moldura>
+      <Cabecalho titulo="Acesso em breve" sub="A entrada na conta abre em breve. Em crise, ligue 188 (CVV), 24 horas." />
+    </Moldura>
+  );
+}
+
 /** Fundo e cartão da tela de entrada, com o logo. */
 function Moldura({ children, rodape }: { children: React.ReactNode; rodape?: React.ReactNode }) {
   return (

@@ -9,7 +9,8 @@ import {
 } from "./sampleData";
 import type { ConsultaUI, ReceitaUI, UsuarioUI } from "./types";
 import { useSession } from "./useSession";
-import Login, { CriarSenha } from "./Login";
+import Login, { AcessoEmBreve, CriarSenha } from "./Login";
+import { ACESSO_EMAIL_ABERTO } from "../cadastroAberto";
 import { AvisoStack } from "../components/avisos/AvisoStack";
 import Header from "./sections/Header";
 import ProximaConsulta from "./sections/ProximaConsulta";
@@ -951,7 +952,7 @@ export default function ContaApp() {
   // (ex.: "Senha criada" aparece já dentro da conta).
   let tela: JSX.Element;
   if (loading) tela = <LoadingState />;
-  else if (!userId) tela = <Login />;
+  else if (!userId) tela = ACESSO_EMAIL_ABERTO ? <Login /> : <AcessoEmBreve />;
   else if (criarSenha === null) tela = <LoadingState />;
   else if (criarSenha) tela = <CriarSenha onPronto={() => setCriarSenha(false)} />;
   else tela = <AuthenticatedApp userId={userId} />;
