@@ -28,6 +28,7 @@ Reverter só uma parte: tirar o `CADASTRO_ABERTO &&` do item na tabela abaixo.
 | Pergunta "Quanto tempo até eu ser atendido?" | `src/RevivazPreview.tsx` (`FAQ`, `soComCadastro`) | volta a pergunta |
 | "consulta individual quando necessário" em "Cuidado entre um encontro e outro" | `src/RevivazPreview.tsx` (BLOCO 8, seção fica: o menu "Para participantes" aponta pra ela) | texto volta completo |
 | "consulta individual quando precisar" em "Sua conta Revivaz" (texto do PC e rótulo de acessibilidade) | `src/sections/CelularesRolagem.tsx` | texto volta completo |
+| Opção "Quero falar com um psicólogo" no exemplo de conversa ("Precisa conversar? Comece por aqui") | `src/sections/ConversaAcolhimento.tsx` (`RESPOSTAS`) | volta a 3ª opção |
 
 ## O que continua no ar
 

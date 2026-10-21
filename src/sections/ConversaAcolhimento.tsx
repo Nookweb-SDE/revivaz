@@ -4,6 +4,7 @@
    4-7-8, técnica 5-4-3-2-1, indicar profissional, CVV/SAMU em risco).
    Substitui o bloco "Como é um encontro", que repetia a seção de encontros. */
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { CADASTRO_ABERTO } from "../cadastroAberto";
 
 type Bp = "mobile" | "tablet" | "desktop";
 
@@ -14,11 +15,14 @@ const T = {
 
 const SAUDACAO = "Oi. Que bom que você veio. Como você está se sentindo agora?";
 
-const RESPOSTAS: { frase: string; resposta: [string, string, string] }[] = [
+const TODAS: { frase: string; resposta: [string, string, string] }[] = [
   { frase: "Estou com ansiedade", resposta: ["Entendo, ansiedade pesa mesmo. Vamos tentar uma respiração: ", "puxe o ar em 4", ", segure em 7 e solte devagar em 8. Quer repetir comigo umas 3 vezes?"] },
   { frase: "Não consigo dormir", resposta: ["Noites assim cansam. Posso te mostrar a técnica ", "5-4-3-2-1", ", que ajuda a mente a desacelerar. Se isso acontece há semanas, vale conversar com um profissional do projeto."] },
   { frase: "Quero falar com um psicólogo", resposta: ["Que bom que você quer cuidar disso. Pela sua conta você pede orientação para uma ", "consulta individual por vídeo", ", com profissionais voluntários com registro ativo. Posso te explicar como funciona?"] },
 ];
+
+/* "Quero falar com um psicólogo" fala da consulta individual: oculto até o banco (vault/OCULTO-ATE-O-BANCO.md). */
+const RESPOSTAS = CADASTRO_ABERTO ? TODAS : TODAS.filter((x) => x.frase !== "Quero falar com um psicólogo");
 
 export function ConversaAcolhimento({ bp }: { bp: Bp }) {
   const mobile = bp === "mobile";
