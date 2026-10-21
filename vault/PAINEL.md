@@ -34,7 +34,7 @@ Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de depl
 
 ## Próximo
 
-0. **Próxima sessão:** ler este painel. Ainda falta:
+0. **Próxima sessão = BANCO DE DADOS** (dono, 21/10). Ler este painel e começar pelo item a. Ainda falta:
    a) **Banco (Diogo)** no repo Nookweb: Supabase novo + `supabase/migrations/0001–0010` + `seed.sql`; chaves por fora do git → pôr no `.env`.
       O antigo `akobilxqkwkcfyqdlzzf` não resolve DNS desde ≤19/10 ("Pedir consulta"/login quebrados).
    b) Com o banco no ar: `CADASTRO_ABERTO = true` reabre TUDO de uma vez (lista em `OCULTO-ATE-O-BANCO.md`), rebuild com as chaves novas, deploy leve, Purge.
