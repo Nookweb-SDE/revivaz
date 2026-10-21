@@ -1,0 +1,19 @@
+{
+  "folders": [
+    {
+      "name": "Revivaz (DEV · condomínio)",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "window.title": "Revivaz DEV — Taboão / condomínio",
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/lh-*.json": true,
+      "**/lighthouse-*.json": true
+    }
+  },
+  "extensions": {
+    "recommendations": ["dbaeumer.vscode-eslint"]
+  }
+}

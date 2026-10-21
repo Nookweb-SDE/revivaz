@@ -14,8 +14,9 @@
     {
       "label": "Abrir no Browser (Edge/Chrome)",
       "type": "shell",
-      "command": "start http://localhost:5173",
+      "command": "xdg-open http://localhost:5173",
       "windows": { "command": "start http://localhost:5173" },
+      "linux": { "command": "xdg-open http://localhost:5173" },
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
     }

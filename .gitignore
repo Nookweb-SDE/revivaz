@@ -12,3 +12,12 @@ tsconfig.tsbuildinfo
 # saída do Playwright: é resultado de execução, não código
 test-results/
 playwright-report/
+
+# config de agente/IA: fica só na máquina, nunca no git
+.claude/
+.cursor/
+.agents/
+.serena/
+.mcp.json
+skills-lock.json
+undefined/
