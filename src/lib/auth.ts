@@ -8,7 +8,10 @@ export async function enviarLinkEmail(
   email: string
 ): Promise<{ ok: boolean; erro?: string }> {
   try {
-    const { error } = await supabase.auth.signInWithOtp({ email });
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: voltarParaCa() },
+    });
     if (error) {
       return { ok: false, erro: error.message };
     }
@@ -17,6 +20,31 @@ export async function enviarLinkEmail(
     const message = err instanceof Error ? err.message : "Erro desconhecido";
     return { ok: false, erro: message };
   }
+}
+
+/**
+ * Entra com a conta Google (OAuth do Supabase). O navegador sai para o Google
+ * e volta para esta mesma página já com a sessão.
+ */
+export async function entrarComGoogle(): Promise<{ ok: boolean; erro?: string }> {
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: voltarParaCa() },
+    });
+    if (error) return { ok: false, erro: error.message };
+    return { ok: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Erro desconhecido";
+    return { ok: false, erro: message };
+  }
+}
+
+// O Auth é dividido com outros apps do projeto: sem redirect explícito o link
+// voltaria para o Site URL de lá. Volta para a página onde a pessoa estava
+// (/conta em produção, /conta.html no Vite).
+function voltarParaCa(): string {
+  return `${window.location.origin}${window.location.pathname}`;
 }
 
 /**

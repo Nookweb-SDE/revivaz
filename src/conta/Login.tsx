@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Mail, Phone, ArrowRight, CheckCircle, AlertCircle, MessageCircle, User, Stethoscope, Shield } from "lucide-react";
 import { T, btnPrimary } from "./ui";
-import { enviarLinkEmail } from "../lib/auth";
+import { enviarLinkEmail, entrarComGoogle } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import ConsentimentoLGPD, { CONSENT_KEY } from "./sections/ConsentimentoLGPD";
 
@@ -9,9 +9,8 @@ import ConsentimentoLGPD, { CONSENT_KEY } from "./sections/ConsentimentoLGPD";
 // ─── Email flow phases ───────────────────────────────────────────────────────
 type EmailPhase = "idle" | "loading" | "sent" | "error";
 
-// O login por WhatsApp (OTP) saiu junto com o canal: sobra o magic-link por
-// e-mail, que não depende de nenhum serviço de terceiro além do Supabase.
-// Com um método só, o seletor de abas também deixou de fazer sentido.
+// O login por WhatsApp (OTP) saiu junto com o canal. Ficam dois caminhos na
+// mesma tela, sem abas: conta Google (1 clique) e magic-link por e-mail.
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 const inputBase: React.CSSProperties = {
   width: "100%",
@@ -203,6 +202,76 @@ function EmailLogin() {
   );
 }
 
+// ─── Google ──────────────────────────────────────────────────────────────────
+// Botão no padrão do Google (fundo branco, "G" colorido). O e-mail fica abaixo
+// para quem não tem conta Google.
+function GoogleLogin() {
+  const [indo, setIndo] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  async function entrar() {
+    if (indo) return;
+    setIndo(true);
+    setErro(null);
+    const r = await entrarComGoogle();
+    // ok = o navegador já está indo para o Google; só volta o estado se falhou.
+    if (!r.ok) {
+      setErro("Não consegui abrir o Google agora. Tente o link por e-mail.");
+      setIndo(false);
+    }
+  }
+
+  return (
+    <>
+      {erro && (
+        <div role="alert" style={errorBox}>
+          <AlertCircle size={15} aria-hidden="true" />
+          {erro}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={entrar}
+        disabled={indo}
+        style={{
+          width: "100%",
+          minHeight: 52,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 10,
+          background: T.white,
+          border: `1.5px solid ${T.gray200}`,
+          borderRadius: 14,
+          fontFamily: "'Nunito',sans-serif",
+          fontWeight: 800,
+          fontSize: 15,
+          color: T.gray950,
+          cursor: indo ? "wait" : "pointer",
+          opacity: indo ? 0.7 : 1,
+          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+          <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/>
+        </svg>
+        {indo ? "Abrindo o Google…" : "Entrar com Google"}
+      </button>
+      <div
+        aria-hidden="true"
+        style={{ display: "flex", alignItems: "center", gap: 10, margin: "20px 0", color: T.gray600, fontSize: 13, fontWeight: 600 }}
+      >
+        <span style={{ flex: 1, height: 1, background: T.gray200 }} />
+        ou receba um link no e-mail
+        <span style={{ flex: 1, height: 1, background: T.gray200 }} />
+      </div>
+    </>
+  );
+}
+
 // ─── Faixa de acesso rápido (DEV ONLY) ──────────────────────────────────────
 // O Vite REMOVE este caminho do bundle de produção (import.meta.env.DEV=false).
 // O endpoint /api/auth/dev-login também recusa quando NODE_ENV=production.
@@ -342,7 +411,7 @@ export default function Login(): JSX.Element {
     () => !!localStorage.getItem(CONSENT_KEY)
   );
 
-  const subtitle = "Você receberá um link de acesso no seu e-mail.";
+  const subtitle = "Entre com sua conta Google ou receba um link no e-mail.";
 
   // Show LGPD consent modal before anything else
   if (!consentido) {
@@ -383,7 +452,7 @@ export default function Login(): JSX.Element {
               Acessar minha conta
             </p>
             <p style={{ margin: 0, fontWeight: 500, fontSize: 14, color: T.gray600 }}>
-              Informe seu e-mail e enviaremos um link de acesso.
+              Entre com sua conta Google ou receba um link no e-mail.
             </p>
           </div>
         </div>
@@ -456,7 +525,8 @@ export default function Login(): JSX.Element {
           {subtitle}
         </p>
 
-        {/* Método único: magic-link por e-mail. */}
+        {/* Google primeiro (1 clique); magic-link por e-mail para quem não tem. */}
+        <GoogleLogin />
         <EmailLogin />
       </div>
 
