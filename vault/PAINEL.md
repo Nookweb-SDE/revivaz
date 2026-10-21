@@ -14,6 +14,16 @@ Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de depl
 | Repositório principal | **github.com/Nookweb-SDE/revivaz** (`main`), remote local `nookweb`; push com `gh auth switch --user Nookweb-SDE` e voltar para IZAI-SDE. O antigo `origin` (IZAI-SDE) parou em 9c40e20 |
 | Motor (ponte Claude na VPS) | perfil `acolhimento` no ar desde 19/10 19:12 (CLI enxuto, opus): IA no site 5,4–6,0 s (antes 9–11 s). Backup `bridge.mjs.bak-20261019` |
 
+## Checkpoint 21/10 noite — banco do Diogo + login por e-mail
+
+- **Banco:** projeto "Operation" do Diogo (`vsztmvkuojmsftnfkzma`), schema `revivaz`; `profiles` virou `revivaz_users`. Auth é COMPARTILHADO com os outros apps dele (a senha que a pessoa cria vale lá também). Chaves só no `.env` / Docker secret.
+- **Branch `feat/login-link-senha-card`** (push em `nookweb` e `origin`, SEM deploy): `458634e` banco → `8a93349` → `9010c70` login → `701352e` código 8 dígitos → `a7e9831` e-mail estilo NookTrack → commit do deploy (este).
+- **Como funciona:** e-mail → servidor gera link + senha temporária (8 dígitos, `generate_link` do admin, o GoTrue NÃO manda e-mail) → manda pelo SMTP da Revivaz → pessoa clica no link OU digita a senha → 1º acesso cria a própria senha. Avisos no canto com cadeado 3D (medidas da NookTrack).
+- **Testado local (QA lab):** pedir acesso, senha temporária, criar senha, link, link reusado (bloqueia), código errado (bloqueia). Conta de teste: `profissional.teste@revivaz.app`.
+- **SMTP:** `mail.revivaz.com.br` aponta para a VPS — NÃO serve. O servidor real é `r220us.hmservers.net` (465 SSL e 587, cert Let's Encrypt ok). Usuário `contato@revivaz.com.br`.
+- **Falta para funcionar no ar:** 1) dono manda a senha do e-mail → `.env` (SMTP_PASS) e na VPS `revivaz_smtp_pass`; 2) na VPS criar `revivaz_service_role_operation` (service_role do Diogo); 3) "pode subir" → build com o `.env` novo, `docker stack deploy` (o stack mudou: secrets novos), Purge Everything.
+- Sem SMTP_PASS: em dev o e-mail sai no console da API; em produção a rota responde 503 ("Não consegui enviar o e-mail").
+
 ## Checkpoint 21/10
 
 - **NO AR 21/10 ~17:20** (`f1058dd`, deploy leve, imagem anterior = `revivaz:prev-20261021`, Purge feito, MISS): conferido no PC — sem "terapeuta", sem consulta (só "Não espere consulta. Ligue 188"), menu "Para participantes", comunicado sem botão do site. A conferência no celular (390) não rodou: o `clica --lab largura` não mudou a largura.
@@ -34,7 +44,7 @@ Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de depl
 
 ## Próximo
 
-0. **Próxima sessão = BANCO DE DADOS** (dono, 21/10). Ler este painel e começar pelo item a. Ainda falta:
+0. **Banco ligado na branch `feat/login-link-senha-card` (21/10 noite).** Próximo: senha SMTP do dono + deploy (ver checkpoint acima). Itens antigos:
    a) **Banco (Diogo)** no repo Nookweb: Supabase novo + `supabase/migrations/0001–0010` + `seed.sql`; chaves por fora do git → pôr no `.env`.
       O antigo `akobilxqkwkcfyqdlzzf` não resolve DNS desde ≤19/10 ("Pedir consulta"/login quebrados).
    b) Com o banco no ar: `CADASTRO_ABERTO = true` reabre TUDO de uma vez (lista em `OCULTO-ATE-O-BANCO.md`), rebuild com as chaves novas, deploy leve, Purge.

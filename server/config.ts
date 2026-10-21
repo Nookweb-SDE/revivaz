@@ -62,7 +62,9 @@ export const requireAuth = makeRequireAuth(SUPABASE_URL, SUPABASE_ANON_KEY);
 // O e-mail de acesso sai daqui, não do Supabase: o projeto Auth é dividido com
 // outros apps, e o SMTP de lá vale para todos eles. Sem senha, em dev o e-mail
 // só vai pro console; em produção a rota recusa (503).
-export const SMTP_HOST = process.env.SMTP_HOST || "mail.revivaz.com.br";
+// mail.revivaz.com.br NÃO serve: aponta para a VPS. O SMTP de verdade é o
+// servidor da HostMídia, e é nesse nome que o certificado TLS bate.
+export const SMTP_HOST = process.env.SMTP_HOST || "r220us.hmservers.net";
 export const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
 export const SMTP_USER = process.env.SMTP_USER || "contato@revivaz.com.br";
 export const SMTP_PASS = resolveSecret("SMTP_PASS", "SMTP_PASS_FILE");
