@@ -34,15 +34,18 @@ Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de depl
 
 ## Próximo
 
-0. **Próxima sessão: o dono vai descrever um ajuste no "flow"** (fluxo da conversa/cadastro). Ler este painel, perguntar o que é, não sair mexendo.
-1. **Quarta 21/10/2026: banco de dados.** O Supabase `akobilxqkwkcfyqdlzzf.supabase.co` não resolve DNS (nem PC nem VPS) desde ≤19/10:
-   "Pedir consulta" (`server/routes/lead.ts`) dá erro e o pedido se perde; Entrar/Cadastre-se não funcionam.
-   Opção 1 (recomendada): dono abre supabase.com e diz se está pausado (reativar) ou apagado (recriar + `supabase/migrations/0001–0010`).
-   Opção 2: Postgres na VPS.
-2. Depois do banco, pedido do dono (19/10): ansiedade/sono livres sem login; **falar com especialista ou continuar conversa
+0. **Próxima sessão:** ler este painel. Ainda falta:
+   a) **Banco (Diogo)** no repo Nookweb: Supabase novo + `supabase/migrations/0001–0010` + `seed.sql`; chaves por fora do git → pôr no `.env`.
+      O antigo `akobilxqkwkcfyqdlzzf` não resolve DNS desde ≤19/10 ("Pedir consulta"/login quebrados).
+   b) Com o banco no ar: `CADASTRO_ABERTO = true` reabre TUDO de uma vez (lista em `OCULTO-ATE-O-BANCO.md`), rebuild com as chaves novas, deploy leve, Purge.
+   c) Cadastro/login: dono escolhe prévia A/B/C (`~/Área de trabalho/previa-revivaz/cadastro/`) e link mágico vs tela de cadastro.
+   d) Conferir revivaz.com.br no celular (390): no 21/10 o `clica --lab largura` não mudou a largura.
+   e) E-mail `contato@revivaz.com.br`: webmail https://webmail.revivaz.com.br; senha nova é o dono que troca no cPanel (https://cpanel.revivaz.com.br, Contas de e-mail › Gerenciar) — senha NUNCA no vault/git. Texto pro grupo já entregue (sem pedir troca de senha).
+   f) Repo antigo `origin` (IZAI-SDE) parou em 9c40e20: decidir se arquiva ou mantém espelho.
+1. Pedido do dono (19/10), depois do banco: ansiedade/sono livres sem login; **falar com especialista ou continuar conversa
    exige cadastro rápido (e-mail ou Google/Gmail)** e a conversa fica gravada (tabelas `conversas`/`mensagens`, como o `ChatIA` da conta).
    Atenção LGPD: dado de saúde = sensível, pedir consentimento explícito no cadastro e citar na privacidade. Prévia HTML antes.
-3. Deploy: o build PRECISA de `--build-arg VITE_SUPABASE_URL/ANON_KEY` (ver `DEPLOY.md`); os envios de 19/10 saíram sem.
+2. Deploy: o build PRECISA de `--build-arg VITE_SUPABASE_URL/ANON_KEY` (ver `DEPLOY.md`); internet lenta → "Deploy leve" no `DEPLOY.md`.
 
 1. (Dono: "só mexe na Revivaz, esquece Tecnopano" — não portar o patch.)
 2. Link "Como funciona" do menu: opção 1 (#encontros) ou 2 (publicar `ComoEEncontro`) — dono decide.
