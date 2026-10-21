@@ -184,7 +184,7 @@ function roteiaAdmin(status = "em_analise") {
   mockFetch.mockImplementation((url: string, init?: RequestInit) => {
     const u = String(url);
     if (u.includes("/auth/v1/user")) return Promise.resolve(mkRes({ id: ADMIN }));
-    if (u.includes("/rest/v1/profiles")) return Promise.resolve(mkRes([{ role: "admin" }]));
+    if (u.includes("/rest/v1/revivaz_users")) return Promise.resolve(mkRes([{ role: "admin" }]));
     if (u.includes("/rest/v1/candidaturas") && (!init || init.method === "GET" || !init.method))
       return Promise.resolve(
         mkRes([
@@ -225,7 +225,7 @@ describe("POST /api/admin/candidatura/:id/decidir", () => {
     mockFetch.mockImplementation((url: string) => {
       const u = String(url);
       if (u.includes("/auth/v1/user")) return Promise.resolve(mkRes({ id: CANDIDATO }));
-      if (u.includes("/rest/v1/profiles")) return Promise.resolve(mkRes([{ role: "paciente" }]));
+      if (u.includes("/rest/v1/revivaz_users")) return Promise.resolve(mkRes([{ role: "paciente" }]));
       return Promise.resolve(mkRes([{}]));
     });
     const r = await req(srv, "POST", `/api/admin/candidatura/${CAND_ID}/decidir`, { acao: "aprovar" }, {
@@ -243,7 +243,7 @@ describe("POST /api/admin/candidatura/:id/decidir", () => {
     const urls = mockFetch.mock.calls.map((c) => String(c[0]));
     expect(urls.some((u) => u.includes("/rest/v1/profissionais"))).toBe(true);
     const patchProfile = mockFetch.mock.calls.find(
-      (c) => String(c[0]).includes("/rest/v1/profiles") && (c[1] as RequestInit)?.method === "PATCH"
+      (c) => String(c[0]).includes("/rest/v1/revivaz_users") && (c[1] as RequestInit)?.method === "PATCH"
     );
     expect(JSON.parse(String((patchProfile![1] as RequestInit).body))).toMatchObject({
       role: "profissional",
@@ -301,7 +301,7 @@ describe("POST /api/admin/candidatura/:id/verificar", () => {
     mockFetch.mockImplementation((url: string) => {
       const u = String(url);
       if (u.includes("/auth/v1/user")) return Promise.resolve(mkRes({ id: CANDIDATO }));
-      if (u.includes("/rest/v1/profiles")) return Promise.resolve(mkRes([{ role: "paciente" }]));
+      if (u.includes("/rest/v1/revivaz_users")) return Promise.resolve(mkRes([{ role: "paciente" }]));
       return Promise.resolve(mkRes([{}]));
     });
     const r = await req(srv, "POST", `/api/admin/candidatura/${CAND_ID}/verificar`, {}, {

@@ -114,9 +114,9 @@ function rotearSupabase(uidDoBearer: string) {
           { nome: "Dra. Ana", especialidade: "Psiquiatria", registro: "CRM 1", profile_id: PROF_PROFILE },
         ])
       );
-    if (u.includes(`/rest/v1/profiles?id=eq.${PACIENTE}`))
+    if (u.includes(`/rest/v1/revivaz_users?id=eq.${PACIENTE}`))
       return Promise.resolve(mkRes([{ nome: "Maria", telefone: "11965119797" }]));
-    if (u.includes("/rest/v1/profiles"))
+    if (u.includes("/rest/v1/revivaz_users"))
       return Promise.resolve(mkRes([{ role: "paciente", nome: "Alguém" }]));
     if (u.includes("/rest/v1/leads"))
       return Promise.resolve(mkRes([{ id: "aaaaaaaa-0000-4000-8000-000000000000" }], 201));

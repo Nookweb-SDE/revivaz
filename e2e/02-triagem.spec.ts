@@ -75,11 +75,11 @@ async function mockAutenticacao(page: Page) {
     });
   });
 
-  // 4. Supabase REST: profiles, consultas, receitas, etc. → retorna vazios
+  // 4. Supabase REST: revivaz_users, consultas, receitas, etc. → retorna vazios
   //    para não bloquear a renderização do ContaApp
   await page.route('**/rest/v1/**', (route) => {
     // Perfil mínimo para o Header renderizar o nome do paciente
-    if (route.request().url().includes('profiles')) {
+    if (route.request().url().includes('revivaz_users')) {
       route.fulfill({
         status: 200,
         contentType: 'application/json',

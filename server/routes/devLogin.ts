@@ -3,7 +3,7 @@
 // com 403 quando NODE_ENV=production.
 import { Router, type Request, type Response } from "express";
 import { randomBytes } from "crypto";
-import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY } from "../config";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, SCHEMA_HEADERS } from "../config";
 
 const router = Router();
 
@@ -39,6 +39,7 @@ router.post("/api/auth/dev-login", async (req: Request, res: Response): Promise<
     "Content-Type": "application/json",
     apikey: SUPABASE_SERVICE_ROLE_KEY,
     Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    ...SCHEMA_HEADERS,
   };
 
   try {
@@ -74,7 +75,7 @@ router.post("/api/auth/dev-login", async (req: Request, res: Response): Promise<
 
     // perfil profissional: garante role + uma ficha em profissionais
     if (perfil === "profissional") {
-      await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+      await fetch(`${SUPABASE_URL}/rest/v1/revivaz_users?id=eq.${userId}`, {
         method: "PATCH",
         headers: { ...adminHeaders, Prefer: "return=minimal" },
         body: JSON.stringify({ role: "profissional" }),

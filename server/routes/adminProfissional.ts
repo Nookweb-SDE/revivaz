@@ -1,7 +1,7 @@
 // Vincula uma ficha de profissional a um login (cria ou acha o auth user pelo
 // e-mail e marca role=profissional). Só admin — conferido pela service_role.
 import { Router, type Request, type Response } from "express";
-import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, requireAuth } from "../config";
+import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, requireAuth, SCHEMA_HEADERS } from "../config";
 
 const router = Router();
 
@@ -32,12 +32,13 @@ router.post(
       "Content-Type": "application/json",
       apikey: SUPABASE_SERVICE_ROLE_KEY,
       Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      ...SCHEMA_HEADERS,
     };
 
     // (2) confere que o chamador é admin (service_role, ignora RLS)
     try {
       const roleRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${callerUid}&select=role`,
+        `${SUPABASE_URL}/rest/v1/revivaz_users?id=eq.${callerUid}&select=role`,
         { headers: adminHeaders }
       );
       if (!roleRes.ok) {
@@ -107,7 +108,7 @@ router.post(
     // assim. Valida o resultado do PATCH antes de seguir pro vínculo.
     try {
       const roleRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${targetUid}&select=role`,
+        `${SUPABASE_URL}/rest/v1/revivaz_users?id=eq.${targetUid}&select=role`,
         { headers: adminHeaders }
       );
       let currentRole: string | undefined;
@@ -117,7 +118,7 @@ router.post(
       }
       if (currentRole !== "admin") {
         const promoteRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles?id=eq.${targetUid}`,
+          `${SUPABASE_URL}/rest/v1/revivaz_users?id=eq.${targetUid}`,
           {
             method: "PATCH",
             headers: { ...adminHeaders, Prefer: "return=minimal" },

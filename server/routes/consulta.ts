@@ -10,6 +10,7 @@ import {
   JITSI_APP_ID,
   JITSI_JWT_SECRET,
   requireAuth,
+  SCHEMA_HEADERS,
 } from "../config";
 import { mintJitsiJwt } from "../jitsiJwt";
 import { roomName, isOnline } from "../../src/video/room";
@@ -51,6 +52,7 @@ router.post(
       "Content-Type": "application/json",
       apikey: SUPABASE_SERVICE_ROLE_KEY,
       Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      ...SCHEMA_HEADERS,
     };
 
     // (2) carrega a consulta via service_role (ignora RLS p/ checar associação)
@@ -129,7 +131,7 @@ router.post(
     let userName = "Participante";
     try {
       const nRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${callerUid}&select=nome`,
+        `${SUPABASE_URL}/rest/v1/revivaz_users?id=eq.${callerUid}&select=nome`,
         { headers: adminHeaders }
       );
       if (nRes.ok) {
@@ -217,6 +219,7 @@ router.post(
       "Content-Type": "application/json",
       apikey: SUPABASE_SERVICE_ROLE_KEY,
       Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      ...SCHEMA_HEADERS,
     };
 
     // valida o Bearer

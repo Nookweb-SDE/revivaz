@@ -5,7 +5,7 @@
 // via service_role (a tabela leads não aceita escrita do navegador) e avisos
 // best-effort — se a Evolution falhar, o lead JÁ está salvo.
 import { Router, type Request, type Response } from "express";
-import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from "../config";
+import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SCHEMA_HEADERS } from "../config";
 import { telefoneValido, emailValido } from "../validacao";
 import { isLeadRateLimited } from "../lib/limitadores";
 
@@ -71,6 +71,7 @@ router.post("/api/lead", async (req: Request, res: Response): Promise<void> => {
         "Content-Type": "application/json",
         apikey: SUPABASE_SERVICE_ROLE_KEY,
         Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        ...SCHEMA_HEADERS,
         Prefer: "return=representation",
       },
       body: JSON.stringify({

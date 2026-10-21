@@ -46,6 +46,15 @@ export const SUPABASE_SERVICE_ROLE_KEY = resolveSecret(
   "SUPABASE_SERVICE_ROLE_KEY_FILE"
 );
 
+// Banco do Revivaz mora no schema "revivaz" (projeto Supabase dividido com outros
+// apps), não no public. PostgREST lê Accept-Profile no GET e Content-Profile no
+// resto; mandar os dois sempre é inofensivo. O /auth/v1 ignora.
+export const SUPABASE_SCHEMA = "revivaz";
+export const SCHEMA_HEADERS: Record<string, string> = {
+  "Accept-Profile": SUPABASE_SCHEMA,
+  "Content-Profile": SUPABASE_SCHEMA,
+};
+
 // ─── Auth middleware (Supabase Bearer → res.locals.uid) ─────────────────────
 export const requireAuth = makeRequireAuth(SUPABASE_URL, SUPABASE_ANON_KEY);
 

@@ -6,7 +6,7 @@
  * do token — nunca do corpo, senão qualquer um se candidata no lugar de outro.
  */
 import { Router, type Request, type Response } from "express";
-import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, requireAuth } from "../config";
+import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, requireAuth, SCHEMA_HEADERS } from "../config";
 import { cpfValido, somenteDigitos } from "../../src/lib/documentos";
 import { registroValido } from "../../src/lib/conselhos";
 import { ESPECIALIDADES } from "../../src/lib/especialidades";
@@ -73,6 +73,7 @@ router.post("/api/candidatura", requireAuth, async (req: Request, res: Response)
     "Content-Type": "application/json",
     apikey: SUPABASE_SERVICE_ROLE_KEY,
     Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    ...SCHEMA_HEADERS,
     Prefer: "return=representation,resolution=merge-duplicates",
   };
 
@@ -123,12 +124,13 @@ function adminHeaders(): Record<string, string> {
     "Content-Type": "application/json",
     apikey: SUPABASE_SERVICE_ROLE_KEY,
     Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    ...SCHEMA_HEADERS,
   };
 }
 
 /** true se o uid é admin. Mesmo padrão do /api/admin/profissional-link. */
 async function ehAdmin(uid: string): Promise<boolean> {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${uid}&select=role`, {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/revivaz_users?id=eq.${uid}&select=role`, {
     headers: adminHeaders(),
   });
   if (!r.ok) return false;
@@ -255,7 +257,7 @@ router.post(
           return;
         }
         const virarProfissional = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles?id=eq.${cand.profile_id}`,
+          `${SUPABASE_URL}/rest/v1/revivaz_users?id=eq.${cand.profile_id}`,
           { method: "PATCH", headers: adminHeaders(), body: JSON.stringify({ role: "profissional" }) }
         );
         if (!virarProfissional.ok) {

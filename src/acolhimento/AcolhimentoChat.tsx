@@ -32,7 +32,7 @@ const FONTE = "'Nunito', system-ui, sans-serif";
 
 const URL_SB = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const ANON = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-const supabase = URL_SB && ANON ? createClient(URL_SB, ANON) : null;
+const supabase = URL_SB && ANON ? createClient(URL_SB, ANON, { db: { schema: "revivaz" } }) : null;
 
 type Papel = "user" | "assistant";
 interface Msg {

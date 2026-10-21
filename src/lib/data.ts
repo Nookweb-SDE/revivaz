@@ -28,7 +28,7 @@ export async function getProfile(): Promise<Profile | null> {
   if (!userId) return null;
 
   const { data, error } = await supabase
-    .from("profiles")
+    .from("revivaz_users")
     .select("*")
     .eq("id", userId)
     .single();
@@ -42,7 +42,7 @@ export async function atualizarProfile(p: Partial<Profile>): Promise<void> {
   if (!userId) throw new Error("Usuário não autenticado");
 
   const { error } = await supabase
-    .from("profiles")
+    .from("revivaz_users")
     .update(p)
     .eq("id", userId);
 
@@ -584,7 +584,7 @@ export async function getNomesPacientes(
   // RLS (profiles_prof_patient_read p/ prof; profiles_admin_all p/ admin)
   // decide o que volta; ids ausentes simplesmente não aparecem no mapa.
   const { data, error } = await supabase
-    .from("profiles")
+    .from("revivaz_users")
     .select("id,nome")
     .in("id", ids);
 
@@ -761,9 +761,9 @@ export async function adminListProfissionais(
 }
 
 export async function adminListPacientes(): Promise<Profile[]> {
-  // RLS admin libera todos os profiles; filtra os pacientes.
+  // RLS admin libera todos os revivaz_users; filtra os pacientes.
   const { data, error } = await supabase
-    .from("profiles")
+    .from("revivaz_users")
     .select("*")
     .eq("role", "paciente")
     .order("created_at", { ascending: false });

@@ -9,6 +9,7 @@ import {
   SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY,
   requireAuth,
+  SCHEMA_HEADERS,
 } from "../config";
 import { buildReceitaPdf } from "../receitaPdf";
 
@@ -46,6 +47,7 @@ async function carregarReceitaAutorizada(
     "Content-Type": "application/json",
     apikey: SUPABASE_SERVICE_ROLE_KEY,
     Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    ...SCHEMA_HEADERS,
   };
 
   const rRes = await fetch(
@@ -73,7 +75,7 @@ async function carregarReceitaAutorizada(
   let autorizado = r.paciente_id === callerUid;
 
   const profRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?id=eq.${callerUid}&select=role,nome`,
+    `${SUPABASE_URL}/rest/v1/revivaz_users?id=eq.${callerUid}&select=role,nome`,
     { headers: adminHeaders }
   );
   if (!profRes.ok) {
@@ -116,7 +118,7 @@ async function carregarReceitaAutorizada(
   let pacienteNome = "Paciente";
   let pacienteTelefone: string | null = null;
   const pacRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?id=eq.${r.paciente_id}&select=nome,telefone`,
+    `${SUPABASE_URL}/rest/v1/revivaz_users?id=eq.${r.paciente_id}&select=nome,telefone`,
     { headers: adminHeaders }
   );
   if (pacRes.ok) {
