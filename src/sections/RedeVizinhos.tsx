@@ -14,7 +14,7 @@ const T = {
 };
 
 const ETAPAS = [
-  { n: "01", titulo: "Escuta", texto: "Um espaço mediado por psicólogos e terapeutas, sem julgamento." },
+  { n: "01", titulo: "Escuta", texto: "Um espaço mediado por psicólogos e profissionais da saúde, sem julgamento." },
   { n: "02", titulo: "Vínculo", texto: "Vizinhos que se conhecem se apoiam melhor." },
   { n: "03", titulo: "Convivência", texto: "Encontros mensais para adolescentes, mulheres e homens." },
   { n: "04", titulo: "Rede de apoio", texto: "CVV 188 e encaminhamento para acolhimento individual." },

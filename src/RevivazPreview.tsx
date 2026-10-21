@@ -156,7 +156,7 @@ export default function RevivazPreview() {
      nesta página — antes eram botões sem ação nenhuma. */
   const NAV = [
     ["Sobre", "#sobre"],
-    ["Para pacientes", "#para-pacientes"],
+    ["Para participantes", "#para-pacientes"],
     ["Como funciona", "#como-funciona"],
     ["Para profissionais", "#para-profissionais"],
   ] as const;
@@ -174,13 +174,13 @@ export default function RevivazPreview() {
   // Princípios do PDF da Flávia (§7 combinados, §8 manejo do grupo).
   const CUIDADO = [
     { icon: MessageCircle, title: "Ninguém é obrigado a falar", desc: "Escutar também é participar. Ninguém é pressionado a contar algo pessoal ou íntimo." },
-    { icon: Stethoscope, title: "Profissionais com registro", desc: "Psicólogos e terapeutas com registro ativo no conselho da área conduzem a conversa, com escuta qualificada e atenção ao grupo." },
+    { icon: Stethoscope, title: "Profissionais com registro", desc: "Psicólogos e profissionais da saúde com registro ativo no conselho da área conduzem a conversa, com escuta qualificada e atenção ao grupo." },
     { icon: Users, title: "Respeito e privacidade", desc: "Histórias de outras pessoas não são expostas, e a roda não vira tribunal de conflitos do condomínio." },
     { icon: Heart, title: "Em crise, ajuda imediata", desc: "Situações de risco são acolhidas e encaminhadas. Em emergência: CVV 188 e SAMU 192, 24 horas." },
   ];
 
   const FEATURES = [
-    { icon: Brain, title: "Escuta qualificada", sub: "Psicólogos e terapeutas conduzem a conversa para que todos possam falar e ser ouvidos.", img: "/revivaz/hero-alt.webp", imgPos: "center" },
+    { icon: Brain, title: "Escuta qualificada", sub: "Psicólogos e profissionais da saúde conduzem a conversa para que todos possam falar e ser ouvidos.", img: "/revivaz/hero-alt.webp", imgPos: "center" },
     { icon: Calendar, title: "Uma quinta por mês", sub: "Encontros presenciais no condomínio, de novembro de 2026 a outubro de 2027.", img: "/revivaz/hero-alt.webp", imgPos: "center" },
     { icon: MessageCircle, title: "Um tema por mês", sub: "Relações sem violência, autocuidado, escolhas, diferenças, comunicação e mais.", img: "/revivaz/hero.webp", imgPos: "center" },
     { icon: Users, title: "Três grupos", sub: "Adolescentes de 12 a 17 anos às 18h, mulheres às 19h e homens às 20h (a confirmar).", img: "/revivaz/hero.webp", imgPos: "center" },
@@ -203,7 +203,7 @@ export default function RevivazPreview() {
     },
     {
       p: "Quem vai me atender?",
-      r: "Os encontros do condomínio são conduzidos por psicólogos e terapeutas com registro ativo no conselho da área. O atendimento individual por vídeo é feito por profissionais voluntários com registro ativo no conselho da área, conferido no cadastro.",
+      r: "Os encontros do condomínio são conduzidos por psicólogos e profissionais da saúde com registro ativo no conselho da área. O atendimento individual por vídeo é feito por profissionais voluntários com registro ativo no conselho da área, conferido no cadastro.",
     },
     {
       p: "É sigiloso mesmo?",
@@ -223,7 +223,7 @@ export default function RevivazPreview() {
     },
     {
       p: "Como funcionam os encontros no condomínio?",
-      r: "São encontros de psicologia comunitária, conduzidos por psicólogos e terapeutas com registro ativo, uma quinta-feira por mês: 18h para adolescentes de 12 a 17 anos, 19h para mulheres e 20h para homens (horário dos homens a confirmar). A participação é livre e ninguém precisa contar nada pessoal. Os encontros não substituem psicoterapia; quem precisar de cuidado individual recebe orientação.",
+      r: "São encontros de psicologia comunitária, conduzidos por psicólogos e profissionais da saúde com registro ativo, uma quinta-feira por mês: 18h para adolescentes de 12 a 17 anos, 19h para mulheres e 20h para homens (horário dos homens a confirmar). A participação é livre e ninguém precisa contar nada pessoal. Os encontros não substituem psicoterapia; quem precisar de cuidado individual recebe orientação.",
     },
   ];
 
@@ -340,7 +340,8 @@ export default function RevivazPreview() {
       {/* ═══ BLOCO 4 — Encontros mensais (mulheres + adolescentes) ═══ */}
       <Encontros bp={bp} />
 
-      {/* ═══ BLOCO 6 — "Saúde digital" (device card polido) ═══ */}
+      {/* ═══ BLOCO 6 — "Saúde digital" (device card polido). Oculto até o banco: ver vault/OCULTO-ATE-O-BANCO.md ═══ */}
+      {CADASTRO_ABERTO && (
       <section style={{ ...sectionPad, background: T.gray050, textAlign: "center" }}>
         <div style={{ ...container }}>
           <div style={{ fontSize: Fp.xs, color: T.teal700, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 700, marginBottom: Sp.s }}>Atendimento individual</div>
@@ -373,6 +374,7 @@ export default function RevivazPreview() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ═══ BLOCO 7 — 2 stat cards (NAVY escuro), números do PDF da Flávia ═══ */}
       <section style={{ ...sectionPad, background: T.white }}>

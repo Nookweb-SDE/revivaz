@@ -68,7 +68,7 @@ export function Encontros({ bp }: { bp: Bp }) {
           <div style={{ fontSize: 12, color: T.teal700, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 700, marginBottom: 8 }}>Psicologia comunitária no Vivaz Taboão da Serra</div>
           <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: mobile ? 22 : 30, color: T.gray950, lineHeight: 1.2, margin: "0 0 12px" }}>Um encontro por mês, perto de casa</h2>
           <p style={{ fontSize: mobile ? 14 : 15, color: T.gray600, lineHeight: 1.7, margin: 0 }}>
-            Uma quinta-feira por mês, psicólogos e terapeutas conduzem encontros presenciais no condomínio. Ninguém precisa contar nada pessoal: a participação é livre e a privacidade, combinada no início.
+            Uma quinta-feira por mês, psicólogos e profissionais da saúde conduzem encontros presenciais no condomínio. Ninguém precisa contar nada pessoal: a participação é livre e a privacidade, combinada no início.
           </p>
         </div>
 
