@@ -22,7 +22,6 @@ Reverter só uma parte: tirar o `CADASTRO_ABERTO &&` do item na tabela abaixo.
 | Bloco "seja voluntário" | `src/sections/FaixaProximoEncontro.tsx` (`onVoluntario`) | cadastro de profissional |
 | Badge "Abrir minha conta" (seção dos celulares) | `src/sections/CelularesRolagem.tsx` | abre /conta. A seção dos celulares continua visível |
 | "Pedir consulta" / "Entrar na minha conta" e "Peça uma consulta" | `src/acolhimento/AcolhimentoChat.tsx` | botões do chat de acolhimento |
-| Seção "Atendimento individual — Consulta por vídeo, com hora marcada" (cartão Atender/Vídeo) | `src/RevivazPreview.tsx` (BLOCO 6) | volta a mostrar a seção inteira |
 | Perguntas frequentes "Quanto custa?", "Quem vai me atender?", "É sigiloso mesmo?" + subtítulo "…e o atendimento individual" | `src/RevivazPreview.tsx` (`FAQ`, marca `soComCadastro`) | voltam as 3 perguntas e o subtítulo completo (pedido da Flávia, 21/10) |
 | Frase "Para atendimento individual, a conta deve ser criada e usada pelo responsável legal." (pergunta "Atende criança e adolescente?") | `src/RevivazPreview.tsx` (`FAQ`) | a frase volta ao fim da resposta |
 | Pergunta "Quanto tempo até eu ser atendido?" | `src/RevivazPreview.tsx` (`FAQ`, `soComCadastro`) | volta a pergunta |
@@ -31,6 +30,8 @@ Reverter só uma parte: tirar o `CADASTRO_ABERTO &&` do item na tabela abaixo.
 | Opção "Quero falar com um psicólogo" no exemplo de conversa ("Precisa conversar? Comece por aqui") | `src/sections/ConversaAcolhimento.tsx` (`RESPOSTAS`) | volta a 3ª opção |
 
 ## O que continua no ar
+
+- 28/10: a seção "Consulta por vídeo" (BLOCO 6) saiu de vez: não haverá atendimento online. No lugar entrou "Psicólogos parceiros" (`src/sections/Psicologos.tsx`): foto, CRP, abordagem, telefone e botão do WhatsApp, sem valor nem horário. Não depende do banco.
 
 - Seção "Precisa conversar? Comece por aqui" (conversa de exemplo + botão "Começar conversa" para /acolhimento).
 - `/acolhimento` e `/conta` abrem pelo endereço direto (admin e profissionais).

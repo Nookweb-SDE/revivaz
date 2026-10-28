@@ -10,6 +10,7 @@ import { Encontros } from "./sections/Encontros";
 import { ConversaAcolhimento } from "./sections/ConversaAcolhimento";
 import { CelularesRolagem } from "./sections/CelularesRolagem";
 import { FaixaProximoEncontro } from "./sections/FaixaProximoEncontro";
+import { Psicologos } from "./sections/Psicologos";
 import { CADASTRO_ABERTO } from "./cadastroAberto";
 import { ESPECIALIDADES, GRUPOS, type GrupoEspecialidade } from "./lib/especialidades";
 import {
@@ -342,41 +343,8 @@ export default function RevivazPreview() {
       {/* ═══ BLOCO 4 — Encontros mensais (mulheres + adolescentes) ═══ */}
       <Encontros bp={bp} />
 
-      {/* ═══ BLOCO 6 — "Saúde digital" (device card polido). Oculto até o banco: ver vault/OCULTO-ATE-O-BANCO.md ═══ */}
-      {CADASTRO_ABERTO && (
-      <section style={{ ...sectionPad, background: T.gray050, textAlign: "center" }}>
-        <div style={{ ...container }}>
-          <div style={{ fontSize: Fp.xs, color: T.teal700, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 700, marginBottom: Sp.s }}>Atendimento individual</div>
-          <h2 style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: Fp["2xl"], color: T.gray950, marginBottom: Sp.s }}>Consulta por vídeo, com hora marcada</h2>
-          <p style={{ fontSize: Fp.sm, color: T.gray600, maxWidth: 420, margin: "0 auto" }}>Para quem precisa de cuidado além dos encontros, com profissionais voluntários.</p>
-          <div style={{ maxWidth: bp === "mobile" ? 320 : 380, margin: `${Sp.l}px auto 0` }}>
-            <div style={{ background: `linear-gradient(160deg, ${T.teal900} 0%, ${T.navy} 100%)`, borderRadius: 20, padding: bp === "mobile" ? 18 : 22, position: "relative", overflow: "hidden", border: "1px solid rgba(255,255,255,.06)", boxShadow: "0 20px 50px rgba(11,29,58,.28)" }}>
-              <div style={{ position: "absolute", top: -50, right: -30, width: 170, height: 170, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,191,216,.28), transparent 70%)", pointerEvents: "none" }} />
-              <div style={{ display: "flex", alignItems: "center", gap: Sp.m, position: "relative", zIndex: 1 }}>
-                <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${T.teal500}, ${T.teal700})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 4px 14px rgba(0,168,191,.4)" }}>
-                  <User size={26} color={T.white} />
-                </div>
-                <div style={{ textAlign: "left", color: T.white, flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: F.sm, fontWeight: 700 }}>Consulta online</div>
-                  <div style={{ fontSize: F.xs, opacity: 0.75 }}>Psicólogo voluntário</div>
-                </div>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.green500, boxShadow: "0 0 0 4px rgba(76,175,80,.2)", flexShrink: 0 }} />
-              </div>
-              {/* Ilustração de uma chamada, não controles de verdade: viraram <span>
-                  para ninguém clicar esperando que atenda alguém. */}
-              <div style={{ display: "flex", gap: Sp.s, marginTop: Sp.m, position: "relative", zIndex: 1 }}>
-                <span aria-hidden="true" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 12, border: "none", background: T.green500, color: T.white, fontSize: F.xs, fontWeight: 700, fontFamily: "inherit" }}>
-                  <Phone size={14} /> Atender
-                </span>
-                <span aria-hidden="true" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 12, border: "1px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.08)", color: T.white, fontSize: F.xs, fontWeight: 700, fontFamily: "inherit", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}>
-                  <Video size={14} /> Vídeo
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      )}
+      {/* ═══ BLOCO 6 — Psicólogos parceiros (contato direto pelo WhatsApp; substitui a consulta por vídeo) ═══ */}
+      <Psicologos bp={bp} />
 
       {/* ═══ BLOCO 7 — 2 stat cards (NAVY escuro), números do PDF da Flávia ═══ */}
       <section style={{ ...sectionPad, background: T.white }}>
