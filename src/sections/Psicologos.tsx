@@ -50,6 +50,12 @@ function IconeWhats() {
 export function Psicologos({ bp }: { bp: Bp }) {
   const mobile = bp === "mobile";
   const [aberto, setAberto] = useState(0);
+  // no celular, o cartão de cima fecha enquanto este abre e a página anda:
+  // depois da animação, traz o cartão aberto inteiro para a tela
+  const abrir = (k: number, el: HTMLElement) => {
+    setAberto(k);
+    if (mobile) setTimeout(() => el.scrollIntoView({ block: "start", behavior: "smooth" }), 650);
+  };
   // no PC basta passar o mouse; no toque, abre ao tocar
   const comMouse = typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches;
 
@@ -72,7 +78,7 @@ export function Psicologos({ bp }: { bp: Bp }) {
         .psi-whats:hover{filter:brightness(.9)}
         .psi-faixa:focus-visible,.psi-whats:focus-visible{outline:3px solid ${T.teal300};outline-offset:3px}
         .psi-cel .psi-faixas{flex-direction:column;height:auto;gap:8px}
-        .psi-cel .psi-faixa{flex:none;height:72px;border-radius:20px}
+        .psi-cel .psi-faixa{flex:none;height:72px;border-radius:20px;scroll-margin-top:76px}
         .psi-cel .psi-faixa.aberta{height:520px}
         .psi-cel .psi-nome-v{writing-mode:horizontal-tb;transform:translateY(-50%);left:84px;top:50%;bottom:auto;font-size:17px}
         .psi-cel .psi-faixa:not(.aberta){background:${T.teal050};color:${T.teal900}}
@@ -92,8 +98,8 @@ export function Psicologos({ bp }: { bp: Bp }) {
           {PSICOLOGOS.map((p, k) => (
             <div key={p.nome} className={`psi-faixa${k === aberto ? " aberta" : ""}`} role="button" tabIndex={0}
               aria-expanded={k === aberto} aria-label={p.nome}
-              onClick={(e) => { if (!(e.target as HTMLElement).closest("a")) setAberto(k); }}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setAberto(k); } }}
+              onClick={(e) => { if (!(e.target as HTMLElement).closest("a")) abrir(k, e.currentTarget); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrir(k, e.currentTarget); } }}
               onMouseEnter={() => { if (comMouse && !mobile) setAberto(k); }}>
               <img src={`/revivaz/psicologos/${p.foto}.webp`} alt={`Foto de ${p.nome}`} loading="lazy" draggable={false} style={{ objectPosition: p.foco }} />
               <span className="psi-nome-v" aria-hidden="true">{p.curto}</span>
