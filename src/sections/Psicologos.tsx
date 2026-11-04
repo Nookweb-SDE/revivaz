@@ -16,6 +16,8 @@ const T = {
 type Psicologo = {
   nome: string; curto: string; crp: string; abordagem: string;
   especializacoes: string[]; tel: string; wa: string; foto: string; foco: string;
+  /** link pronto do WhatsApp (wa.me/message/...), quando não temos o número */
+  link?: string;
 };
 
 const PSICOLOGOS: Psicologo[] = [
@@ -25,10 +27,13 @@ const PSICOLOGOS: Psicologo[] = [
   { nome: "Walter Aparecido Santos", curto: "Walter", crp: "06/55994-8", abordagem: "Psicólogo clínico",
     especializacoes: ["Gerontólogo", "Especialização em Dependência Química", "Psicopedagogo institucional"],
     tel: "(11) 98117-6518", wa: "5511981176518", foto: "walter", foco: "50% 40%" },
+  { nome: "David F. Santos", curto: "David", crp: "06/196112", abordagem: "",
+    especializacoes: [],
+    tel: "", wa: "", link: "https://wa.me/message/RGHC3235YTMMN1", foto: "david", foco: "50% 35%" },
   { nome: "Fabiana Farias", curto: "Fabiana", crp: "06/234608", abordagem: "Humanista-Existencial",
     especializacoes: ["Pós-graduada em Abordagem Centrada na Pessoa e Saúde da Família", "Capacitação em Prevenção ao Suicídio"],
     tel: "(11) 95871-0606", wa: "5511958710606", foto: "fabiana", foco: "50% 35%" },
-  { nome: "Mariana Alves", curto: "Mariana", crp: "06/236420", abordagem: "Psicanálise",
+  { nome: "Mariana Alves", curto: "Mariana", crp: "06/236420", abordagem: "Psicanalítica",
     especializacoes: ["Psicanalista", "Neuropsicóloga"],
     tel: "(11) 98208-0367", wa: "5511982080367", foto: "mariana", foco: "55% 40%" },
   { nome: "Sabrina Bezerra Meira", curto: "Sabrina", crp: "06/225787", abordagem: "Terapia Cognitivo-Comportamental (TCC)",
@@ -36,7 +41,7 @@ const PSICOLOGOS: Psicologo[] = [
     tel: "(11) 98183-2420", wa: "5511981832420", foto: "sabrina", foco: "50% 28%" },
 ];
 
-const linkWhats = (p: Psicologo) =>
+const linkWhats = (p: Psicologo) => p.link ??
   `https://wa.me/${p.wa}?text=${encodeURIComponent(`Olá, ${p.curto}! Vim pelo site do Revivaz e gostaria de saber sobre o atendimento psicológico.`)}`;
 
 function IconeWhats() {
@@ -106,7 +111,9 @@ export function Psicologos({ bp }: { bp: Bp }) {
               <div className="psi-info">
                 <h3 style={{ margin: 0, fontSize: mobile ? 22 : bp === "tablet" ? 23 : 28, fontWeight: 900, lineHeight: 1.15 }}>{p.nome}</h3>
                 <div style={{ color: T.teal300, fontSize: 14, fontWeight: 700 }}>CRP {p.crp}</div>
-                <span style={{ display: "inline-block", marginTop: 12, padding: "6px 13px", borderRadius: 999, background: "rgba(255,255,255,.16)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", fontWeight: 800, fontSize: 14 }}>{p.abordagem}</span>
+                {p.abordagem && (
+                  <span style={{ display: "inline-block", marginTop: 12, padding: "6px 13px", borderRadius: 999, background: "rgba(255,255,255,.16)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", fontWeight: 800, fontSize: 14 }}>{p.abordagem}</span>
+                )}
                 {p.especializacoes.length > 0 && (
                   <p style={{ margin: "10px 0 0", fontSize: 14.5, lineHeight: 1.5, color: "rgba(255,255,255,.85)", maxWidth: 520 }}>{p.especializacoes.join(" · ")}</p>
                 )}
@@ -114,7 +121,7 @@ export function Psicologos({ bp }: { bp: Bp }) {
                   <a className="psi-whats" href={linkWhats(p)} target="_blank" rel="noopener noreferrer" tabIndex={k === aberto ? 0 : -1}>
                     <IconeWhats /> Chamar no WhatsApp
                   </a>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,.85)" }}>{p.tel}</span>
+                  {p.tel && <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,.85)" }}>{p.tel}</span>}
                 </div>
               </div>
             </div>
