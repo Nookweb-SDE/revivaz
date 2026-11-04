@@ -14,6 +14,10 @@ Ler isto primeiro. Detalhe do dia em `CHECKPOINT-AAAA-MM-DD.md`; receita de depl
 | Repositório principal | **github.com/Nookweb-SDE/revivaz** (`main`), remote local `nookweb`; push com `gh auth switch --user Nookweb-SDE` e voltar para IZAI-SDE. O antigo `origin` (IZAI-SDE) parou em 9c40e20 |
 | Motor (ponte Claude na VPS) | perfil `acolhimento` no ar desde 19/10 19:12 (CLI enxuto, opus): IA no site 5,4–6,0 s (antes 9–11 s). Backup `bridge.mjs.bak-20261019` |
 
+## Checkpoint 04/11 — psicólogo David
+
+- **NO AR 04/11** (`cd33221` na `feat/psicologos-whatsapp`, deploy leve, imagem anterior = `revivaz:prev-20261104`, Purge feito, MISS): David F. Santos (CRP 06/196112) entra depois do Walter, link `wa.me/message/RGHC3235YTMMN1`; Mariana = "Psicanalítica". QA em produção 1920/1280/1024/768/390/360 ok. Falta da Flávia: abordagem do David (cartão sem etiqueta), número e foto maior (a atual tem 282 px).
+
 ## Checkpoint 21/10 noite — banco do Diogo + login por e-mail
 
 - **NO AR 21/10 noite** (`1c6af03`, deploy leve + `npm ci` no delta, `docker stack deploy`, imagem anterior = `revivaz:prev-20261021b`, Purge feito, MISS): banco do Diogo ligado (secret `revivaz_service_role_operation`, criado pelo dono); `/conta` = "Acesso em breve"; `/api/auth/acesso` = 404; home sem botões de entrar/cadastro; bundle sem modo dev. Falta: dono pôr `SMTP_PASS` no `.env` para o teste de e-mail de verdade em dev.
